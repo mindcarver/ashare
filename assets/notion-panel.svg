@@ -1,0 +1,34 @@
+<svg width="920" height="320" viewBox="0 0 920 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="320" rx="24" fill="#F7EBD5"/>
+  <rect x="24" y="24" width="872" height="272" rx="20" fill="#F1E2C7" stroke="#2F4A4C" stroke-width="3"/>
+  <path d="M24 78H896" stroke="#2F4A4C" stroke-width="2" opacity=".42"/>
+  <circle cx="52" cy="51" r="7" fill="#B65243"/>
+  <circle cx="78" cy="51" r="7" fill="#C6A95D"/>
+  <circle cx="104" cy="51" r="7" fill="#2F4A4C"/>
+
+  <text x="460" y="112" text-anchor="middle" fill="#263F41" font-family="Georgia, 'Songti SC', serif" font-size="16" letter-spacing=".8">A-SHARE RESEARCH NOTEBOOK</text>
+
+  <rect x="54" y="138" width="250" height="112" rx="16" fill="#FAF3E5" stroke="#B65243" stroke-width="2"/>
+  <rect x="82" y="166" width="54" height="54" rx="14" fill="#E2CFAE"/>
+  <path d="M94 199L108 185L121 193L133 176" stroke="#B65243" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="162" y="184" fill="#263F41" font-family="Georgia, 'Songti SC', serif" font-size="24" font-weight="700" textLength="96" lengthAdjust="spacingAndGlyphs">公司研究</text>
+  <text x="162" y="212" fill="#5C5A4F" font-family="Arial, 'PingFang SC', sans-serif" font-size="15" textLength="110" lengthAdjust="spacingAndGlyphs">预期差 / 催化</text>
+
+  <rect x="335" y="138" width="250" height="112" rx="16" fill="#FAF3E5" stroke="#2F4A4C" stroke-width="2"/>
+  <rect x="363" y="166" width="54" height="54" rx="14" fill="#D6E0D8"/>
+  <path d="M376 181H404" stroke="#2F4A4C" stroke-width="6" stroke-linecap="round"/>
+  <path d="M376 195H408" stroke="#2F4A4C" stroke-width="6" stroke-linecap="round"/>
+  <path d="M376 209H399" stroke="#2F4A4C" stroke-width="6" stroke-linecap="round"/>
+  <text x="443" y="184" fill="#263F41" font-family="Georgia, 'Songti SC', serif" font-size="24" font-weight="700" textLength="96" lengthAdjust="spacingAndGlyphs">新闻映射</text>
+  <text x="443" y="212" fill="#5C5A4F" font-family="Arial, 'PingFang SC', sans-serif" font-size="15" textLength="112" lengthAdjust="spacingAndGlyphs">事件 / 标的池</text>
+
+  <rect x="616" y="138" width="250" height="112" rx="16" fill="#FAF3E5" stroke="#C6A95D" stroke-width="2"/>
+  <rect x="644" y="166" width="54" height="54" rx="14" fill="#E7D9BA"/>
+  <path d="M657 182H685" stroke="#B65243" stroke-width="6" stroke-linecap="round"/>
+  <path d="M657 196H676" stroke="#2F4A4C" stroke-width="6" stroke-linecap="round"/>
+  <path d="M657 210H688" stroke="#C6A95D" stroke-width="6" stroke-linecap="round"/>
+  <text x="724" y="184" fill="#263F41" font-family="Georgia, 'Songti SC', serif" font-size="24" font-weight="700" textLength="96" lengthAdjust="spacingAndGlyphs">观察清单</text>
+  <text x="724" y="212" fill="#5C5A4F" font-family="Arial, 'PingFang SC', sans-serif" font-size="15" textLength="96" lengthAdjust="spacingAndGlyphs">关注 / 证伪</text>
+
+  <path d="M68 270H852" stroke="#2F4A4C" stroke-width="2" stroke-dasharray="7 11" opacity=".32"/>
+</svg>
