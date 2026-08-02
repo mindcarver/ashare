@@ -10,7 +10,7 @@
 <h1>A 股研究技能库</h1>
 
 <p>
-  <sub>公司研究 / 新闻映射 / 观察清单</sub>
+  <sub>公司研究 / 新闻映射 / 资本环境仪表盘</sub>
 </p>
 
 <br />
@@ -36,6 +36,10 @@
       <td align="center"><code>ashare-news-investment-targets</code></td>
       <td>从新闻、公告、文章或研报摘录中提取潜在 A 股标的，并按统一口径评分。</td>
     </tr>
+    <tr>
+      <td align="center"><code>ashare-capital-environment-dashboard</code></td>
+      <td>生成 AGUHOT 风格的资本环境仪表盘 HTML：4 市场（全球/美国/中国/韩国）× 7 维度共 28 格证据面板。用 <code>--as-of YYYY-MM-DD</code> 点时回放，只选 <code>publishedAt ≤ asOf</code> 的记录；全未知时显示空状态，严格区分已观测事实与未知，禁出投资建议。</td>
+    </tr>
   </tbody>
 </table>
 
@@ -47,7 +51,7 @@
   <tbody>
     <tr>
       <td align="center"><b>目录</b></td>
-      <td align="left"><code>skills/ashare-company-research</code><br /><code>skills/ashare-news-investment-targets</code></td>
+      <td align="left"><code>skills/ashare-company-research</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
     </tr>
     <tr>
       <td align="center"><b>安装</b></td>
@@ -56,6 +60,10 @@
     <tr>
       <td align="center"><b>同步</b></td>
       <td align="left"><code>~/.codex/skills/</code><br /><code>~/.claude/skills/</code></td>
+    </tr>
+    <tr>
+      <td align="center"><b>资本环境回放</b></td>
+      <td align="left"><code>python3 skills/ashare-capital-environment-dashboard/scripts/gen_dashboard.py --cells cells.json --as-of YYYY-MM-DD --out report.html</code><br />每格可提供单条或历史记录数组；生成器按发布日期截止选择最新可用记录。</td>
     </tr>
   </tbody>
 </table>
@@ -81,6 +89,14 @@
         <code>ashare-news-investment-targets</code>
       </td>
       <td align="left">从新闻、公告、文章或研报里提取受益标的；适合 A 股机会、海外映射和受益股评分。</td>
+    </tr>
+    <tr>
+      <td align="center" width="280">
+        <img src="./assets/ashare-icon.svg" alt="" width="42" />
+        <br />
+        <code>ashare-capital-environment-dashboard</code>
+      </td>
+      <td align="left">生成资本环境仪表盘 HTML：4 市场 × 7 维度的证据面板；用 <code>--as-of</code> 生成真实点时快照，全未知时不伪造矩阵；只描述环境状态与证据，不给投资建议。</td>
     </tr>
   </tbody>
 </table>
