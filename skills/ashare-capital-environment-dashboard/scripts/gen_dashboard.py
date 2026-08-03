@@ -454,6 +454,9 @@ DIM_LABEL = {"growth": "增长", "inflation": "通胀", "liquidity": "流动性"
 EXPECTED_KEYS = {f"{market}|{dimension}" for market in MARKETS for dimension in DIMS}
 AVAILABILITIES = {"available", "partial", "unknown", "failed", "pending_review", "incomplete_reconstruction"}
 FORBIDDEN_TERMS = ("买入", "卖出", "建议买", "建议卖", "目标价", "目标仓位", "牛熊分数", "总分", "确定牛", "确定熊", "必然涨", "必然跌")
+# 板块倾向建议层（可选）：由 load_records 从 cells JSON 顶层 sectorAdvice 拆出
+SECTOR_ADVICE = {}
+SECTOR_STANCE_CLS = {"关注": "st-up", "中性": "st-mid", "回避": "st-down"}
 
 
 def parse_date(value, field):
@@ -473,13 +476,25 @@ def parse_args():
 
 
 def load_records(path):
+    """读取 cells JSON。支持两种顶层结构：
+    1) 28 个 market|dimension 键（原有）；
+    2) 含 "cells" 与/或 "sectorAdvice" 的包装对象。
+    sectorAdvice（板块倾向建议层）会被拆出存到全局 SECTOR_ADVICE，不参与 28 格校验。"""
+    global SECTOR_ADVICE
     if path is None:
         return CELLS
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"无法读取 cells JSON：{path}") from exc
-    records = payload.get("cells", payload) if isinstance(payload, dict) else None
+    if isinstance(payload, dict) and "sectorAdvice" in payload:
+        SECTOR_ADVICE = payload.get("sectorAdvice") or {}
+    if isinstance(payload, dict) and "cells" in payload:
+        records = payload["cells"]
+    elif isinstance(payload, dict):
+        records = {k: v for k, v in payload.items() if k != "sectorAdvice"}
+    else:
+        records = None
     if not isinstance(records, dict):
         raise ValueError("cells JSON 必须是对象，或包含对象字段 cells")
     return records
@@ -726,6 +741,39 @@ def takeaway_html():
             f'{risk_html}</div>')
 
 
+def sector_advice_html():
+    """板块倾向建议层（可选）：用户要求投资/板块建议时，从 cells JSON 顶层 sectorAdvice 渲染。
+    约束：仅板块/主题粒度；倾向只用 关注/中性/回避；每条必须带证据来源 + 证伪条件；卡头固定免责声明。"""
+    if not SECTOR_ADVICE or not SECTOR_ADVICE.get("markets"):
+        return ""
+    disclaimer = (SECTOR_ADVICE.get("disclaimer")
+                  or "以下为基于资本环境证据的板块方向性研究参考，仅为建议，不构成投资建议或买卖指令，不保证未来表现。")
+    market_blocks = []
+    for mkt in SECTOR_ADVICE.get("markets", []):
+        rows = []
+        for it in mkt.get("items", []):
+            stance = it.get("stance", "中性")
+            cls = SECTOR_STANCE_CLS.get(stance, "st-mid")
+            rows.append(
+                '<div class="sa-item">'
+                f'<span class="sa-stance {cls}">{stance}</span>'
+                f'<span class="sa-sector">{it.get("sector", "")}</span>'
+                f'<div class="sa-ev"><b>证据：</b>{it.get("evidence", "")}</div>'
+                f'<div class="sa-tr"><b>证伪条件：</b>{it.get("trigger", "")}</div>'
+                '</div>'
+            )
+        mkt_name = mkt.get("market", "")
+        mkt_date = f'<span class="sa-mkt-date">{mkt.get("date", "")}</span>' if mkt.get("date") else ""
+        market_blocks.append(
+            f'<div class="sa-mkt"><div class="sa-mkt-name">{mkt_name}</div>{mkt_date}'
+            f'<div class="sa-list">{"".join(rows)}</div></div>'
+        )
+    return (f'<div class="sector-advice-box">'
+            f'<div class="tw-head">板块倾向建议 · 研究参考（仅建议）</div>'
+            f'<p class="sa-disclaimer">{disclaimer}</p>'
+            f'{"".join(market_blocks)}</div>')
+
+
 MATRIX_ROWS_HTML = "\n".join("    " + row for row in matrix_rows)
 SECTIONS_HTML = "\n\n".join(sections)
 
@@ -823,6 +871,24 @@ main{min-height:100vh}
 .risk-low .risk-title{color:var(--market-up)}
 .risk-section .tw-item{font-size:0.75rem}
 .risk-section .tw-tag{background:transparent;border:1px solid var(--border-hairline);color:var(--ink-tertiary)}
+/* 板块倾向建议卡（研究参考，仅建议） */
+.sector-advice-box{background:var(--surface-base);border:1px solid var(--border-hairline);border-left:3px solid #f59e0b;border-radius:0.5rem;padding:0.75rem 1.25rem;margin-top:0.625rem}
+.sector-advice-box .tw-head{font-size:0.8rem;font-weight:600;color:var(--ink-primary);margin-bottom:0.375rem}
+.sa-disclaimer{margin:0 0 0.625rem 0;font-size:0.7rem;color:var(--ink-tertiary);line-height:1.5}
+.sa-mkt{margin-bottom:0.75rem;border-top:1px dashed var(--border-hairline);padding-top:0.5rem}
+.sa-mkt:first-of-type{border-top:none;padding-top:0}
+.sa-mkt-name{font-size:0.78rem;font-weight:600;color:var(--ink-primary);display:inline-block;margin-right:0.5rem}
+.sa-mkt-date{font-size:0.68rem;color:var(--ink-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.sa-list{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.375rem}
+.sa-item{border:1px solid var(--border-hairline);border-radius:0.375rem;padding:0.5rem 0.625rem;background:var(--surface-raised)}
+.sa-item .sa-sector{font-size:0.78rem;font-weight:600;color:var(--ink-primary)}
+.sa-item .sa-stance{float:right;border-radius:9999px;padding:0.05rem 0.5rem;font-size:0.68rem;font-weight:600;margin-left:0.5rem}
+.sa-item .sa-stance.st-up{background:var(--market-up-soft);color:var(--market-up)}
+.sa-item .sa-stance.st-mid{background:var(--surface-muted);color:var(--ink-secondary)}
+.sa-item .sa-stance.st-down{background:var(--market-down-soft);color:var(--market-down)}
+.sa-item .sa-ev,.sa-item .sa-tr{font-size:0.7rem;line-height:1.5;color:var(--ink-secondary);margin-top:0.25rem}
+.sa-item .sa-tr{color:var(--ink-tertiary)}
+.sa-item .sa-ev b,.sa-item .sa-tr b{color:var(--ink-primary);font-weight:600}
 /* 每格风险点 */
 .risk-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}
 .risk-dot.rk-high{background:var(--market-down)}
@@ -882,6 +948,8 @@ nav.dates button.primary:hover{opacity:0.9}
   </div>
 
   {{TAKEAWAYS_HTML}}
+
+  {{SECTOR_ADVICE_HTML}}
 
   {{DASHBOARD_CONTENT}}
 </div>
@@ -1013,6 +1081,7 @@ html = (template
         .replace("{{AS_OF}}", AS_OF).replace("{{YESTERDAY}}", YESTERDAY).replace("{{LAST_WEEK}}", LAST_WEEK)
         .replace("{{OVERVIEW}}", overview).replace("{{DISCLAIMER}}", DISCLAIMER)
         .replace("{{TAKEAWAYS_HTML}}", takeaway_html())
+        .replace("{{SECTOR_ADVICE_HTML}}", sector_advice_html())
         .replace("{{DASHBOARD_CONTENT}}", DASHBOARD_CONTENT)
         .replace("{{CELLS_JSON}}", json.dumps(CELLS, ensure_ascii=False, indent=1)))
 
