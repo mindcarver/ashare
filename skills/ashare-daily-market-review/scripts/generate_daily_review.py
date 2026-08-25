@@ -16,6 +16,7 @@ SCHEMA_VERSION = "1.0"
 SECTION_NAMES = (
     "indices",
     "breadth",
+    "short_term_sentiment",
     "turnover",
     "sectors",
     "funds",
@@ -28,6 +29,12 @@ FORBIDDEN = (
     "建议卖出",
     "目标价",
     "目标仓位",
+    "建议轻仓",
+    "建议半仓",
+    "建议重仓",
+    "建议空仓",
+    "建议加仓",
+    "建议减仓",
     "确定牛市",
     "确定熊市",
     "必然上涨",
@@ -150,8 +157,8 @@ def normalized_sections(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if availability not in AVAILABILITY:
             raise ReviewError(f"sections.{name}.availability 不受支持")
         require_text(section, "status_reason", f"sections.{name}")
-        if availability == "unknown" and (
-            section.get("items") or section.get("metrics")
+        if availability == "unknown" and any(
+            section.get(name) for name in ("items", "metrics", "previous_metrics")
         ):
             raise ReviewError(f"sections.{name} 标记unknown时不能携带数值数据")
         sections[name] = section
@@ -218,6 +225,75 @@ def validate_sections(
                 require_market_date(
                     evidence, f"sections.breadth.metrics.{name}", market_date
                 )
+
+    sentiment = sections["short_term_sentiment"]
+    if sentiment["availability"] != "unknown":
+        metrics = sentiment.get("metrics")
+        if not isinstance(metrics, dict):
+            raise ReviewError("sections.short_term_sentiment.metrics 必须是object")
+        required = ("open_board_failed", "limit_attempts", "highest_streak")
+        if sentiment["availability"] == "available" and any(
+            name not in metrics for name in required
+        ):
+            raise ReviewError("available short_term_sentiment 缺少必需指标")
+        if sentiment["availability"] == "available":
+            if breadth["availability"] != "available":
+                raise ReviewError("available short_term_sentiment 要求breadth为available")
+            require_text(breadth, "universe", "sections.breadth")
+            if require_text(sentiment, "universe", "sections.short_term_sentiment") != breadth["universe"]:
+                raise ReviewError("short_term_sentiment.universe 必须与breadth.universe一致")
+            require_text(sentiment, "methodology", "sections.short_term_sentiment")
+        for name, evidence in metrics.items():
+            constraint = "positive" if name == "limit_attempts" else "nonnegative"
+            validate_evidence(
+                evidence,
+                f"sections.short_term_sentiment.metrics.{name}",
+                as_of,
+                "count",
+                constraint,
+            )
+            if sentiment["availability"] == "available":
+                require_market_date(
+                    evidence,
+                    f"sections.short_term_sentiment.metrics.{name}",
+                    market_date,
+                )
+        attempts = value(sentiment, "limit_attempts")
+        failed = value(sentiment, "open_board_failed")
+        if attempts is not None and failed is not None and failed > attempts:
+            raise ReviewError("open_board_failed 不能大于limit_attempts")
+        previous = sentiment.get("previous_metrics")
+        if previous is not None:
+            if not isinstance(previous, dict):
+                raise ReviewError("sections.short_term_sentiment.previous_metrics 必须是object")
+            required_previous = (
+                "limit_up",
+                "limit_down",
+                "open_board_failed",
+                "limit_attempts",
+                "highest_streak",
+            )
+            if any(name not in previous for name in required_previous):
+                raise ReviewError("previous_metrics 缺少修复判断必需指标")
+            for name in required_previous:
+                constraint = "positive" if name == "limit_attempts" else "nonnegative"
+                evidence = previous[name]
+                validate_evidence(
+                    evidence,
+                    f"sections.short_term_sentiment.previous_metrics.{name}",
+                    as_of,
+                    "count",
+                    constraint,
+                )
+                if parse_date(
+                    evidence["observed_at"],
+                    f"sections.short_term_sentiment.previous_metrics.{name}.observed_at",
+                ) >= market_date:
+                    raise ReviewError("previous_metrics.observed_at 必须早于market_date")
+            if value({"metrics": previous}, "open_board_failed") > value(
+                {"metrics": previous}, "limit_attempts"
+            ):
+                raise ReviewError("previous_metrics.open_board_failed 不能大于limit_attempts")
 
     turnover = sections["turnover"]
     if turnover["availability"] != "unknown":
@@ -310,6 +386,106 @@ def value(section: dict[str, Any], metric: str) -> float | None:
     return float(evidence["value"]) if evidence else None
 
 
+def derive_short_term_sentiment(
+    sections: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    sentiment = sections["short_term_sentiment"]
+    breadth = sections["breadth"]
+    if sentiment["availability"] != "available":
+        return {
+            "state": "unknown",
+            "reason": sentiment["status_reason"],
+        }
+    if breadth["availability"] != "available":
+        return {
+            "state": "unknown",
+            "reason": "涨跌停宽度数据不可得，不能分类短线情绪",
+        }
+
+    limit_up = value(breadth, "limit_up")
+    limit_down = value(breadth, "limit_down")
+    failed = value(sentiment, "open_board_failed")
+    attempts = value(sentiment, "limit_attempts")
+    highest_streak = value(sentiment, "highest_streak")
+    if None in (limit_up, limit_down, failed, attempts, highest_streak):
+        return {
+            "state": "unknown",
+            "reason": "短线情绪必需指标不完整",
+        }
+
+    open_board_rate = round(failed / attempts * 100, 6)
+    result: dict[str, Any] = {
+        "open_board_rate_pct": open_board_rate,
+        "repair_evaluated": False,
+    }
+    if limit_up < 20 and limit_down > 10 and highest_streak < 3:
+        result.update(
+            {
+                "state": "ice",
+                "rule": "limit_up < 20 and limit_down > 10 and highest_streak < 3",
+                "evidence": f"涨停 {limit_up:.0f}，跌停 {limit_down:.0f}，最高连板 {highest_streak:.0f}",
+            }
+        )
+        return result
+    if limit_up > 80 and open_board_rate < 15 and highest_streak > 5:
+        result.update(
+            {
+                "state": "euphoria",
+                "rule": "limit_up > 80 and open_board_rate_pct < 15 and highest_streak > 5",
+                "evidence": f"涨停 {limit_up:.0f}，炸板率 {open_board_rate:.2f}%，最高连板 {highest_streak:.0f}",
+            }
+        )
+        return result
+    if open_board_rate > 25:
+        result.update(
+            {
+                "state": "divergence",
+                "rule": "open_board_rate_pct > 25 and not (ice or euphoria)",
+                "evidence": f"炸板率 {open_board_rate:.2f}%",
+            }
+        )
+        return result
+
+    previous = sentiment.get("previous_metrics")
+    if previous is not None:
+        previous_failed = float(previous["open_board_failed"]["value"])
+        previous_attempts = float(previous["limit_attempts"]["value"])
+        previous_rate = round(previous_failed / previous_attempts * 100, 6)
+        previous_limit_up = float(previous["limit_up"]["value"])
+        previous_limit_down = float(previous["limit_down"]["value"])
+        previous_streak = float(previous["highest_streak"]["value"])
+        result["repair_evaluated"] = True
+        result["previous_open_board_rate_pct"] = previous_rate
+        if (
+            limit_up > previous_limit_up
+            and limit_down < previous_limit_down
+            and open_board_rate < previous_rate
+            and highest_streak >= previous_streak
+        ):
+            result.update(
+                {
+                    "state": "repair",
+                    "rule": "limit_up > previous_limit_up and limit_down < previous_limit_down and open_board_rate_pct < previous_open_board_rate_pct and highest_streak >= previous_highest_streak",
+                    "evidence": (
+                        f"涨停 {previous_limit_up:.0f}→{limit_up:.0f}，"
+                        f"跌停 {previous_limit_down:.0f}→{limit_down:.0f}，"
+                        f"炸板率 {previous_rate:.2f}%→{open_board_rate:.2f}%，"
+                        f"最高连板 {previous_streak:.0f}→{highest_streak:.0f}"
+                    ),
+                }
+            )
+            return result
+
+    result.update(
+        {
+            "state": "neutral",
+            "rule": "no_predefined_state_triggered",
+            "evidence": "当前数据完整但未触发预定义状态",
+        }
+    )
+    return result
+
+
 def derive(
     sections: dict[str, dict[str, Any]]
 ) -> tuple[dict[str, Any], list[dict[str, str]]]:
@@ -331,6 +507,7 @@ def derive(
     limit_down = value(breadth, "limit_down")
     if limit_up is not None and limit_down is not None:
         derived["limit_balance"] = limit_up - limit_down
+    derived["short_term_sentiment"] = derive_short_term_sentiment(sections)
 
     turnover = sections["turnover"]
     amount = value(turnover, "amount")
@@ -485,7 +662,35 @@ def build_markdown(
             lines.append(f"涨跌家数比：{ratio:.2f}" if ratio is not None else "涨跌家数比：无法计算（下跌家数为0）")
         lines.append("")
 
-    lines.extend(["## 三、成交与流动性", ""])
+    lines.extend(["## 三、短线情绪观察", ""])
+    sentiment_section = sections["short_term_sentiment"]
+    sentiment = derived["short_term_sentiment"]
+    if sentiment["state"] == "unknown":
+        lines.extend([f"> UNKNOWN：{sentiment['reason']}", ""])
+    else:
+        labels = {
+            "ice": "冰点",
+            "euphoria": "亢奋",
+            "divergence": "分歧",
+            "repair": "修复",
+            "neutral": "中性",
+        }
+        metrics = sentiment_section["metrics"]
+        lines.extend(
+            [
+                f"- 股票池：{sentiment_section['universe']}",
+                f"- 方法：{sentiment_section['methodology']}",
+                f"- 炸板率：{sentiment['open_board_rate_pct']:.2f}%（{fmt_evidence(metrics['open_board_failed'])} / {fmt_evidence(metrics['limit_attempts'])}）",
+                f"- 最高连板：{fmt_evidence(metrics['highest_streak'])}",
+                f"- 状态：{labels[sentiment['state']]}；规则：`{sentiment['rule']}`。",
+                f"- 依据：{sentiment['evidence']}。",
+            ]
+        )
+        if not sentiment["repair_evaluated"]:
+            lines.append("- 修复：未评估（缺少完整的前一可比交易日指标）。")
+        lines.append("")
+
+    lines.extend(["## 四、成交与流动性", ""])
     turnover = sections["turnover"]
     if turnover["availability"] == "unknown":
         lines.extend([unknown_line(turnover), ""])
@@ -499,7 +704,7 @@ def build_markdown(
             lines.append(f"- 较5日均值：{derived['turnover_vs_5d_avg_pct']:+.2f}%")
         lines.extend([f"- 覆盖说明：{turnover['status_reason']}", ""])
 
-    lines.extend(["## 四、板块表现", ""])
+    lines.extend(["## 五、板块表现", ""])
     sectors = sections["sectors"]
     if sectors["availability"] == "unknown":
         lines.extend([unknown_line(sectors), ""])
@@ -519,8 +724,8 @@ def build_markdown(
         lines.append("")
 
     for section_name, heading, explanation in (
-        ("funds", "五、资金证据", "methodology"),
-        ("style", "六、风格结构", "interpretation"),
+        ("funds", "六、资金证据", "methodology"),
+        ("style", "七、风格结构", "interpretation"),
     ):
         section = sections[section_name]
         lines.extend([f"## {heading}", ""])
@@ -535,7 +740,7 @@ def build_markdown(
             )
         lines.append("")
 
-    lines.extend(["## 七、事件与验证点", ""])
+    lines.extend(["## 八、事件与验证点", ""])
     events = sections["events"]
     if events["availability"] == "unknown":
         lines.extend([unknown_line(events), ""])
@@ -550,7 +755,7 @@ def build_markdown(
             lines.append(f"- {item['event_date']}｜{item['title']}｜{item['source']['name']}")
         lines.append("")
 
-    lines.extend(["## 八、结构信号与限制", ""])
+    lines.extend(["## 九、结构信号与限制", ""])
     if signals:
         for signal in signals:
             lines.append(f"- {signal['label']}：{signal['evidence']}；规则：`{signal['rule']}`。")
@@ -561,7 +766,7 @@ def build_markdown(
         section = sections[name]
         if section["availability"] != "available":
             lines.append(f"- {name}：{section['availability']}，{section['status_reason']}")
-    lines.extend(["", "## 九、来源汇总", "", "| 来源 | URL | 使用次数 |", "|---|---|---:|"])
+    lines.extend(["", "## 十、来源汇总", "", "| 来源 | URL | 使用次数 |", "|---|---|---:|"])
     for source in sources:
         lines.append(f"| {source['name']} | {source['url']} | {source['count']} |")
     lines.extend(["", "---", "", "本报告只描述输入证据和显式规则，不构成投资建议。", ""])

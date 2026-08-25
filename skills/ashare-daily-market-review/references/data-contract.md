@@ -18,7 +18,7 @@
 
 ## 章节状态
 
-七个章节统一使用：
+八个章节统一使用：
 
 ```json
 {
@@ -31,7 +31,7 @@
 - `partial`：有可用证据但覆盖或时点不完整；必须说明缺什么。
 - `unknown`：没有可用数值；不得填0或携带伪数据。
 
-`indices/breadth/turnover/sectors/style`标记available时，代表当日的核心证据必须满足`observed_at == market_date`。滞后数据只能标partial。
+`indices/breadth/short_term_sentiment/turnover/sectors/style`标记available时，代表当日的核心证据必须满足`observed_at == market_date`。滞后数据只能标partial。
 
 ## 数值证据
 
@@ -58,7 +58,7 @@
 - 金额：`CNY`
 - 其他指标保留清晰单位，不做隐式缩放。
 
-## 七个章节
+## 八个章节
 
 ### indices
 
@@ -67,6 +67,20 @@
 ### breadth
 
 `metrics`支持`advancers/decliners/unchanged/limit_up/limit_down`。available时五项必填。
+
+若`short_term_sentiment`为available，`breadth`还必须给出非空`universe`，如“全A非ST普通股”；其值必须与短线情绪章节完全一致。
+
+### short_term_sentiment
+
+短线情绪章节只描述市场状态，不生成仓位、买卖或个股指令。它必须给出非空`universe`和`methodology`，并使用与`breadth`相同的股票池和交易日：
+
+- `open_board_failed`：炸板次数，单位`count`。
+- `limit_attempts`：用于计算炸板率的封板尝试次数，单位`count`，必须大于0且不小于`open_board_failed`。
+- `highest_streak`：最高连板高度，单位`count`。
+
+`availability=available`时三项均必填且`observed_at == market_date`。炸板率为`open_board_failed / limit_attempts`，必须记录供应商对两项计数的定义；不把“最终涨停家数”替代为分母。
+
+可选`previous_metrics`可提供上一可比交易日的同名三项，以及`limit_up`、`limit_down`。其来源、观察日和单位与当前指标相同，但观察日必须早于`market_date`。只有前后两组完整且口径一致时，才评估“修复”。详细状态规则见[短线情绪规则](short-term-sentiment.md)。
 
 ### turnover
 

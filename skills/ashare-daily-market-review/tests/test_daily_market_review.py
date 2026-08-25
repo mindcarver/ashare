@@ -48,6 +48,39 @@ class DailyMarketReviewTests(unittest.TestCase):
         path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
         return path
 
+    @staticmethod
+    def evidence(value, observed_at="2026-08-25"):
+        return {
+            "value": value,
+            "unit": "count",
+            "observed_at": observed_at,
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {
+                "id": "fixture-sentiment",
+                "name": "测试情绪源",
+                "url": "https://example.com/sentiment",
+            },
+        }
+
+    def with_sentiment(self, market, current, previous=None):
+        market["sections"]["breadth"]["universe"] = "全A非ST普通股"
+        market["sections"]["short_term_sentiment"] = {
+            "availability": "available",
+            "status_reason": "同一股票池的短线情绪数据完整",
+            "universe": "全A非ST普通股",
+            "methodology": "供应商按盘中封板尝试和炸板事件计数",
+            "metrics": {
+                name: self.evidence(value) for name, value in current.items()
+            },
+        }
+        if previous is not None:
+            market["sections"]["short_term_sentiment"]["previous_metrics"] = {
+                name: self.evidence(value, "2026-08-24")
+                for name, value in previous.items()
+            }
+        return market
+
     def test_generates_derived_breadth_turnover_and_sector_tables(self):
         with tempfile.TemporaryDirectory() as tmp:
             _, markdown_path, summary_path = self.run_generator(MARKET, tmp)
@@ -60,7 +93,7 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertEqual(summary["derived"]["leading_sector"], "电子")
         self.assertEqual(summary["derived"]["lagging_sector"], "银行")
         self.assertIn("## 二、市场宽度", markdown)
-        self.assertIn("## 四、板块表现", markdown)
+        self.assertIn("## 五、板块表现", markdown)
 
     def test_detects_index_breadth_divergence_by_explicit_rule(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
@@ -97,8 +130,11 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["coverage"], {"available": 0, "partial": 0, "unknown": 7})
-        self.assertEqual(summary["derived"], {})
+        self.assertEqual(summary["coverage"], {"available": 0, "partial": 0, "unknown": 8})
+        self.assertEqual(
+            summary["derived"],
+            {"short_term_sentiment": {"state": "unknown", "reason": "输入未提供该章节"}},
+        )
         self.assertIn("无可得盘面数据", markdown)
         self.assertIn("宽度源不可用", markdown)
 
@@ -114,7 +150,20 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertEqual(first_text, second_text)
         self.assertEqual(first_json, second_json)
         self.assertRegex(first_json["run"]["input_sha256"], r"^[0-9a-f]{64}$")
-        for forbidden in ("建议买入", "建议卖出", "目标价", "目标仓位", "确定牛市", "确定熊市"):
+        for forbidden in (
+            "建议买入",
+            "建议卖出",
+            "目标价",
+            "目标仓位",
+            "建议轻仓",
+            "建议半仓",
+            "建议重仓",
+            "建议空仓",
+            "建议加仓",
+            "建议减仓",
+            "确定牛市",
+            "确定熊市",
+        ):
             self.assertNotIn(forbidden, first_text)
 
     def test_rejects_market_date_after_as_of(self):
@@ -143,6 +192,75 @@ class DailyMarketReviewTests(unittest.TestCase):
             result, _, _ = self.run_generator(path, tmp, expected_returncode=2)
 
         self.assertIn("使用count时必须是整数", result.stderr)
+
+    def test_classifies_euphoria_with_complete_evidence(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["sections"]["breadth"]["metrics"]["limit_up"]["value"] = 81
+        market["sections"]["breadth"]["metrics"]["limit_down"]["value"] = 1
+        self.with_sentiment(
+            market,
+            {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 6},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "euphoria.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        sentiment = summary["derived"]["short_term_sentiment"]
+        self.assertEqual(sentiment["state"], "euphoria")
+        self.assertEqual(sentiment["open_board_rate_pct"], 10.0)
+        self.assertIn("状态：亢奋", markdown)
+        self.assertNotIn("建议重仓", markdown)
+
+    def test_classifies_repair_only_with_complete_previous_metrics(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["sections"]["breadth"]["metrics"]["limit_up"]["value"] = 40
+        market["sections"]["breadth"]["metrics"]["limit_down"]["value"] = 5
+        self.with_sentiment(
+            market,
+            {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 4},
+            {
+                "limit_up": 30,
+                "limit_down": 8,
+                "open_board_failed": 20,
+                "limit_attempts": 100,
+                "highest_streak": 3,
+            },
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "repair.json", market)
+            _, _, summary_path = self.run_generator(path, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        sentiment = summary["derived"]["short_term_sentiment"]
+        self.assertEqual(sentiment["state"], "repair")
+        self.assertTrue(sentiment["repair_evaluated"])
+
+    def test_rejects_sentiment_with_mismatched_universe_or_invalid_denominator(self):
+        mismatched = json.loads(MARKET.read_text(encoding="utf-8"))
+        self.with_sentiment(
+            mismatched,
+            {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 4},
+        )
+        mismatched["sections"]["short_term_sentiment"]["universe"] = "沪深300"
+        invalid = json.loads(MARKET.read_text(encoding="utf-8"))
+        self.with_sentiment(
+            invalid,
+            {"open_board_failed": 101, "limit_attempts": 100, "highest_streak": 4},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            mismatched_path = self.write_json(tmp, "mismatched.json", mismatched)
+            invalid_path = self.write_json(tmp, "invalid.json", invalid)
+            mismatched_result, _, _ = self.run_generator(
+                mismatched_path, tmp, expected_returncode=2
+            )
+            invalid_result, _, _ = self.run_generator(
+                invalid_path, tmp, expected_returncode=2
+            )
+
+        self.assertIn("universe 必须与breadth.universe一致", mismatched_result.stderr)
+        self.assertIn("open_board_failed 不能大于limit_attempts", invalid_result.stderr)
 
 
 if __name__ == "__main__":
