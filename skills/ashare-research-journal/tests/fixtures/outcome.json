@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "research_id": "r-600001-20260801-30d",
+  "evaluation_date": "2026-08-31",
+  "stock_path": [
+    {
+      "value": 10.0,
+      "unit": "CNY",
+      "observed_at": "2026-08-01",
+      "published_at": "2026-08-01",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-stock-price",
+        "name": "测试股票行情源",
+        "url": "https://example.com/stock/600001"
+      }
+    },
+    {
+      "value": 9.0,
+      "unit": "CNY",
+      "observed_at": "2026-08-10",
+      "published_at": "2026-08-10",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-stock-price",
+        "name": "测试股票行情源",
+        "url": "https://example.com/stock/600001"
+      }
+    },
+    {
+      "value": 12.0,
+      "unit": "CNY",
+      "observed_at": "2026-08-20",
+      "published_at": "2026-08-20",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-stock-price",
+        "name": "测试股票行情源",
+        "url": "https://example.com/stock/600001"
+      }
+    },
+    {
+      "value": 11.0,
+      "unit": "CNY",
+      "observed_at": "2026-08-31",
+      "published_at": "2026-08-31",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-stock-price",
+        "name": "测试股票行情源",
+        "url": "https://example.com/stock/600001"
+      }
+    }
+  ],
+  "benchmark_path": [
+    {
+      "value": 4000.0,
+      "unit": "index_points",
+      "observed_at": "2026-08-01",
+      "published_at": "2026-08-01",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-benchmark",
+        "name": "测试基准行情源",
+        "url": "https://example.com/index/000300"
+      }
+    },
+    {
+      "value": 4050.0,
+      "unit": "index_points",
+      "observed_at": "2026-08-20",
+      "published_at": "2026-08-20",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-benchmark",
+        "name": "测试基准行情源",
+        "url": "https://example.com/index/000300"
+      }
+    },
+    {
+      "value": 4100.0,
+      "unit": "index_points",
+      "observed_at": "2026-08-31",
+      "published_at": "2026-08-31",
+      "fetched_at": "2026-08-31T18:00:00+08:00",
+      "source": {
+        "id": "fixture-benchmark",
+        "name": "测试基准行情源",
+        "url": "https://example.com/index/000300"
+      }
+    }
+  ],
+  "falsifiers_triggered": [],
+  "notes": "合成结果，仅用于测试"
+}
