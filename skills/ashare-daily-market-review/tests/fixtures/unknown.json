@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "market_date": "2026-08-25",
+  "as_of": "2026-08-25",
+  "sections": {
+    "indices": {"availability": "unknown", "status_reason": "指数源不可用"},
+    "breadth": {"availability": "unknown", "status_reason": "宽度源不可用"},
+    "turnover": {"availability": "unknown", "status_reason": "成交源不可用"},
+    "sectors": {"availability": "unknown", "status_reason": "板块源不可用"},
+    "funds": {"availability": "unknown", "status_reason": "资金源不可用"},
+    "style": {"availability": "unknown", "status_reason": "风格源不可用"},
+    "events": {"availability": "unknown", "status_reason": "事件源不可用"}
+  },
+  "verification_points": []
+}
