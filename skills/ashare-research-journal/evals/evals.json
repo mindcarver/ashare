@@ -1,0 +1,35 @@
+{
+  "skill_name": "ashare-research-journal",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把刚才对这家公司的三个月研究判断保存下来，后面复盘。",
+      "expected_output": "在明确授权后构造包含as_of、evaluation_date、结构化成功标准、概率、基线、催化剂、证伪条件和来源的快照；写入本地SQLite并返回research_id和SHA。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "这个判断还有两周才到期，先按今天价格算它命中了吧。",
+      "expected_output": "拒绝在evaluation_date之前打分；只能展示原快照或列入待到期记录。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "到期结果涨了10%，但当时定义的订单延期证伪已经发生，这次算成功吗？",
+      "expected_output": "分别报告市场收益标准和证伪条件；即使criterion通过，只要预定义证伪触发，最终passed为false。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "统计过去所有AI推荐胜率，没到期的也算失败。",
+      "expected_output": "拒绝把未成熟记录作为失败；只统计到期且已有结果的样本，并同时给样本量、命中率、超额、回撤和可用概率的Brier分数。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "把上个月那条研究记录里的概率从0.6改成0.8。",
+      "expected_output": "拒绝覆盖历史快照；要求创建新research_id并显式引用原记录。",
+      "files": []
+    }
+  ]
+}

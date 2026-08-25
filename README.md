@@ -10,7 +10,7 @@
 <h1>A 股研究技能库</h1>
 
 <p>
-  <sub>候选筛选 / 公司研究 / 新闻映射 / 资本环境仪表盘</sub>
+  <sub>候选筛选 / 公司研究 / 研究复盘 / 新闻映射 / 资本环境仪表盘</sub>
 </p>
 
 <br />
@@ -37,6 +37,10 @@
       <td>分析单个 A 股公司，整理财务取证、预期差、催化剂、估值、筹码资金和风险证伪。</td>
     </tr>
     <tr>
+      <td align="center"><code>ashare-research-journal</code></td>
+      <td>冻结当时研究证据、评价日期和证伪条件；到期后计算收益、超额、回撤、命中率和概率校准。</td>
+    </tr>
+    <tr>
       <td align="center"><code>ashare-news-investment-targets</code></td>
       <td>从新闻、公告、文章或研报摘录中提取潜在 A 股标的，并按统一口径评分。</td>
     </tr>
@@ -55,7 +59,7 @@
   <tbody>
     <tr>
       <td align="center"><b>目录</b></td>
-      <td align="left"><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
+      <td align="left"><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-research-journal</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
     </tr>
     <tr>
       <td align="center"><b>安装</b></td>
@@ -97,6 +101,14 @@
         <code>ashare-company-research</code>
       </td>
       <td align="left">全面分析单个 A 股公司；观察 1 周到 6 个月的财务质量、预期差、催化剂、估值空间、筹码资金和风险证伪。</td>
+    </tr>
+    <tr>
+      <td align="center" width="280">
+        <img src="./assets/ashare-icon.svg" alt="" width="42" />
+        <br />
+        <code>ashare-research-journal</code>
+      </td>
+      <td align="left">用户明确要求保存时，冻结研究快照；到期后追加真实价格路径，区分市场结果、证伪触发和研究校准，不事后改写原判断。</td>
     </tr>
     <tr>
       <td align="center" width="280">

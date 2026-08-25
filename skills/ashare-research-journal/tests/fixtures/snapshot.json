@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "research_id": "r-600001-20260801-30d",
+  "code": "600001",
+  "name": "甲公司",
+  "market": "SSE",
+  "as_of": "2026-08-01",
+  "evaluation_date": "2026-08-31",
+  "horizon_label": "30 calendar days",
+  "thesis": "订单兑现可能形成预期差",
+  "probability": 0.7,
+  "benchmark_code": "000300",
+  "criterion": {
+    "metric": "excess_return_pct",
+    "operator": "gte",
+    "value": 5.0
+  },
+  "baseline": {
+    "stock": {
+      "value": 10.0,
+      "unit": "CNY",
+      "observed_at": "2026-08-01",
+      "published_at": "2026-08-01",
+      "fetched_at": "2026-08-01T18:00:00+08:00",
+      "source": {
+        "id": "fixture-stock-price",
+        "name": "测试股票行情源",
+        "url": "https://example.com/stock/600001"
+      }
+    },
+    "benchmark": {
+      "value": 4000.0,
+      "unit": "index_points",
+      "observed_at": "2026-08-01",
+      "published_at": "2026-08-01",
+      "fetched_at": "2026-08-01T18:00:00+08:00",
+      "source": {
+        "id": "fixture-benchmark",
+        "name": "测试基准行情源",
+        "url": "https://example.com/index/000300"
+      }
+    }
+  },
+  "catalysts": [
+    "订单公告",
+    "季度业绩验证"
+  ],
+  "falsifiers": [
+    "订单延期",
+    "毛利率显著低于假设"
+  ],
+  "evidence": [
+    {
+      "claim": "公司披露在手订单增长",
+      "observed_at": "2026-06-30",
+      "published_at": "2026-07-25",
+      "fetched_at": "2026-08-01T18:10:00+08:00",
+      "source": {
+        "id": "fixture-company-report",
+        "name": "测试公司公告",
+        "url": "https://example.com/announcement/600001"
+      }
+    }
+  ]
+}

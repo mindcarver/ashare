@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS=(
   ashare-stock-screening
   ashare-company-research
+  ashare-research-journal
   ashare-news-investment-targets
   ashare-capital-environment-dashboard
 )
