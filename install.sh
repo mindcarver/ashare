@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Append new skill names here; no other changes required.
 SKILLS=(
+  ashare-stock-screening
   ashare-company-research
   ashare-news-investment-targets
   ashare-capital-environment-dashboard

@@ -10,7 +10,7 @@
 <h1>A 股研究技能库</h1>
 
 <p>
-  <sub>公司研究 / 新闻映射 / 资本环境仪表盘</sub>
+  <sub>候选筛选 / 公司研究 / 新闻映射 / 资本环境仪表盘</sub>
 </p>
 
 <br />
@@ -29,8 +29,12 @@
   </thead>
   <tbody>
     <tr>
+      <td align="center"><code>ashare-stock-screening</code></td>
+      <td>从明确股票池按可审计条件筛选候选，保留数据时点、来源、排除原因和可复现输入摘要。</td>
+    </tr>
+    <tr>
       <td align="center"><code>ashare-company-research</code></td>
-      <td>分析单个 A 股公司，整理预期差、催化剂、估值、筹码资金和风险证伪。</td>
+      <td>分析单个 A 股公司，整理财务取证、预期差、催化剂、估值、筹码资金和风险证伪。</td>
     </tr>
     <tr>
       <td align="center"><code>ashare-news-investment-targets</code></td>
@@ -51,7 +55,7 @@
   <tbody>
     <tr>
       <td align="center"><b>目录</b></td>
-      <td align="left"><code>skills/ashare-company-research</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
+      <td align="left"><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
     </tr>
     <tr>
       <td align="center"><b>安装</b></td>
@@ -60,6 +64,10 @@
     <tr>
       <td align="center"><b>同步</b></td>
       <td align="left"><code>~/.codex/skills/</code><br /><code>~/.claude/skills/</code></td>
+    </tr>
+    <tr>
+      <td align="center"><b>候选股筛选</b></td>
+      <td align="left"><code>python3 skills/ashare-stock-screening/scripts/screen_stocks.py --input stocks.json --as-of YYYY-MM-DD --criterion roe_ttm:gte:15 --sort roe_ttm:desc --output result.json</code><br />缺失、未来发布或来源不完整的指标不会静默通过。</td>
     </tr>
     <tr>
       <td align="center"><b>资本环境回放</b></td>
@@ -78,9 +86,17 @@
       <td align="center" width="280">
         <img src="./assets/ashare-icon.svg" alt="" width="42" />
         <br />
+        <code>ashare-stock-screening</code>
+      </td>
+      <td align="left">先从全A股、指数成分股或自定义列表筛出候选，再把选中的公司交给深度研究；筛选结果只说明是否通过显式条件，不产生隐藏评分或自动荐股。</td>
+    </tr>
+    <tr>
+      <td align="center" width="280">
+        <img src="./assets/ashare-icon.svg" alt="" width="42" />
+        <br />
         <code>ashare-company-research</code>
       </td>
-      <td align="left">全面分析 A 股公司；观察 1 周到 6 个月的预期差、催化剂、估值空间、筹码资金和风险证伪。</td>
+      <td align="left">全面分析单个 A 股公司；观察 1 周到 6 个月的财务质量、预期差、催化剂、估值空间、筹码资金和风险证伪。</td>
     </tr>
     <tr>
       <td align="center" width="280">
