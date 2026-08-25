@@ -10,7 +10,7 @@
 <h1>A 股研究技能库</h1>
 
 <p>
-  <sub>候选筛选 / 公司研究 / 研究复盘 / 新闻映射 / 资本环境仪表盘</sub>
+  <sub>每日盘面 / 候选筛选 / 公司研究 / 研究复盘 / 新闻映射 / 资本环境</sub>
 </p>
 
 <br />
@@ -28,6 +28,10 @@
     </tr>
   </thead>
   <tbody>
+    <tr>
+      <td align="center"><code>ashare-daily-market-review</code></td>
+      <td>复盘单个A股交易日的指数、成交、宽度、涨跌停、板块、资金、风格、事件和结构背离。</td>
+    </tr>
     <tr>
       <td align="center"><code>ashare-stock-screening</code></td>
       <td>从明确股票池按可审计条件筛选候选，保留数据时点、来源、排除原因和可复现输入摘要。</td>
@@ -59,7 +63,7 @@
   <tbody>
     <tr>
       <td align="center"><b>目录</b></td>
-      <td align="left"><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-research-journal</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
+      <td align="left"><code>skills/ashare-daily-market-review</code><br /><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-research-journal</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
     </tr>
     <tr>
       <td align="center"><b>安装</b></td>
@@ -86,6 +90,14 @@
 
 <table>
   <tbody>
+    <tr>
+      <td align="center" width="280">
+        <img src="./assets/ashare-icon.svg" alt="" width="42" />
+        <br />
+        <code>ashare-daily-market-review</code>
+      </td>
+      <td align="left">收盘后复盘A股单日盘面；严格区分available/partial/unknown，计算上涨参与度、成交变化和指数—宽度背离，不替代多市场宏观资本环境。</td>
+    </tr>
     <tr>
       <td align="center" width="280">
         <img src="./assets/ashare-icon.svg" alt="" width="42" />

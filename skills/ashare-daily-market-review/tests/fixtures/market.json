@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "market_date": "2026-08-25",
+  "as_of": "2026-08-25",
+  "sections": {
+    "indices": {
+      "availability": "available",
+      "status_reason": "主要指数收盘数据完整",
+      "items": [
+        {
+          "id": "000300",
+          "name": "沪深300",
+          "primary": true,
+          "close": {
+            "value": 4200.0,
+            "unit": "index_points",
+            "observed_at": "2026-08-25",
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {"id": "fixture-index", "name": "测试指数源", "url": "https://example.com/index"}
+          },
+          "change_pct": {
+            "value": 1.2,
+            "unit": "percent",
+            "observed_at": "2026-08-25",
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {"id": "fixture-index", "name": "测试指数源", "url": "https://example.com/index"}
+          }
+        },
+        {
+          "id": "399006",
+          "name": "创业板指",
+          "primary": false,
+          "close": {
+            "value": 2600.0,
+            "unit": "index_points",
+            "observed_at": "2026-08-25",
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {"id": "fixture-index", "name": "测试指数源", "url": "https://example.com/index"}
+          },
+          "change_pct": {
+            "value": 2.0,
+            "unit": "percent",
+            "observed_at": "2026-08-25",
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {"id": "fixture-index", "name": "测试指数源", "url": "https://example.com/index"}
+          }
+        }
+      ]
+    },
+    "breadth": {
+      "availability": "available",
+      "status_reason": "全A股涨跌家数口径",
+      "metrics": {
+        "advancers": {"value": 3000, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
+        "decliners": {"value": 2000, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
+        "unchanged": {"value": 100, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
+        "limit_up": {"value": 80, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
+        "limit_down": {"value": 5, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}}
+      }
+    },
+    "turnover": {
+      "availability": "available",
+      "status_reason": "沪深京成交额统一为CNY",
+      "metrics": {
+        "amount": {"value": 1500000000000, "unit": "CNY", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}},
+        "previous_amount": {"value": 1200000000000, "unit": "CNY", "observed_at": "2026-08-24", "published_at": "2026-08-24", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}},
+        "avg_5d_amount": {"value": 1300000000000, "unit": "CNY", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}}
+      }
+    },
+    "sectors": {
+      "availability": "partial",
+      "status_reason": "仅覆盖申万一级前后样本",
+      "classification": "申万一级",
+      "items": [
+        {"id": "sw-a", "name": "电子", "change_pct": {"value": 3.2, "unit": "percent", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-sector", "name": "测试板块源", "url": "https://example.com/sector"}}},
+        {"id": "sw-b", "name": "银行", "change_pct": {"value": -1.1, "unit": "percent", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-sector", "name": "测试板块源", "url": "https://example.com/sector"}}},
+        {"id": "sw-c", "name": "医药", "change_pct": {"value": 1.5, "unit": "percent", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-sector", "name": "测试板块源", "url": "https://example.com/sector"}}}
+      ]
+    },
+    "funds": {
+      "availability": "partial",
+      "status_reason": "仅有交易所两融变化",
+      "items": [
+        {
+          "name": "融资余额日变化",
+          "methodology": "交易所公布融资余额差分，不等同主力资金",
+          "metric": {"value": -10000000000, "unit": "CNY", "observed_at": "2026-08-24", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-margin", "name": "测试两融源", "url": "https://example.com/margin"}}
+        }
+      ]
+    },
+    "style": {
+      "availability": "partial",
+      "status_reason": "仅覆盖小盘相对大盘",
+      "items": [
+        {
+          "name": "小盘相对大盘",
+          "interpretation": "正值表示本样本内小盘相对占优",
+          "metric": {"value": 0.5, "unit": "percent", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-style", "name": "测试风格源", "url": "https://example.com/style"}}
+        }
+      ]
+    },
+    "events": {
+      "availability": "available",
+      "status_reason": "当日公开事件",
+      "items": [
+        {"title": "当日公开政策事件", "event_date": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-event", "name": "测试事件源", "url": "https://example.com/event"}}
+      ]
+    }
+  },
+  "verification_points": [
+    {"title": "次日宏观数据发布", "event_date": "2026-08-26", "published_at": "2026-08-20", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-calendar", "name": "测试日历源", "url": "https://example.com/calendar"}}
+  ]
+}
