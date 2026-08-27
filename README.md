@@ -10,7 +10,7 @@
 <h1>A 股研究技能库</h1>
 
 <p>
-  <sub>每日盘面 / 候选筛选 / 公司研究 / 研究复盘 / 新闻映射 / 资本环境</sub>
+  <sub>每日盘面与短线情绪 / 候选筛选 / 公司研究 / 研究复盘 / 新闻映射 / 资本环境</sub>
 </p>
 
 <br />
@@ -30,7 +30,7 @@
   <tbody>
     <tr>
       <td align="center"><code>ashare-daily-market-review</code></td>
-      <td>复盘单个A股交易日的指数、成交、宽度、涨跌停、板块、资金、风格、事件和结构背离。</td>
+      <td>复盘单个A股交易日的指数、成交、宽度、涨跌停、短线情绪、板块、资金、风格、事件和结构背离；只输出可审计观察，不给买卖或仓位指令。</td>
     </tr>
     <tr>
       <td align="center"><code>ashare-stock-screening</code></td>
@@ -74,6 +74,10 @@
       <td align="left"><code>~/.codex/skills/</code><br /><code>~/.claude/skills/</code></td>
     </tr>
     <tr>
+      <td align="center"><b>每日盘面与短线情绪</b></td>
+      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json</code><br />短线情绪仅在涨跌停、炸板次数、封板尝试次数和最高连板使用同一股票池且数据时点、来源完整时分类；否则输出<code>unknown</code>。</td>
+    </tr>
+    <tr>
       <td align="center"><b>候选股筛选</b></td>
       <td align="left"><code>python3 skills/ashare-stock-screening/scripts/screen_stocks.py --input stocks.json --as-of YYYY-MM-DD --criterion roe_ttm:gte:15 --sort roe_ttm:desc --output result.json</code><br />缺失、未来发布或来源不完整的指标不会静默通过。</td>
     </tr>
@@ -96,7 +100,7 @@
         <br />
         <code>ashare-daily-market-review</code>
       </td>
-      <td align="left">收盘后复盘A股单日盘面；严格区分available/partial/unknown，计算上涨参与度、成交变化和指数—宽度背离，不替代多市场宏观资本环境。</td>
+      <td align="left">收盘后复盘A股单日盘面；严格区分available/partial/unknown，计算上涨参与度、成交变化、指数—宽度背离，以及基于炸板率和最高连板的短线情绪观察。情绪数据不完整即unknown，不替代多市场宏观资本环境，也不输出仓位或交易指令。</td>
     </tr>
     <tr>
       <td align="center" width="280">
