@@ -48,7 +48,8 @@ python3 scripts/generate_daily_review.py \
   --input market.json \
   --as-of 2026-08-25 \
   --output daily-review-2026-08-25.md \
-  --summary-out daily-review-2026-08-25.json
+  --summary-out daily-review-2026-08-25.json \
+  --html-out daily-review-2026-08-25.html
 ```
 
 生成器确定性计算：
@@ -59,6 +60,8 @@ python3 scripts/generate_daily_review.py \
 - 领涨/领跌板块。
 - 显式指数—宽度背离。
 - 可得且口径明确时的炸板率与短线情绪观察。
+
+`--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、事件、限制与来源。HTML不依赖在线图表库；数据缺失时展示unknown/原因，不绘制零值替代图表。
 
 内置背离和情绪规则公开在JSON摘要中。读取[短线情绪规则](references/short-term-sentiment.md)以确认所需字段、口径和状态优先级。例如：主要指数上涨但上涨家数占比低于40%，标记“指数上涨但宽度偏窄”；这只是结构观察，不预测次日方向。
 
