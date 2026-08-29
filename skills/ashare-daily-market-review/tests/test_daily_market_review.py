@@ -15,11 +15,10 @@ UNKNOWN = FIXTURES / "unknown.json"
 
 
 class DailyMarketReviewTests(unittest.TestCase):
-    def run_generator(self, input_path, directory, expected_returncode=0):
+    def run_generator(self, input_path, directory, expected_returncode=0, html_out=None):
         markdown = Path(directory) / "report.md"
         summary = Path(directory) / "summary.json"
-        result = subprocess.run(
-            [
+        command = [
                 sys.executable,
                 str(SCRIPT),
                 "--input",
@@ -30,7 +29,11 @@ class DailyMarketReviewTests(unittest.TestCase):
                 str(markdown),
                 "--summary-out",
                 str(summary),
-            ],
+            ]
+        if html_out is not None:
+            command.extend(["--html-out", str(html_out)])
+        result = subprocess.run(
+            command,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -261,6 +264,33 @@ class DailyMarketReviewTests(unittest.TestCase):
 
         self.assertIn("universe 必须与breadth.universe一致", mismatched_result.stderr)
         self.assertIn("open_board_failed 不能大于limit_attempts", invalid_result.stderr)
+
+    def test_generates_self_contained_visual_html_and_escapes_input(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["sections"]["indices"]["items"][0]["name"] = "<script>alert(1)</script>"
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "report.html"
+            path = self.write_json(tmp, "market.html.json", market)
+            _, _, summary_path = self.run_generator(path, tmp, html_out=html_path)
+            html = html_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        self.assertIn("A-SHARE / DAILY INTELLIGENCE", html)
+        self.assertIn("市场宽度", html)
+        self.assertIn("板块温度", html)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
+        self.assertNotIn("<script>alert(1)</script>", html)
+        self.assertNotIn("<script", html)
+        self.assertEqual(summary["coverage"], {"available": 4, "partial": 3, "unknown": 1})
+
+    def test_visual_html_all_unknown_does_not_draw_zero_value_charts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "unknown.html"
+            _, _, _ = self.run_generator(UNKNOWN, tmp, html_out=html_path)
+            html = html_path.read_text(encoding="utf-8")
+
+        self.assertIn("该日期没有可得的盘面数据", html)
+        self.assertNotIn('class="donut"', html)
 
 
 if __name__ == "__main__":

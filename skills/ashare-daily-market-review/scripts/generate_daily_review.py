@@ -7,6 +7,7 @@ import json
 import math
 import sys
 from datetime import date, datetime
+from html import escape
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -603,6 +604,155 @@ def unknown_line(section: dict[str, Any]) -> str:
     return f"> {section['availability'].upper()}：{section['status_reason']}"
 
 
+def html_text(value: Any) -> str:
+    return escape(str(value), quote=True)
+
+
+def availability_badge(section: dict[str, Any]) -> str:
+    status = section["availability"]
+    labels = {"available": "可得", "partial": "部分", "unknown": "未知"}
+    return f'<span class="badge badge-{status}">{labels[status]}</span>'
+
+
+def value_tone(number: float | None) -> str:
+    if number is None:
+        return "neutral"
+    return "rise" if number > 0 else "fall" if number < 0 else "neutral"
+
+
+def html_evidence(evidence: dict[str, Any]) -> str:
+    source = evidence["source"]
+    return (
+        f'{html_text(source["name"])} · 观测 {html_text(evidence["observed_at"])} · '
+        f'发布 {html_text(evidence["published_at"])}'
+    )
+
+
+def html_metric_card(label: str, display: str, detail: str, tone: str = "neutral") -> str:
+    return f'''<article class="metric-card tone-{tone}">
+  <p>{html_text(label)}</p><strong>{html_text(display)}</strong><small>{html_text(detail)}</small>
+</article>'''
+
+
+def build_html(
+    data: dict[str, Any],
+    sections: dict[str, dict[str, Any]],
+    input_sha256: str,
+    derived: dict[str, Any],
+    signals: list[dict[str, str]],
+    coverage_counts: dict[str, int],
+    sources: list[dict[str, Any]],
+) -> str:
+    """Build a self-contained visual report from the same validated evidence."""
+    indices = sections["indices"]
+    breadth = sections["breadth"]
+    turnover = sections["turnover"]
+    sectors = sections["sectors"]
+    sentiment_section = sections["short_term_sentiment"]
+    sentiment = derived["short_term_sentiment"]
+
+    primary = None
+    if indices["availability"] != "unknown":
+        primary = next(item for item in indices["items"] if item["primary"])
+    primary_change = float(primary["change_pct"]["value"]) if primary else None
+    amount = turnover.get("metrics", {}).get("amount")
+    metrics = breadth.get("metrics", {})
+    advance_share = derived.get("advancer_share_pct")
+
+    hero_cards = []
+    if primary:
+        hero_cards.append(html_metric_card(
+            primary["name"], fmt_evidence(primary["close"]), fmt_evidence(primary["change_pct"]), value_tone(primary_change)
+        ))
+    if amount:
+        hero_cards.append(html_metric_card(
+            "全市场成交额", fmt_evidence(amount),
+            f"较前值 {derived['turnover_vs_previous_pct']:+.2f}%" if "turnover_vs_previous_pct" in derived else turnover["status_reason"],
+            value_tone(derived.get("turnover_vs_previous_pct")),
+        ))
+    if advance_share is not None:
+        hero_cards.append(html_metric_card("上涨参与度", f"{advance_share:.2f}%", "上涨家数占总样本", value_tone(advance_share - 50)))
+    if "limit_balance" in derived:
+        hero_cards.append(html_metric_card("涨停净差", f"{derived['limit_balance']:+.0f}", "涨停家数减跌停家数", value_tone(derived["limit_balance"])))
+    if not hero_cards:
+        hero_cards.append(html_metric_card("市场脉搏", "未知", "缺少可得的盘面核心数据"))
+
+    index_rows = ""
+    if indices["availability"] == "unknown":
+        index_rows = f'<p class="empty">{html_text(indices["status_reason"])}</p>'
+    else:
+        index_rows = "".join(
+            f'''<div class="index-row"><span>{html_text(item["name"])}</span>
+<strong>{html_text(fmt_evidence(item["close"]))}</strong>
+<b class="value-{value_tone(float(item["change_pct"]["value"]))}">{html_text(fmt_evidence(item["change_pct"]))}</b>
+<small>{html_evidence(item["change_pct"])}</small></div>'''
+            for item in indices["items"]
+        )
+
+    breadth_chart = '<p class="empty">宽度数据不可得</p>'
+    if advance_share is not None:
+        breadth_chart = f'''<div class="breadth-wrap">
+  <div class="donut" style="--advance:{advance_share:.4f}%"><span>{advance_share:.1f}%<small>上涨</small></span></div>
+  <div class="breadth-list">
+    <p><span>上涨</span><strong>{metrics["advancers"]["value"]:,}</strong></p>
+    <p><span>下跌</span><strong>{metrics["decliners"]["value"]:,}</strong></p>
+    <p><span>平盘</span><strong>{metrics["unchanged"]["value"]:,}</strong></p>
+    <p><span>涨停 / 跌停</span><strong>{metrics["limit_up"]["value"]:,} / {metrics["limit_down"]["value"]:,}</strong></p>
+  </div>
+</div>'''
+
+    state_labels = {"ice": "冰点", "euphoria": "亢奋", "divergence": "分歧", "repair": "修复", "neutral": "中性", "unknown": "未知"}
+    if sentiment["state"] == "unknown":
+        sentiment_html = f'<p class="empty">短线情绪未知：{html_text(sentiment["reason"])}</p>'
+    else:
+        sentiment_html = f'''<div class="sentiment-state state-{html_text(sentiment["state"])}">
+  <span>市场状态</span><strong>{state_labels[sentiment["state"]]}</strong>
+</div><p class="rule">{html_text(sentiment["evidence"])}</p>
+<dl><dt>炸板率</dt><dd>{sentiment["open_board_rate_pct"]:.2f}%</dd><dt>最高连板</dt><dd>{fmt_evidence(sentiment_section["metrics"]["highest_streak"])}</dd></dl>
+<p class="evidence">股票池：{html_text(sentiment_section["universe"])}<br />{html_text(sentiment_section["methodology"])}<br />规则：<code>{html_text(sentiment["rule"])}</code></p>'''
+
+    sector_html = f'<p class="empty">{html_text(sectors["status_reason"])}</p>'
+    if sectors["availability"] != "unknown":
+        ordered = sorted(sectors["items"], key=lambda item: (-float(item["change_pct"]["value"]), item["id"]))
+        max_change = max(abs(float(item["change_pct"]["value"])) for item in ordered) or 1
+        sector_rows = []
+        for item in ordered:
+            change = float(item["change_pct"]["value"])
+            width = max(8, abs(change) / max_change * 100)
+            side = "positive" if change >= 0 else "negative"
+            sector_rows.append(f'''<div class="sector-row"><span>{html_text(item["name"])}</span><div class="bar-track {side}"><i style="width:{width:.2f}%"></i></div><b class="value-{value_tone(change)}">{html_text(fmt_evidence(item["change_pct"]))}</b></div>''')
+        sector_html = f'<p class="section-note">{html_text(sectors["classification"])} · {html_text(sectors["status_reason"])}</p>' + "".join(sector_rows)
+
+    def evidence_rows(section_name: str, description_key: str) -> str:
+        section = sections[section_name]
+        if section["availability"] == "unknown":
+            return f'<p class="empty">{html_text(section["status_reason"])}</p>'
+        rows = []
+        for item in section["items"]:
+            evidence = item["metric"]
+            rows.append(f'''<li><strong>{html_text(item["name"])} · {html_text(fmt_evidence(evidence))}</strong><span>{html_text(item[description_key])}</span><small>{html_evidence(evidence)}</small></li>''')
+        return '<ul class="evidence-list">' + "".join(rows) + "</ul>"
+
+    event_items = []
+    if sections["events"]["availability"] != "unknown":
+        event_items.extend(f'<li><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>{html_text(item["source"]["name"])}</small></li>' for item in sections["events"]["items"])
+    event_items.extend(f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["source"]["name"])}</small></li>' for item in data.get("verification_points", []))
+    events_html = '<ul class="timeline">' + "".join(event_items) + "</ul>" if event_items else '<p class="empty">暂无可得事件或验证点</p>'
+
+    signal_html = "".join(f'<li><strong>{html_text(signal["label"])}：</strong>{html_text(signal["evidence"])}<small>{html_text(signal["rule"])}</small></li>' for signal in signals)
+    if not signal_html:
+        signal_html = '<li>当前输入未触发预定义的指数—宽度背离规则。</li>'
+    limits = "".join(f'<li>{html_text(name)}：{html_text(section["availability"])}，{html_text(section["status_reason"])}</li>' for name, section in sections.items() if section["availability"] != "available")
+
+    source_rows = "".join(f'<tr><td>{html_text(source["name"])}</td><td><a href="{html_text(source["url"])}" rel="noreferrer" target="_blank">{html_text(source["url"])}</a></td><td>{source["count"]}</td></tr>' for source in sources)
+    all_unknown = coverage_counts["unknown"] == len(SECTION_NAMES)
+    content = '<div class="no-data">该日期没有可得的盘面数据；未绘制任何零值替代图表。</div>' if all_unknown else f'''<section class="dashboard-grid" aria-label="盘面核心数据"><article class="panel wide"><div class="panel-head"><h2>主要指数</h2>{availability_badge(indices)}</div>{index_rows}</article><article class="panel"><div class="panel-head"><h2>市场宽度</h2>{availability_badge(breadth)}</div>{breadth_chart}</article><article class="panel"><div class="panel-head"><h2>短线情绪</h2>{availability_badge(sentiment_section)}</div>{sentiment_html}</article><article class="panel wide"><div class="panel-head"><h2>板块温度</h2>{availability_badge(sectors)}</div>{sector_html}</article><article class="panel"><div class="panel-head"><h2>资金证据</h2>{availability_badge(sections["funds"])}</div>{evidence_rows("funds", "methodology")}</article><article class="panel"><div class="panel-head"><h2>风格结构</h2>{availability_badge(sections["style"])}</div>{evidence_rows("style", "interpretation")}</article><article class="panel wide"><div class="panel-head"><h2>事件与验证点</h2>{availability_badge(sections["events"])}</div>{events_html}</article></section>'''
+
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>A股每日盘面复盘 · {html_text(data["market_date"])}</title><style>
+:root{{--ink:#13211f;--paper:#f6f1e7;--paper-2:#eee6d7;--line:#d8cdbb;--red:#bf332d;--green:#19724b;--gold:#ba8a35;--muted:#756f66}}*{{box-sizing:border-box}}body{{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;overflow-x:hidden}}body:before{{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}}main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}.masthead{{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}}.eyebrow{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}}h1,h2,p{{margin:0}}h1{{font-size:clamp(34px,6vw,68px);line-height:.95;letter-spacing:-.06em}}.asof{{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right}}.coverage{{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}}.badge{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;padding:6px 8px;border-radius:999px;letter-spacing:.04em}}.badge-available{{background:#d8eedf;color:#155836}}.badge-partial{{background:#efe4c7;color:#725210}}.badge-unknown{{background:#edd8d2;color:#8a2c27}}.hero-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}}.metric-card,.panel{{background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25)}}.metric-card{{min-width:0;min-height:132px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;border-top:4px solid var(--gold);overflow:hidden}}.metric-card p,.section-note,.evidence,small{{color:var(--muted);font-size:12px;line-height:1.5}}.metric-card strong{{font-family:"SFMono-Regular",Consolas,monospace;font-size:27px;letter-spacing:-.06em;overflow-wrap:anywhere}}.tone-rise{{border-top-color:var(--red)}}.tone-fall{{border-top-color:var(--green)}}.dashboard-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}.panel{{padding:20px;min-width:0}}.wide{{grid-column:span 2}}.panel-head{{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}}h2{{font-size:19px;letter-spacing:-.03em}}.index-row{{display:grid;grid-template-columns:1.2fr .8fr .55fr 1.75fr;gap:10px;padding:11px 0;border-bottom:1px solid rgba(216,205,187,.55);align-items:baseline}}.index-row strong,.index-row b,.sector-row b{{font-family:"SFMono-Regular",Consolas,monospace}}.value-rise{{color:var(--red)}}.value-fall{{color:var(--green)}}.value-neutral{{color:var(--muted)}}.breadth-wrap{{display:flex;gap:22px;align-items:center}}.donut{{width:142px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--red) 0 var(--advance),var(--green) var(--advance) 100%);position:relative;display:grid;place-items:center;flex:none}}.donut:before{{content:"";position:absolute;width:72%;aspect-ratio:1;border-radius:50%;background:var(--paper)}}.donut span{{position:relative;text-align:center;font:700 25px/1 "SFMono-Regular",Consolas,monospace}}.donut small{{display:block;font:11px/1.5 "Noto Serif SC",serif}}.breadth-list{{width:100%}}.breadth-list p{{display:flex;justify-content:space-between;border-bottom:1px solid rgba(216,205,187,.5);padding:7px 0;font-size:13px}}.breadth-list strong{{font-family:"SFMono-Regular",Consolas,monospace}}.sentiment-state{{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0 7px;border-bottom:1px solid var(--line)}}.sentiment-state strong{{font-size:30px;color:var(--gold)}}.state-ice strong{{color:#3c6294}}.state-euphoria strong{{color:var(--red)}}.state-divergence strong{{color:#a45729}}.state-repair strong{{color:var(--green)}}.rule{{font-size:14px;line-height:1.7;margin:12px 0}}dl{{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0;font-size:13px}}dd{{margin:0;font-family:"SFMono-Regular",Consolas,monospace}}.sector-row{{display:grid;grid-template-columns:74px 1fr 70px;gap:10px;align-items:center;margin:13px 0;font-size:13px}}.bar-track{{height:9px;background:#e5dac7;display:flex}}.bar-track.positive{{justify-content:flex-start}}.bar-track.negative{{justify-content:flex-end}}.bar-track i{{height:100%;background:var(--red)}}.bar-track.negative i{{background:var(--green)}}.evidence-list,.timeline,.signal-list{{margin:0;padding:0;list-style:none}}.evidence-list li,.timeline li{{padding:10px 0;border-bottom:1px solid rgba(216,205,187,.55);display:grid;gap:3px}}.evidence-list span{{font-size:12px;line-height:1.5}}.timeline time{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;color:var(--gold)}}.future time{{color:var(--green)}}.signal-area{{margin-top:10px;background:#e3d4bc;padding:20px;border-left:5px solid var(--gold)}}.signal-list li{{margin:7px 0;line-height:1.6}}.signal-list small{{display:block;margin-left:0}}.limits{{margin-top:14px;font-size:12px;color:#5f584e}}.source-box{{margin-top:10px;background:var(--paper-2);padding:20px;overflow:auto}}table{{border-collapse:collapse;width:100%;font-size:12px}}td,th{{text-align:left;padding:9px;border-bottom:1px solid var(--line)}}a{{color:#245d58;word-break:break-all}}.empty,.no-data{{color:var(--muted);line-height:1.7}}.no-data{{padding:72px 20px;text-align:center;background:var(--paper);border:1px solid var(--line);font-size:17px}}footer{{margin-top:20px;color:#cfc5b4;font-size:12px;line-height:1.7}}@media(max-width:760px){{main{{padding:22px 14px 40px}}.masthead{{display:block}}.asof{{text-align:left;margin-top:16px}}.hero-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}.metric-card{{min-height:112px;padding:15px}}.metric-card strong{{font-size:20px}}.dashboard-grid{{grid-template-columns:1fr}}.wide{{grid-column:auto}}.index-row{{grid-template-columns:1fr auto;gap:5px}}.index-row span{{grid-column:1;grid-row:1}}.index-row strong{{grid-column:2;grid-row:1}}.index-row b{{grid-column:1;grid-row:2}}.index-row small{{grid-column:1/-1;grid-row:3}}.breadth-wrap{{align-items:flex-start;gap:14px}}.donut{{width:118px}}}}
+</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{content}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
+
+
 def build_markdown(
     data: dict[str, Any],
     sections: dict[str, dict[str, Any]],
@@ -622,7 +772,7 @@ def build_markdown(
         "",
     ]
     if coverage_counts["unknown"] == len(SECTION_NAMES):
-        lines.extend(["## 无可得盘面数据", "", "本次七个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+        lines.extend(["## 无可得盘面数据", "", "本次八个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
 
     lines.extend(["## 一、主要指数", ""])
     indices = sections["indices"]
@@ -804,7 +954,15 @@ def generate(data: dict[str, Any], input_sha256: str, requested_as_of: date):
     markdown = build_markdown(
         data, sections, input_sha256, derived, signals, coverage_counts, sources
     )
-    return markdown, summary
+    html = build_html(
+        data, sections, input_sha256, derived, signals, coverage_counts, sources
+    )
+    html = html.replace(
+        "</head>",
+        "<style>@media(max-width:620px){.hero-grid{grid-template-columns:1fr}.metric-card strong{font-size:24px}.index-row{display:block}.index-row strong,.index-row b,.index-row small{display:block;margin-top:4px}}</style></head>",
+        1,
+    )
+    return markdown, summary, html
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -813,6 +971,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary-out", type=Path, required=True)
+    parser.add_argument("--html-out", type=Path, help="可选静态 HTML 可视化输出路径")
     return parser
 
 
@@ -821,7 +980,7 @@ def main() -> int:
     try:
         requested_as_of = parse_date(args.as_of, "as-of")
         data, input_sha256 = load_input(args.input)
-        markdown, summary = generate(data, input_sha256, requested_as_of)
+        markdown, summary, html = generate(data, input_sha256, requested_as_of)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.summary_out.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(markdown, encoding="utf-8")
@@ -829,12 +988,14 @@ def main() -> int:
             json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        if args.html_out:
+            args.html_out.parent.mkdir(parents=True, exist_ok=True)
+            args.html_out.write_text(html, encoding="utf-8")
+        result = {"output": str(args.output), "summary": str(args.summary_out)}
+        if args.html_out:
+            result["html"] = str(args.html_out)
         print(
-            json.dumps(
-                {"output": str(args.output), "summary": str(args.summary_out)},
-                ensure_ascii=False,
-                sort_keys=True,
-            )
+            json.dumps(result, ensure_ascii=False, sort_keys=True)
         )
         return 0
     except (ReviewError, OSError) as exc:
