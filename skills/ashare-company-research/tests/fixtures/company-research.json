@@ -17,6 +17,32 @@
     "valuation_view": "PE只适合作为交叉验证，需结合中周期利润和现金转换。",
     "primary_risk": "客户资本开支延后会压缩订单和产能利用率。"
   },
+  "dashboard": {
+    "headline_thesis": {
+      "statement": "主业改善已经验证，订单兑现仍需继续确认。",
+      "detail": "先看经营、现金和订单的同向证据，再判断当前估值是否已经反映未来增长。"
+    },
+    "signals": [
+      {"label": "上半年收入", "value": "12.4亿元", "detail": "同比+18%，已披露。", "kind": "事实", "tone": "red", "source_id": "annual-report"},
+      {"label": "核心订单", "value": "待核验", "detail": "订单金额和客户结构尚未完整披露。", "kind": "判断", "tone": "gold"},
+      {"label": "利润弹性", "value": "看利用率", "detail": "收入能否传导利润取决于产能和产品结构。", "kind": "推断", "tone": "green"},
+      {"label": "估值方法", "value": "中周期PE", "detail": "PE仅作交叉验证，不单独定价。", "kind": "判断", "tone": "muted"},
+      {"label": "首要风险", "value": "订单延后", "detail": "客户资本开支延后会压缩兑现。", "kind": "判断", "tone": "gold"}
+    ],
+    "expectation_gap": {
+      "market_pricing": "市场主要按周期设备供应商理解公司。",
+      "verified_facts": "收入增长与已披露订单显示需求存在，但核心订单尚未完全验证。",
+      "next_proof": "后续订单确认和产能利用率披露将决定预期差是否成立。"
+    },
+    "catalysts": [
+      {"title": "业绩说明会", "detail": "关注订单、利用率和客户结构是否有新增披露。"},
+      {"title": "行业资本开支数据", "detail": "确认下游需求是否继续改善。"}
+    ],
+    "invalidations": [
+      {"title": "订单确认延后", "detail": "若订单和合同负债持续弱于预期，收入兑现假设下修。"},
+      {"title": "现金转换恶化", "detail": "经营现金流持续弱于利润则财务质量判断下修。"}
+    ]
+  },
   "evidence": [
     {
       "label": "上半年收入",
