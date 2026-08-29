@@ -69,4 +69,4 @@ python3 scripts/generate_company_research_html.py --input company-research.json 
 - `technical.availability != available` 时只显示“技术面未验证”和原因；不得补均线、支撑位、MACD 或价格。
 - `gaps` 必须保留未核验项；空数据不填 0、行业均值或模型默认值。
 - 禁止 `建议买入/建议卖出/目标价/目标仓位/建议加仓/建议减仓/建议满仓/建议清仓/保证收益`。
-- HTML首层必须显示：研究命题、五个关键信号、市场定价/已验证事实/下一步验证、催化与证伪。关键证据台账、业务与利润引擎、估值与情景、风险与证伪、技术面、待核验限制和信息来源在第二层按需展开。视觉系统与 `ashare-daily-market-review` 和 `ashare-capital-environment-dashboard` 一致：深墨绿网格背景、宋体正文、金色眉题、米白纸张卡、细棕边和 5px 硬投影。
+- HTML首层必须显示：研究命题、五个关键信号、市场定价/已验证事实/下一步验证、催化与证伪。关键证据台账、业务与利润引擎、估值与情景、风险与证伪、技术面、待核验限制和信息来源在第二层按需展开。所有面向读者的栏目和标签必须使用中文。视觉系统与 `ashare-daily-market-review` 和 `ashare-capital-environment-dashboard` 一致：深墨绿网格背景、宋体正文、金色眉题、米白纸张卡、细棕边和 5px 硬投影。

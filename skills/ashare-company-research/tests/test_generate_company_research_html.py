@@ -37,7 +37,7 @@ class CompanyResearchHtmlTests(unittest.TestCase):
         self.assertIn("--ink:#13211f", html)
         self.assertIn("background:#18221f", html)
         self.assertIn('font-family:"Noto Serif SC","Songti SC",STSong,serif', html)
-        self.assertIn("A-SHARE / COMPANY RESEARCH", html)
+        self.assertIn("A股 / 公司研究", html)
         self.assertIn("box-shadow:5px 5px 0 rgba(12,18,16,.25)", html)
         for heading in ("当前研究命题", "市场定价什么", "已验证事实", "下一步验证", "催化剂", "证伪信号", "技术面", "信息来源"):
             self.assertIn(heading, html)
@@ -45,6 +45,11 @@ class CompanyResearchHtmlTests(unittest.TestCase):
         self.assertIn("样例设备2026年半年度报告", html)
         self.assertEqual(html.count('class="signal '), 5)
         self.assertIn("展开关键证据台账", html)
+        self.assertIn("01 · 市场定价", html)
+        self.assertIn("02 · 已验证事实", html)
+        self.assertIn("03 · 下一步验证", html)
+        self.assertNotIn("MARKET PRICING", html)
+        self.assertNotIn("VERIFIED FACTS", html)
 
     def test_rejects_fact_without_source(self):
         data = json.loads(FIXTURE.read_text(encoding="utf-8"))
