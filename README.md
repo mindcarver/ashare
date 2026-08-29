@@ -75,7 +75,7 @@
     </tr>
     <tr>
       <td align="center"><b>每日盘面与短线情绪</b></td>
-      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html</code><br />HTML 使用同一份已校验输入生成市场脉搏、宽度环图和板块强弱条；短线情绪仅在涨跌停、炸板次数、封板尝试次数和最高连板使用同一股票池且数据时点、来源完整时分类，否则输出<code>unknown</code>而不补零。</td>
+      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html</code><br />HTML 使用同一份已校验输入生成市场脉搏、宽度环图、短线情绪卡和下一交易日验证；板块默认只显示涨幅前10与跌幅前10，完整榜单可折叠。短线情绪数据不完整时输出<code>unknown</code>而不补零。</td>
     </tr>
     <tr>
       <td align="center"><b>候选股筛选</b></td>

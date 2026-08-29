@@ -292,6 +292,35 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertIn("该日期没有可得的盘面数据", html)
         self.assertNotIn('class="donut"', html)
 
+    def test_visual_html_focuses_sector_view_and_keeps_full_list_collapsed(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        exemplar = market["sections"]["sectors"]["items"][0]
+        sectors = []
+        for index in range(25):
+            item = copy.deepcopy(exemplar)
+            item["id"] = f"sector-{index:02d}"
+            item["name"] = f"行业{index:02d}"
+            item["change_pct"]["value"] = index - 12
+            sectors.append(item)
+        market["sections"]["sectors"]["items"] = sectors
+        self.with_sentiment(
+            market,
+            {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 6},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "focused.html"
+            path = self.write_json(tmp, "focused.json", market)
+            _, _, _ = self.run_generator(path, tmp, html_out=html_path)
+            html = html_path.read_text(encoding="utf-8")
+
+        self.assertIn("涨幅靠前", html)
+        self.assertIn("跌幅靠前", html)
+        self.assertIn("展开完整 25 个行业榜单", html)
+        self.assertIn('style="width:0.00%"', html)
+        self.assertIn("下一交易日验证", html)
+        self.assertIn('class="sentiment-kpis"', html)
+        self.assertIn("查看股票池、口径与规则", html)
+
 
 if __name__ == "__main__":
     unittest.main()

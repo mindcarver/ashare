@@ -705,23 +705,49 @@ def build_html(
     if sentiment["state"] == "unknown":
         sentiment_html = f'<p class="empty">短线情绪未知：{html_text(sentiment["reason"])}</p>'
     else:
+        sentiment_cards = [
+            ("炸板率", f"{sentiment['open_board_rate_pct']:.2f}%"),
+            ("最高连板", fmt_evidence(sentiment_section["metrics"]["highest_streak"])),
+        ]
+        if "limit_balance" in derived:
+            sentiment_cards.append(("涨停净差", f"{derived['limit_balance']:+.0f}"))
+        cards = "".join(
+            f'<div><span>{html_text(label)}</span><strong>{html_text(number)}</strong></div>'
+            for label, number in sentiment_cards
+        )
         sentiment_html = f'''<div class="sentiment-state state-{html_text(sentiment["state"])}">
   <span>市场状态</span><strong>{state_labels[sentiment["state"]]}</strong>
 </div><p class="rule">{html_text(sentiment["evidence"])}</p>
-<dl><dt>炸板率</dt><dd>{sentiment["open_board_rate_pct"]:.2f}%</dd><dt>最高连板</dt><dd>{fmt_evidence(sentiment_section["metrics"]["highest_streak"])}</dd></dl>
-<p class="evidence">股票池：{html_text(sentiment_section["universe"])}<br />{html_text(sentiment_section["methodology"])}<br />规则：<code>{html_text(sentiment["rule"])}</code></p>'''
+<div class="sentiment-kpis">{cards}</div>
+<details class="method-details"><summary>查看股票池、口径与规则</summary><p class="evidence">股票池：{html_text(sentiment_section["universe"])}<br />{html_text(sentiment_section["methodology"])}<br />规则：<code>{html_text(sentiment["rule"])}</code></p></details>'''
 
     sector_html = f'<p class="empty">{html_text(sectors["status_reason"])}</p>'
     if sectors["availability"] != "unknown":
         ordered = sorted(sectors["items"], key=lambda item: (-float(item["change_pct"]["value"]), item["id"]))
         max_change = max(abs(float(item["change_pct"]["value"])) for item in ordered) or 1
-        sector_rows = []
-        for item in ordered:
-            change = float(item["change_pct"]["value"])
-            width = max(8, abs(change) / max_change * 100)
-            side = "positive" if change >= 0 else "negative"
-            sector_rows.append(f'''<div class="sector-row"><span>{html_text(item["name"])}</span><div class="bar-track {side}"><i style="width:{width:.2f}%"></i></div><b class="value-{value_tone(change)}">{html_text(fmt_evidence(item["change_pct"]))}</b></div>''')
-        sector_html = f'<p class="section-note">{html_text(sectors["classification"])} · {html_text(sectors["status_reason"])}</p>' + "".join(sector_rows)
+        winners = ordered[:10]
+        losers = sorted(ordered, key=lambda item: (float(item["change_pct"]["value"]), item["id"]))[:10]
+
+        def sector_rows(items: list[dict[str, Any]]) -> str:
+            rows = []
+            for item in items:
+                change = float(item["change_pct"]["value"])
+                width = abs(change) / max_change * 100
+                side = "positive" if change >= 0 else "negative"
+                rows.append(f'''<div class="sector-row"><span>{html_text(item["name"])}</span><div class="bar-track {side}"><i style="width:{width:.2f}%"></i></div><b class="value-{value_tone(change)}">{html_text(fmt_evidence(item["change_pct"]))}</b></div>''')
+            return "".join(rows)
+
+        up_count = sum(float(item["change_pct"]["value"]) > 0 for item in ordered)
+        down_count = sum(float(item["change_pct"]["value"]) < 0 for item in ordered)
+        flat_count = len(ordered) - up_count - down_count
+        full_rows = sector_rows(ordered)
+        featured_rows = sector_rows(winners)
+        if any(item["id"] not in {winner["id"] for winner in winners} for item in losers):
+            featured_rows += '<p class="sector-divider">跌幅靠前</p>' + sector_rows(losers)
+        sector_html = f'''<p class="section-note">{html_text(sectors["classification"])} · {html_text(sectors["status_reason"])}</p>
+<div class="sector-summary"><span>覆盖 {len(ordered)} 个行业</span><span class="value-rise">上涨 {up_count}</span><span class="value-fall">下跌 {down_count}</span><span>平盘 {flat_count}</span></div>
+<p class="sector-divider">涨幅靠前</p>{featured_rows}
+<details class="full-list"><summary>展开完整 {len(ordered)} 个行业榜单</summary>{full_rows}</details>'''
 
     def evidence_rows(section_name: str, description_key: str) -> str:
         section = sections[section_name]
@@ -747,6 +773,11 @@ def build_html(
     source_rows = "".join(f'<tr><td>{html_text(source["name"])}</td><td><a href="{html_text(source["url"])}" rel="noreferrer" target="_blank">{html_text(source["url"])}</a></td><td>{source["count"]}</td></tr>' for source in sources)
     all_unknown = coverage_counts["unknown"] == len(SECTION_NAMES)
     content = '<div class="no-data">该日期没有可得的盘面数据；未绘制任何零值替代图表。</div>' if all_unknown else f'''<section class="dashboard-grid" aria-label="盘面核心数据"><article class="panel wide"><div class="panel-head"><h2>主要指数</h2>{availability_badge(indices)}</div>{index_rows}</article><article class="panel"><div class="panel-head"><h2>市场宽度</h2>{availability_badge(breadth)}</div>{breadth_chart}</article><article class="panel"><div class="panel-head"><h2>短线情绪</h2>{availability_badge(sentiment_section)}</div>{sentiment_html}</article><article class="panel wide"><div class="panel-head"><h2>板块温度</h2>{availability_badge(sectors)}</div>{sector_html}</article><article class="panel"><div class="panel-head"><h2>资金证据</h2>{availability_badge(sections["funds"])}</div>{evidence_rows("funds", "methodology")}</article><article class="panel"><div class="panel-head"><h2>风格结构</h2>{availability_badge(sections["style"])}</div>{evidence_rows("style", "interpretation")}</article><article class="panel wide"><div class="panel-head"><h2>事件与验证点</h2>{availability_badge(sections["events"])}</div>{events_html}</article></section>'''
+    if not all_unknown and data.get("verification_points"):
+        next_point = min(data["verification_points"], key=lambda item: item["event_date"])
+        remaining = len(data["verification_points"]) - 1
+        suffix = f"；另有 {remaining} 项" if remaining else ""
+        content = f'''<aside class="verify-strip" aria-label="下一交易日验证"><span>下一交易日验证</span><strong>{html_text(next_point["event_date"])} · {html_text(next_point["title"])}{suffix}</strong><small>{html_text(next_point["source"]["name"])} · 已在信息截止日前公开</small></aside>''' + content
 
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>A股每日盘面复盘 · {html_text(data["market_date"])}</title><style>
 :root{{--ink:#13211f;--paper:#f6f1e7;--paper-2:#eee6d7;--line:#d8cdbb;--red:#bf332d;--green:#19724b;--gold:#ba8a35;--muted:#756f66}}*{{box-sizing:border-box}}body{{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;overflow-x:hidden}}body:before{{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}}main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}.masthead{{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}}.eyebrow{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}}h1,h2,p{{margin:0}}h1{{font-size:clamp(34px,6vw,68px);line-height:.95;letter-spacing:-.06em}}.asof{{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right}}.coverage{{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}}.badge{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;padding:6px 8px;border-radius:999px;letter-spacing:.04em}}.badge-available{{background:#d8eedf;color:#155836}}.badge-partial{{background:#efe4c7;color:#725210}}.badge-unknown{{background:#edd8d2;color:#8a2c27}}.hero-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}}.metric-card,.panel{{background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25)}}.metric-card{{min-width:0;min-height:132px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;border-top:4px solid var(--gold);overflow:hidden}}.metric-card p,.section-note,.evidence,small{{color:var(--muted);font-size:12px;line-height:1.5}}.metric-card strong{{font-family:"SFMono-Regular",Consolas,monospace;font-size:27px;letter-spacing:-.06em;overflow-wrap:anywhere}}.tone-rise{{border-top-color:var(--red)}}.tone-fall{{border-top-color:var(--green)}}.dashboard-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}.panel{{padding:20px;min-width:0}}.wide{{grid-column:span 2}}.panel-head{{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}}h2{{font-size:19px;letter-spacing:-.03em}}.index-row{{display:grid;grid-template-columns:1.2fr .8fr .55fr 1.75fr;gap:10px;padding:11px 0;border-bottom:1px solid rgba(216,205,187,.55);align-items:baseline}}.index-row strong,.index-row b,.sector-row b{{font-family:"SFMono-Regular",Consolas,monospace}}.value-rise{{color:var(--red)}}.value-fall{{color:var(--green)}}.value-neutral{{color:var(--muted)}}.breadth-wrap{{display:flex;gap:22px;align-items:center}}.donut{{width:142px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--red) 0 var(--advance),var(--green) var(--advance) 100%);position:relative;display:grid;place-items:center;flex:none}}.donut:before{{content:"";position:absolute;width:72%;aspect-ratio:1;border-radius:50%;background:var(--paper)}}.donut span{{position:relative;text-align:center;font:700 25px/1 "SFMono-Regular",Consolas,monospace}}.donut small{{display:block;font:11px/1.5 "Noto Serif SC",serif}}.breadth-list{{width:100%}}.breadth-list p{{display:flex;justify-content:space-between;border-bottom:1px solid rgba(216,205,187,.5);padding:7px 0;font-size:13px}}.breadth-list strong{{font-family:"SFMono-Regular",Consolas,monospace}}.sentiment-state{{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0 7px;border-bottom:1px solid var(--line)}}.sentiment-state strong{{font-size:30px;color:var(--gold)}}.state-ice strong{{color:#3c6294}}.state-euphoria strong{{color:var(--red)}}.state-divergence strong{{color:#a45729}}.state-repair strong{{color:var(--green)}}.rule{{font-size:14px;line-height:1.7;margin:12px 0}}dl{{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0;font-size:13px}}dd{{margin:0;font-family:"SFMono-Regular",Consolas,monospace}}.sector-row{{display:grid;grid-template-columns:74px 1fr 70px;gap:10px;align-items:center;margin:13px 0;font-size:13px}}.bar-track{{height:9px;background:#e5dac7;display:flex}}.bar-track.positive{{justify-content:flex-start}}.bar-track.negative{{justify-content:flex-end}}.bar-track i{{height:100%;background:var(--red)}}.bar-track.negative i{{background:var(--green)}}.evidence-list,.timeline,.signal-list{{margin:0;padding:0;list-style:none}}.evidence-list li,.timeline li{{padding:10px 0;border-bottom:1px solid rgba(216,205,187,.55);display:grid;gap:3px}}.evidence-list span{{font-size:12px;line-height:1.5}}.timeline time{{font:700 11px/1 "SFMono-Regular",Consolas,monospace;color:var(--gold)}}.future time{{color:var(--green)}}.signal-area{{margin-top:10px;background:#e3d4bc;padding:20px;border-left:5px solid var(--gold)}}.signal-list li{{margin:7px 0;line-height:1.6}}.signal-list small{{display:block;margin-left:0}}.limits{{margin-top:14px;font-size:12px;color:#5f584e}}.source-box{{margin-top:10px;background:var(--paper-2);padding:20px;overflow:auto}}table{{border-collapse:collapse;width:100%;font-size:12px}}td,th{{text-align:left;padding:9px;border-bottom:1px solid var(--line)}}a{{color:#245d58;word-break:break-all}}.empty,.no-data{{color:var(--muted);line-height:1.7}}.no-data{{padding:72px 20px;text-align:center;background:var(--paper);border:1px solid var(--line);font-size:17px}}footer{{margin-top:20px;color:#cfc5b4;font-size:12px;line-height:1.7}}@media(max-width:760px){{main{{padding:22px 14px 40px}}.masthead{{display:block}}.asof{{text-align:left;margin-top:16px}}.hero-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}.metric-card{{min-height:112px;padding:15px}}.metric-card strong{{font-size:20px}}.dashboard-grid{{grid-template-columns:1fr}}.wide{{grid-column:auto}}.index-row{{grid-template-columns:1fr auto;gap:5px}}.index-row span{{grid-column:1;grid-row:1}}.index-row strong{{grid-column:2;grid-row:1}}.index-row b{{grid-column:1;grid-row:2}}.index-row small{{grid-column:1/-1;grid-row:3}}.breadth-wrap{{align-items:flex-start;gap:14px}}.donut{{width:118px}}}}
@@ -959,7 +990,12 @@ def generate(data: dict[str, Any], input_sha256: str, requested_as_of: date):
     )
     html = html.replace(
         "</head>",
-        "<style>@media(max-width:620px){.hero-grid{grid-template-columns:1fr}.metric-card strong{font-size:24px}.index-row{display:block}.index-row strong,.index-row b,.index-row small{display:block;margin-top:4px}}</style></head>",
+        """<style>
+.verify-strip{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin:0 0 10px;padding:14px 18px;background:#dfe8df;border:1px solid #98af9c;border-left:5px solid var(--green)}
+.verify-strip span{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.08em;color:#276342}.verify-strip strong{font-size:15px}.verify-strip small{white-space:nowrap}
+.sentiment-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.sentiment-kpis div{padding:9px;background:#eee6d7;border-top:2px solid var(--gold)}.sentiment-kpis span{display:block;color:var(--muted);font-size:11px}.sentiment-kpis strong{display:block;margin-top:3px;font-family:"SFMono-Regular",Consolas,monospace;font-size:19px}.method-details,.full-list{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}.method-details summary,.full-list summary{cursor:pointer;color:#275b55;font-weight:700}.sector-summary{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;font:700 11px/1.4 "SFMono-Regular",Consolas,monospace;color:var(--muted)}.sector-divider{margin:16px 0 6px;font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}.full-list[open]{padding-top:14px}.full-list summary{margin-bottom:12px}
+@media(max-width:620px){.hero-grid{grid-template-columns:1fr}.metric-card strong{font-size:24px}.index-row{display:block}.index-row strong,.index-row b,.index-row small{display:block;margin-top:4px}.verify-strip{grid-template-columns:1fr;gap:5px}.verify-strip small{white-space:normal}.sentiment-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.sentiment-kpis strong{font-size:16px}.sector-row{grid-template-columns:68px 1fr 58px;gap:7px}}
+</style></head>""",
         1,
     )
     return markdown, summary, html
