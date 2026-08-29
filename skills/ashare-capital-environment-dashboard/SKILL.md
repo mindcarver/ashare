@@ -1,11 +1,11 @@
 ---
 name: ashare-capital-environment-dashboard
-description: 生成 AGUHOT 资本环境仪表盘风格的 HTML 报告，覆盖全球/美国/中国/韩国 4 个市场 × 增长/通胀/流动性/资金价格/风险偏好与信用/市场宽度/机构持仓与拥挤度 7 个维度的最新状态与证据。当用户要"做一份资本环境仪表盘""中美韩宏观对照""资本环境多维证据""资本环境报告""类似 AGUHOT 的资本环境页面"时使用。也可用于回放某一日（asOf=YYYY-MM-DD）的资本环境状态。明确区分已观测事实和未知；默认不输出指令性投资建议/目标价/牛熊判断/买卖结论，但用户明确要求时，可输出证据驱动的"板块倾向建议层"（关注/中性/回避，仅为研究建议，不构成投资建议）。
+description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿用 AGUHOT 4市场×7维度证据网格，视觉与 ashare-daily-market-review 的“市场脉搏”HTML 保持一致。当用户要"做一份资本环境仪表盘""中美韩宏观对照""资本环境多维证据""资本环境报告""类似 AGUHOT 的资本环境页面"时使用。也可用于回放某一日（asOf=YYYY-MM-DD）的资本环境状态。明确区分已观测事实和未知；默认不输出指令性投资建议/目标价/牛熊判断/买卖结论，但用户明确要求时，可输出证据驱动的"板块倾向建议层"（关注/中性/回避，仅为研究建议，不构成投资建议）。
 ---
 
 # 资本环境仪表盘
 
-生成 AGUHOT 风格的多市场×多维度资本环境仪表盘 HTML 报告。视觉与覆盖语义对齐 AGUHOT `apps/web/app/(operator)/capital-environment` 页（参考 `references/aguhot-design-spec.md`），数据采集对齐 `references/data-routing.md`，HTML 模板见 `references/html-template.md`。
+生成多市场×多维度资本环境仪表盘 HTML 报告。4×7 字段与覆盖语义沿用 AGUHOT 资本环境页，视觉壳层和组件语言必须对齐 `ashare-daily-market-review` 的“市场脉搏”HTML（参考更新后的 `references/aguhot-design-spec.md`）；数据采集对齐 `references/data-routing.md`，HTML 模板见 `references/html-template.md`。
 
 默认使用中文输出。
 
@@ -106,7 +106,7 @@ description: 生成 AGUHOT 资本环境仪表盘风格的 HTML 报告，覆盖�
 无论回放哪一天，HTML 结构固定为 6 段。**全部 28 格用 ECharts 图表渲染 + AI 透镜分析**：
 
 1. **顶部导航**：标题 + 回放日期 + 静态快照说明；其他日期必须重新运行生成器，或由已验证的服务端按同一规则处理 `asOf`。
-2. **顶部摘要卡**：浅底（surface-muted）框，第一行是 overview，第二行是 disclaimer。overview 句式：
+2. **顶部摘要卡**：米白纸张卡 + 金色左边线 + 硬投影，第一行是 overview，第二行是 disclaimer。overview 句式：
    ```
    截至 {YYYY-MM-DD} 的资本环境：{覆盖等级}。以下为各市场维度的可观测状态，区分已观测事实与未知。
    ```
@@ -194,7 +194,7 @@ description: 生成 AGUHOT 资本环境仪表盘风格的 HTML 报告，覆盖�
 
 - **输出格式**：自包含 HTML（外链仅 ECharts CDN），ECharts 套骨架别从零写嵌套。文件命名：`ashare-capital-environment-dashboard-{YYYY-MM-DD}.html`，放项目根或用户指定位置。
 - **生成脚本（推荐）**：`scripts/gen_dashboard.py` 已内置完整模板 + 渲染引擎 + 覆盖矩阵生成逻辑。样例数据可直接生成；生产输入使用 `--cells cells.json --as-of YYYY-MM-DD --out file.html`。每个 `market|dimension` 可是一条记录或按版本保存的记录数组；脚本只选 `publishedAt ≤ asOf` 的最新记录，无合格记录自动标 `未知`。
-- **视觉风格**：浅底深字研报风，参考 AGUHOT 仪表盘配色（`bg-canvas`、`text-ink-primary`、`bg-market-up-soft`、`bg-market-down-soft`、`border-border-hairline`），A股口径红涨绿跌。
+- **视觉风格（必须）**：与 `ashare-daily-market-review` HTML 同一套“市场脉搏”视觉系统：深墨绿 24px 网格背景、宋体研报正文、金色英文眉题、米白纸张卡、细棕边、5px 硬投影、等宽数字与证据元数据；A股涨跌保持红涨绿跌。资本仪表盘只保留自身 4×7 信息架构，不再使用 AGUHOT 浅色后台壳层。
 - **数据注入**：所有 28 格数据通过模板唯一的 `{{CELLS_JSON}}` 占位符注入（见 `references/html-template.md` 第三节配置格式），禁止硬编码在 HTML 标签里。
 - **HTML 模板**：见 `references/html-template.md`（脚本内已内嵌此模板）。
 - **交付前必做**（三条全过才交付）：

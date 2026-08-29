@@ -1,10 +1,10 @@
 # HTML 模板（资本环境仪表盘 · 图表化）
 
-> 自包含 HTML 模板，按 AGUHOT 设计规格复现，但**全部 28 格用 ECharts 图表渲染**（不再是文字折叠卡）。
+> 自包含 HTML 模板，保留 AGUHOT 的 4×7 字段与覆盖语义，视觉系统对齐 `ashare-daily-market-review` 的“市场脉搏”HTML：深墨绿背景、米白纸张卡、宋体研报正文、金色眉题与硬投影。全部 28 格用 ECharts 图表渲染。
 >
 > 使用方法：
 > 1. 复制模板到新文件 `ashare-capital-environment-dashboard-{YYYY-MM-DD}.html`
-> 2. 替换占位符：`{{AS_OF}}` `{{OVERVIEW}}` `{{DISCLAIMER}}` `{{YESTERDAY}}` `{{LAST_WEEK}}` `{{CELLS_JSON}}`
+> 2. 替换占位符：`{{AS_OF}}` `{{OVERVIEW}}` `{{DISCLAIMER}}` `{{CELLS_JSON}}`
 > 3. `{{CELLS_JSON}}` 是唯一的数据入口（见第三节配置格式），28 格全部由它驱动
 > 4. 跑节点语法检查 → present_files 交付
 
@@ -44,27 +44,34 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
 :root{
-  --canvas:#f8fafc;
-  --surface-base:#ffffff;
-  --surface-raised:#fafbfc;
-  --surface-muted:#f1f5f9;
-  --ink-primary:#0f172a;
-  --ink-secondary:#475569;
-  --ink-tertiary:#94a3b8;
-  --border-hairline:#e2e8f0;
-  --brand:#2563eb;
-  --brand-foreground:#ffffff;
-  --market-up:#16a34a;
-  --market-up-soft:#dcfce7;
-  --market-down:#dc2626;
-  --market-down-soft:#fee2e2;
+  --ink:#13211f;
+  --paper:#f6f1e7;
+  --paper-2:#eee6d7;
+  --line:#d8cdbb;
+  --red:#bf332d;
+  --green:#19724b;
+  --gold:#ba8a35;
+  --muted:#756f66;
+  --canvas:#18221f;
+  --surface-base:var(--paper);
+  --surface-raised:var(--paper);
+  --surface-muted:var(--paper-2);
+  --ink-primary:var(--ink);
+  --ink-secondary:#5f584e;
+  --ink-tertiary:var(--muted);
+  --border-hairline:var(--line);
+  --brand:var(--gold);
+  --brand-foreground:#18221f;
+  --market-up:var(--green);
+  --market-up-soft:#d8eedf;
+  --market-down:var(--red);
+  --market-down-soft:#edd8d2;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--canvas);color:var(--ink-primary);
-  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;}
+body{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}
 main{min-height:100vh}
-.container{max-width:72rem;margin:0 auto;padding:2.5rem 1.5rem}
+.container{max-width:1180px;margin:0 auto;padding:32px 20px 56px}
 .badge{display:inline-flex;align-items:center;border-radius:9999px;padding:0.125rem 0.5rem;
   font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.7rem;line-height:1rem;white-space:nowrap}
 .badge-up{background:var(--market-up-soft);color:var(--market-up)}
@@ -72,30 +79,29 @@ main{min-height:100vh}
 .badge-mid{background:var(--surface-muted);color:var(--ink-secondary)}
 .badge-muted{background:var(--surface-muted);color:var(--ink-tertiary)}
 /* 覆盖矩阵 */
-.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;margin-top:1.25rem;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.68rem;color:var(--ink-secondary)}
+.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;margin-top:10px;padding:20px;background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25);font-family:"SFMono-Regular",Consolas,monospace;font-size:0.68rem;color:var(--ink-secondary)}
 .matrix-cell{display:flex;align-items:center;justify-content:center;padding:4px 2px;border-radius:4px;min-height:1.4rem;text-align:center}
 .matrix-cell.a{background:var(--market-up-soft);color:var(--market-up)}
 .matrix-cell.p{background:var(--surface-muted);color:var(--ink-secondary)}
 .matrix-cell.u{background:var(--market-down-soft);color:var(--market-down)}
 .matrix-cell.lbl{background:transparent;justify-content:flex-start;padding-left:2px;color:var(--ink-primary);font-weight:600}
-.matrix-legend{display:flex;gap:0.75rem;margin-top:0.5rem;font-size:0.7rem;color:var(--ink-tertiary)}
+.matrix-legend{display:flex;gap:0.75rem;margin:0.75rem 0 0;font-size:0.7rem;color:#cfc5b4}
 .matrix-legend span{display:inline-flex;align-items:center;gap:4px}
 .swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
 /* 摘要卡 */
-.summary-box{background:var(--surface-muted);border:1px solid var(--border-hairline);border-radius:0.5rem;padding:0.875rem 1.25rem;margin-top:1.25rem}
+.summary-box{background:#e3d4bc;border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .summary-box p{margin:0}
 .summary-box .overview{font-size:0.875rem;color:var(--ink-secondary)}
 .summary-box .disclaimer{margin-top:0.375rem;font-size:0.7rem;color:var(--ink-tertiary)}
 /* 市场 section */
 section.market{margin-top:2rem}
-.market-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
-.market-head h2{font-size:1.125rem;font-weight:600;margin:0;color:var(--ink-primary)}
+.market-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;padding-bottom:12px;border-bottom:1px solid rgba(248,242,230,.25)}
+.market-head h2{font-size:1.25rem;font-weight:700;margin:0;color:#f8f2e6}
 .market-grid{display:grid;gap:0.625rem}
 @media (min-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1024px){.market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* 维度格 */
-.cell{border:1px solid var(--border-hairline);border-radius:0.5rem;padding:0.625rem;background:var(--surface-raised)}
+.cell{border:1px solid var(--line);padding:14px;background:var(--paper);box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .cell-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.25rem}
 .cell-name{font-size:0.8rem;font-weight:500;color:var(--ink-primary)}
 .chart-box{width:100%;height:180px}
@@ -103,42 +109,24 @@ section.market{margin-top:2rem}
   font-size:0.75rem;text-align:center;padding:0 0.5rem}
 .cell-evidence{margin-top:0.25rem;padding-top:0.25rem;border-top:1px dashed var(--border-hairline);
   font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.62rem;color:var(--ink-tertiary);line-height:1.3}
-/* header / nav */
-header .breadcrumb{display:flex;align-items:center;gap:0.75rem;font-size:0.875rem;color:var(--ink-tertiary)}
-header .breadcrumb a{color:var(--ink-tertiary);text-decoration:none}
-header .breadcrumb a:hover{color:var(--brand)}
-header h1{font-size:1.5rem;font-weight:700;margin:0.5rem 0 0 0}
-header .asof{color:var(--ink-secondary);margin:0.25rem 0 0 0}
-nav.dates{margin-top:1rem;display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem;font-size:0.875rem}
-nav.dates a,nav.dates button{border:1px solid var(--border-hairline);border-radius:0.375rem;padding:0.25rem 0.625rem;
-  color:var(--ink-secondary);background:transparent;text-decoration:none;font:inherit;cursor:pointer}
-nav.dates a:hover,nav.dates button:hover{background:var(--surface-muted)}
-nav.dates input[type=date]{border:1px solid var(--border-hairline);border-radius:0.375rem;background:var(--surface-base);
-  padding:0.25rem 0.5rem;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.875rem;color:var(--ink-primary)}
-nav.dates button.primary{background:var(--brand);color:var(--brand-foreground);border-color:var(--brand)}
-nav.dates button.primary:hover{opacity:0.9}
+/* 与每日盘面复盘一致的页首 */
+.masthead{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}
+.eyebrow{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}
+.masthead h1{font-size:clamp(34px,6vw,68px);line-height:.95;letter-spacing:-.06em;margin:0}
+.masthead .asof{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right;margin:0}
+.snapshot-note{color:#cfc5b4;font-size:12px;line-height:1.7;margin:16px 0 24px}
+@media(max-width:760px){.container{padding:22px 14px 40px}.masthead{display:block}.masthead .asof{text-align:left;margin-top:16px}.matrix-wrap{overflow-x:auto;padding:14px}.market-grid{grid-template-columns:1fr}.cell{padding:12px}}
 </style>
 </head>
 <body>
 <main>
 <div class="container">
-  <header>
-    <div class="breadcrumb"><a href="/console">← 返回运营台</a></div>
-    <h1>资本环境仪表盘</h1>
-    <p class="asof">回放日期：{{AS_OF}}</p>
+  <header class="masthead">
+    <div><p class="eyebrow">GLOBAL / CAPITAL ENVIRONMENT</p><h1>资本环境</h1></div>
+    <p class="asof">回放日期 {{AS_OF}}<br />静态点时快照<br />4 市场 × 7 维度</p>
   </header>
 
-  <nav class="dates" aria-label="选择回放日期">
-    <span>快速切换：</span>
-    <a href="?">最新</a>
-    <a href="?asOf={{YESTERDAY}}">{{YESTERDAY}}</a>
-    <a href="?asOf={{LAST_WEEK}}">{{LAST_WEEK}}</a>
-    <form action="" method="get" style="margin-left:0.5rem;display:flex;align-items:center;gap:0.25rem">
-      <label for="asOf">自选日期：</label>
-      <input id="asOf" name="asOf" type="date" value="{{AS_OF}}" />
-      <button type="submit" class="primary">回放</button>
-    </form>
-  </nav>
+  <p class="snapshot-note">请用生成器的 <code>--as-of YYYY-MM-DD</code> 生成其他日期，避免 URL 参数显示未筛选数据。</p>
 
   <div class="summary-box">
     <p class="overview">{{OVERVIEW}}</p>
@@ -220,8 +208,8 @@ const CELLS = {{CELLS_JSON}};
 const DIM_SHORT = {
   'global': 'global','us':'us','cn':'cn','kr':'kr'
 };
-const upColor = '#16a34a', downColor = '#dc2626', inkColor = '#0f172a',
-      secColor = '#475569', terColor = '#94a3b8', lineColor = '#2563eb';
+const upColor = '#19724b', downColor = '#bf332d', inkColor = '#13211f',
+      secColor = '#5f584e', terColor = '#756f66', lineColor = '#ba8a35';
 
 function evid(cfg){
   const ev = document.getElementById(cfg.evId);
@@ -305,14 +293,14 @@ function renderLine(el, cfg){
       type: 'value',
       scale: true,
       axisLabel: { color: terColor, fontSize: 8 },
-      splitLine: { lineStyle: { color: '#eef2f7' } }
+      splitLine: { lineStyle: { color: '#e5dac7' } }
     },
     series: [{
       type: 'line', data: cfg.values || [], smooth: true, symbol: 'circle', symbolSize: 5,
       lineStyle: { color: lineColor, width: 2 },
       itemStyle: { color: lineColor },
       areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1,
-        colorStops: [{offset:0,color:'rgba(37,99,235,0.18)'},{offset:1,color:'rgba(37,99,235,0)'}] } },
+        colorStops: [{offset:0,color:'rgba(186,138,53,0.2)'},{offset:1,color:'rgba(186,138,53,0)'}] } },
       markLine: (cfg.markLines || []).map(function(m){
         return { name: m.label, yAxis: m.value, lineStyle: { color: downColor, type: 'dashed', width: 1 },
                  label: { formatter: m.label, color: downColor, fontSize: 8, position: 'insideEndTop' } };
@@ -331,7 +319,7 @@ function renderBar(el, cfg){
       axisLabel: { color: terColor, fontSize: 9 }, axisTick: { show: false },
       axisLine: { lineStyle: { color: secColor } } },
     yAxis: { type: 'value', axisLabel: { color: terColor, fontSize: 8 },
-      splitLine: { lineStyle: { color: '#eef2f7' } } },
+      splitLine: { lineStyle: { color: '#e5dac7' } } },
     series: [{
       type: 'bar', data: (cfg.values || []).map(function(v, i){
         return { value: v, itemStyle: { color: (cfg.colors || [])[i] || secColor, borderRadius: [3,3,0,0] } };
@@ -381,7 +369,7 @@ Object.keys(CELLS).forEach(function(key){ renderCell(key, CELLS[key]); });
     "min": 0,
     "max": 6,
     "name": "Q2 GDP年化",
-    "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+    "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
     "markers": [{ "value": 2.1, "label": "Q1 2.1%" }],
     "source": "us-bea（U.S. BEA, 二季度实际GDP年化季率）",
     "observedAt": "2026-06-30",
@@ -404,7 +392,7 @@ Object.keys(CELLS).forEach(function(key){ renderCell(key, CELLS[key]); });
     "type": "bar",
     "categories": ["上涨", "下跌", "平盘", "停牌"],
     "values": [4691, 728, 115, 6],
-    "colors": ["#16a34a", "#dc2626", "#94a3b8", "#cbd5e1"],
+    "colors": ["#bf332d", "#19724b", "#756f66", "#d8cdbb"],
     "source": "cn-akshare-breadth（AkShare, 7/31收盘）",
     "observedAt": "2026-07-31",
     "publishedAt": "2026-07-31",
@@ -422,7 +410,7 @@ Object.keys(CELLS).forEach(function(key){ renderCell(key, CELLS[key]); });
 | `value` | number | gauge 的指针值 |
 | `unit` | string | 单位（% / 点 / x / 亿元） |
 | `min`/`max` | number | gauge 量程 |
-| `sections` | array | gauge 分段颜色 `[[0.33,"#16a34a"],...]`（0-1 比例） |
+| `sections` | array | gauge 分段颜色 `[[0.33,"#19724b"],...]`（0-1 比例） |
 | `markers` | array | gauge 参考标记 `[{value,label}]`（如历史均值/前值） |
 | `dates`/`values` | array | line 的 x/y 数据 |
 | `markLines` | array | line 参考线 `[{value,label}]`（如荣枯线 50） |

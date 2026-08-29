@@ -1,6 +1,6 @@
-# AGUHOT 资本环境仪表盘设计规格
+# 资本环境仪表盘字段与视觉规格
 
-> 本文档是 AGUHOT `apps/web/app/(operator)/capital-environment/` 页面（Issue #58）的设计快照，用于让本技能 1:1 复现视觉、字段、覆盖语义。
+> 字段、4×7 网格和覆盖语义沿用 AGUHOT `apps/web/app/(operator)/capital-environment/` 页面（Issue #58）；HTML 视觉系统按用户要求对齐 `ashare-daily-market-review` 的“市场脉搏”报告，不再 1:1 复现 AGUHOT 浅色后台页面。
 >
 > 源码参考（仅内部团队可见）：
 > - `apps/web/app/(operator)/capital-environment/page.tsx`（force-dynamic RSC）
@@ -10,28 +10,23 @@
 
 ## 一、页面骨架（自上而下）
 
-> 本技能交付的离线 HTML 在字段语义上 1:1 复现 AGUHOT 页面，但在**展示形态上做了图表化升级**：28 格由 `<details>` 折叠文字改为 ECharts 图表网格（gauge/line/bar），并新增顶部覆盖矩阵热力图。字段定义（第二、三节）与覆盖语义（第六节）不变。
+> 本技能交付的离线 HTML 在字段语义上复现 AGUHOT 页面，但展示形态使用每日盘面复盘的研报式壳层，并把 28 格图表化为 ECharts 网格（gauge/line/bar）。字段定义与覆盖语义不变。
 
-1. **顶部导航条**：返回运营台链接（`/console`）
-2. **页面标题**：资本环境仪表盘（h1，2xl bold）
-3. **回放日期**：`回放日期：YYYY-MM-DD`（次级文字）
-4. **快速切换区**：标签"快速切换：" + 4 个链接/输入框
-   - `最新`（指向 `?`）
-   - `昨日`（`?asOf=YYYY-MM-DD`，date - 1）
-   - `一周前`（`?asOf=YYYY-MM-DD`，date - 7）
-   - 自选日期输入框 + `回放` 按钮（GET form，无 JS）
-5. **顶部摘要卡**（浅底）：overview 一行 + disclaimer 一行
-6. **覆盖矩阵**（图表化新增）：4 市场 × 7 维度色块热力图
+1. **研报式页首**：金色英文眉题 `GLOBAL / CAPITAL ENVIRONMENT` + 中文标题“资本环境”
+2. **点时信息**：右侧显示回放日期、静态点时快照和 `4 市场 × 7 维度`
+3. **静态快照说明**：其他日期必须重新运行生成器 `--as-of`，不提供会伪装回放的 URL 控件
+4. **顶部摘要卡**：米白纸张底、金色左边线，overview 一行 + disclaimer 一行
+5. **覆盖矩阵**（图表化新增）：4 市场 × 7 维度色块热力图
    - 行 = 市场（全球/美国/中国/韩国），列 = 7 维度
    - 色块：可得=绿底/部分=灰底/未知失败无法还原=红底/待复核=浅灰
    - 底部附图例（可得/部分/未知失败）
-7. **市场×维度图表网格**：
+6. **市场×维度图表网格**：
    - 每个市场一个 `<section>`，标题：市场名（h2，左）+ 覆盖徽章（右）
    - 3 列响应式网格（`md:grid-cols-3`），每格一个卡片：
      - 顶部：维度名 + 覆盖徽章
      - 中部：ECharts 图表（180px 高）——gauge / line / bar，无数据格显示灰色占位"无可得数值（非零值）" + reason
      - 底部：一行证据脚注（来源 / 观测日期 / 发布日期 / 处理版本）
-8. **底部免责声明**（无，disclaimer 在顶部摘要卡里）
+7. **底部免责声明**（无，disclaimer 在顶部摘要卡里）
 
 完全无数据时（allUnknown）：不渲染市场 section 与覆盖矩阵，显示"该日期无可得的资本环境数据。请选择一个有可靠数据的日期。"（居中浅灰文字）。
 
@@ -103,43 +98,38 @@
 | `incomplete_reconstruction` | 无法还原 | `bg-market-down-soft text-market-down` |
 
 颜色说明：
-- `bg-market-up-soft` / `text-market-up`：A股口径，**绿**=涨=可得（与西方惯例相反）
-- `bg-market-down-soft` / `text-market-down`：**红**=跌=缺失
+- `bg-market-up-soft` / `text-market-up`：**绿**只表示覆盖“可得”，不是涨跌方向
+- `bg-market-down-soft` / `text-market-down`：**红**表示未知/失败/无法还原
 - `bg-surface-muted` / `text-ink-secondary`：中性灰
 - `bg-surface-muted` / `text-ink-tertiary`：更浅灰（待复核）
+- 行情与市场表现图仍使用 A 股口径：**红涨、绿跌**；不要把覆盖状态色解释为行情方向。
 
-## 三、颜色变量（Tailwind 自定义令牌）
+## 三、视觉令牌（与每日盘面复盘一致）
 
 ```css
---canvas: #f8fafc;          /* 页面背景 */
---surface-base: #ffffff;     /* 卡片背景 */
---surface-raised: #fafbfc;   /* details 折叠卡背景 */
---surface-muted: #f1f5f9;    /* 摘要卡背景 */
---ink-primary: #0f172a;      /* 主要文字 */
---ink-secondary: #475569;    /* 次要文字 */
---ink-tertiary: #94a3b8;     /* 浅文字 */
---border-hairline: #e2e8f0;  /* 边框 */
---brand: #2563eb;            /* 主色（链接/按钮） */
---brand-foreground: #ffffff; /* 主色文字 */
---market-up: #16a34a;        /* 涨/可得（A股口径=绿） */
---market-up-soft: #dcfce7;   /* 涨/可得 浅底 */
---market-down: #dc2626;      /* 跌/缺失（A股口径=红） */
---market-down-soft: #fee2e2; /* 跌/缺失 浅底 */
+--ink: #13211f;       /* 米白卡片上的正文 */
+--paper: #f6f1e7;     /* 主卡片背景 */
+--paper-2: #eee6d7;   /* 次级证据区 */
+--line: #d8cdbb;      /* 卡片与表格边框 */
+--red: #bf332d;       /* A股上涨/高风险 */
+--green: #19724b;     /* A股下跌/可得覆盖 */
+--gold: #ba8a35;      /* 眉题、重点与中性强调 */
+--muted: #756f66;     /* 次级文字 */
+--canvas: #18221f;    /* 深墨绿网格背景 */
+--market-up-soft: #d8eedf;
+--market-down-soft: #edd8d2;
 ```
 
 ## 四、视觉规范
 
-- **容器**：`mx-auto max-w-4xl px-6 py-12`
-- **章节间距**：`space-y-8`
-- **市场标题**：`flex items-center justify-between`，标题 h2 `text-lg font-semibold`
-- **维度网格**：`grid gap-2 sm:grid-cols-2`
-- **折叠卡**：
-  - 闭合态：`rounded-lg border border-border-hairline bg-surface-raised px-4 py-3`
-  - 展开态：`open:bg-surface-base`（添加 Tailwind 变体）
-  - summary：`flex cursor-pointer items-center justify-between gap-2 list-none`（去掉默认三角）
-  - 维度名：`text-sm font-medium text-ink-primary`
-  - 徽章：`rounded-full px-2 py-0.5 font-mono text-xs`
-- **展开内容**：`mt-3 space-y-2 font-mono text-xs text-ink-secondary`
+- **页面壳层**：深墨绿 `#18221f` + 24px 网格纹理；内容最大宽度 1180px。
+- **字体**：正文使用 `Noto Serif SC / Songti SC / STSong`；数字、时间、状态和来源使用等宽字体。
+- **页首**：金色英文眉题、超大中文标题、右侧点时信息，结构与每日复盘 `.masthead` 相同。
+- **卡片**：米白纸张底、细棕边、`5px 5px` 深色硬投影，不使用后台式圆角浮层。
+- **重点区**：摘要/研判用金色左边线，风险用红色左边线，次级证据区使用 `paper-2`。
+- **市场标题**：深色背景上的浅色标题与分隔线；维度卡保持 3/2/1 列响应式网格。
+- **徽章**：沿用 available/partial/unknown 语义，但颜色值改为每日复盘的绿/金/红纸张色。
+- **图表**：轴线与文字使用纸张体系色，主趋势线用金色；A股涨跌仍保持红涨绿跌。
 
 ## 五、键盘与可达性
 
