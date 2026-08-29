@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "company": "样例设备",
+    "ticker": "000001.SZ",
+    "exchange": "深交所",
+    "as_of": "2026-08-29",
+    "accessed_at": "2026-08-29T16:00:00+08:00",
+    "period": "1个月到6个月",
+    "mode": "深度报告",
+    "confidence": "中"
+  },
+  "summary": {
+    "research_label": "观察",
+    "market_view": "市场将公司主要视为周期设备供应商。",
+    "evidence_view": "已披露订单和产能利用率显示核心产品需求尚未完全验证。",
+    "expectation_gap": "若订单确认节奏快于当前披露，收入兑现可能高于市场已反映的水平。",
+    "valuation_view": "PE只适合作为交叉验证，需结合中周期利润和现金转换。",
+    "primary_risk": "客户资本开支延后会压缩订单和产能利用率。"
+  },
+  "evidence": [
+    {
+      "label": "上半年收入",
+      "content": "营业收入 12.4 亿元，同比增长 18%。",
+      "kind": "事实",
+      "observed_at": "2026-06-30",
+      "published_at": "2026-08-20",
+      "source_id": "annual-report"
+    },
+    {
+      "label": "利润弹性",
+      "content": "收入增长能否传导到利润，取决于产能利用率和产品结构。",
+      "kind": "推断"
+    },
+    {
+      "label": "预期差判断",
+      "content": "订单确认节奏是当前最值得继续核验的边际变量。",
+      "kind": "判断"
+    }
+  ],
+  "business_engine": [
+    {
+      "label": "利润公式",
+      "content": "收入 = 出货量 × 单价；利润弹性取决于利用率、产品结构和原材料成本。"
+    },
+    {
+      "label": "产业链位置",
+      "content": "公司处于设备交付环节，订单确认和验收节奏影响收入兑现。"
+    }
+  ],
+  "catalysts": [
+    {
+      "window": "1个月内",
+      "event": "中报业绩说明会",
+      "evidence": "公司公告日程",
+      "upside": "披露订单与利用率改善",
+      "downside": "订单确认延后"
+    },
+    {
+      "window": "3个月内",
+      "event": "下游资本开支数据发布",
+      "evidence": "行业协会月度数据",
+      "upside": "需求继续改善",
+      "downside": "行业库存回升"
+    }
+  ],
+  "valuation": {
+    "method": "中周期PE + 现金转换交叉验证",
+    "conclusion": "当前估值需结合利润正常化和订单兑现判断，不能只按低PE下结论。",
+    "scenarios": [
+      {"name": "悲观", "assumption": "订单延后、利用率回落", "trigger": "下游资本开支下修"},
+      {"name": "中性", "assumption": "订单按计划确认", "trigger": "维持当前披露节奏"},
+      {"name": "乐观", "assumption": "订单确认快于预期", "trigger": "新增客户和产能爬坡验证"}
+    ]
+  },
+  "risks": [
+    {"risk": "订单延后", "signal": "验收节奏低于公告预期", "trigger": "连续两个季度合同负债和收入背离", "impact": "收入兑现假设下修"},
+    {"risk": "现金转换恶化", "signal": "应收增速快于收入", "trigger": "经营现金流持续弱于净利润", "impact": "财务质量判断下修"},
+    {"risk": "行业需求反转", "signal": "下游资本开支下修", "trigger": "行业协会订单指标转弱", "impact": "盈利与估值假设重估"}
+  ],
+  "technical": {
+    "availability": "unknown",
+    "status_reason": "尚未取得可复核的OHLCV与复权口径，技术面未验证。"
+  },
+  "gaps": [
+    "订单金额与客户结构尚待投资者关系记录核验。",
+    "同行产能利用率口径不一致，暂不做强制排名。"
+  ],
+  "sources": [
+    {
+      "id": "annual-report",
+      "name": "样例设备2026年半年度报告",
+      "url": "https://example.com/annual-report"
+    }
+  ]
+}
