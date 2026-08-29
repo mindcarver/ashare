@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "headline": "某地发布低空经济示范航线和基础设施招标计划",
+    "market": "中国A股",
+    "as_of": "2026-08-29",
+    "accessed_at": "2026-08-29T16:00:00+08:00",
+    "source_trust": "中"
+  },
+  "news": {
+    "source_id": "policy-release",
+    "published_at": "2026-08-29",
+    "category": "政策类",
+    "strength": "中",
+    "one_line": "示范航线和基础设施招标若进入执行阶段，可能影响低空基础设施和运营服务环节的订单预期。"
+  },
+  "transmission_chain": {
+    "event": "地方发布示范航线和基础设施招标计划",
+    "industry_variable": "项目招标、基础设施建设和运营服务需求",
+    "company_impact": "直接中标方和已具备交付能力的供应商可能先获得订单验证",
+    "expectation_state": "市场是否已经交易该主题尚待结合股价和资金数据核验",
+    "verification_node": "招标公告、中标结果、合同金额和交付节奏"
+  },
+  "candidates": [
+    {
+      "rank": 1,
+      "company": "样例基建",
+      "ticker": "000001.SZ",
+      "tier": "一级受益",
+      "role": "低空基础设施交付",
+      "logic": "若中标公告确认，公司所在环节可能直接获得设备或工程订单。",
+      "evidence": "公司公告显示已参与相关试点项目。",
+      "market_priced": "待核验",
+      "score": {
+        "news_intensity": 16,
+        "relevance": 17,
+        "expectation_gap": 10,
+        "earnings_elasticity": 11,
+        "price_position": 0,
+        "sector_strength": 0,
+        "fund_trace": 0,
+        "pending": ["price_position", "sector_strength", "fund_trace"]
+      },
+      "verification": ["确认招标范围和公司中标资格", "核验订单金额占收入比例"],
+      "risk": "计划发布不等于项目实际招标或公司中标。"
+    },
+    {
+      "rank": 2,
+      "company": "样例运营",
+      "ticker": null,
+      "tier": "二级受益",
+      "role": "运营服务",
+      "logic": "示范航线运营若落地，服务环节可能受益，但收入确认路径较长。",
+      "evidence": "新闻仅提及行业方向，未确认公司参与资格。",
+      "market_priced": "待核验",
+      "score": {
+        "news_intensity": 14,
+        "relevance": 11,
+        "expectation_gap": 8,
+        "earnings_elasticity": 7,
+        "price_position": 0,
+        "sector_strength": 0,
+        "fund_trace": 0,
+        "pending": ["price_position", "sector_strength", "fund_trace"]
+      },
+      "verification": ["核验运营资质和航线资源", "核验商业化收费模式"],
+      "risk": "运营环节可能长期停留在示范阶段。"
+    },
+    {
+      "rank": 3,
+      "company": "样例概念",
+      "ticker": "代码待核验",
+      "tier": "三级概念",
+      "role": "概念映射",
+      "logic": "仅存在主题关联，尚未找到订单或收入证据。",
+      "evidence": "未取得公司公告或客户关系证据。",
+      "market_priced": "待核验",
+      "score": {
+        "news_intensity": 10,
+        "relevance": 4,
+        "expectation_gap": 5,
+        "earnings_elasticity": 3,
+        "price_position": 0,
+        "sector_strength": 0,
+        "fund_trace": 0,
+        "pending": ["price_position", "sector_strength", "fund_trace"]
+      },
+      "verification": ["核验实际业务收入占比"],
+      "risk": "概念热度不能替代业绩传导。"
+    }
+  ],
+  "deep_updates": [
+    {
+      "company": "样例基建",
+      "status": "仍无法确认",
+      "content": "尚未取得中标结果，维持订单弹性待核验。",
+      "impact": "关联强度和业绩弹性暂不加分。"
+    }
+  ],
+  "technical": [
+    {
+      "company": "样例基建",
+      "availability": "unknown",
+      "status_reason": "未取得可复核的OHLCV与复权口径，技术面未验证。"
+    }
+  ],
+  "watch_plan": [
+    {
+      "window": "1到3天",
+      "item": "跟踪招标公告与板块成交",
+      "strengthen": "出现公司中标资格或订单金额披露",
+      "weaken": "新闻无后续公告且主题热度回落"
+    },
+    {
+      "window": "1到2周",
+      "item": "核验公司订单与客户关系",
+      "strengthen": "披露正式合同或项目验收",
+      "weaken": "仅有概念宣传，无订单证据"
+    }
+  ],
+  "gaps": [
+    "股价位置、板块强度和资金痕迹缺少实时可核验数据，按待核验处理。",
+    "招标计划尚未对应到具体中标公司和合同金额。"
+  ],
+  "sources": [
+    {
+      "id": "policy-release",
+      "name": "样例地方政策发布",
+      "url": "https://example.com/policy-release"
+    }
+  ]
+}
