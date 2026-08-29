@@ -19,7 +19,7 @@
 import argparse
 import json
 import sys
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 # ============ 28 格数据 ============
@@ -28,7 +28,7 @@ CELLS = {
     # ---- 全球（2026-08-02 实测升级：IMF WEO + 各央行官网 + ICE BofA）----
     "global|growth": {
         "type": "gauge", "value": 3.0, "unit": "%", "min": 0, "max": 6,
-        "name": "2026 GDP增速预测", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "2026 GDP增速预测", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 3.1, "label": "4月预测 3.1%"}],
         "source": "imf-weo（IMF World Economic Outlook 2026/7/8 更新, 2026全球增速预测3.0%/2027 3.4%）",
         "observedAt": "2026-07-08", "publishedAt": "2026-07-08", "processingVersion": "v1.1", "availability": "available",
@@ -43,7 +43,7 @@ CELLS = {
     },
     "global|inflation": {
         "type": "gauge", "value": 4.4, "unit": "%", "min": 0, "max": 8,
-        "name": "全球通胀预测", "sections": [[0.25, "#16a34a"], [0.5, "#f59e0b"], [1, "#dc2626"]],
+        "name": "全球通胀预测", "sections": [[0.25, "#19724b"], [0.5, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.0, "label": "央合目标 ~2%"}],
         "source": "imf-weo（IMF WEO 2026/4, 全球通胀预测4.4%；7月版称下行趋势已停止）",
         "observedAt": "2026-04-14", "publishedAt": "2026-04-14", "processingVersion": "v1.1", "availability": "available",
@@ -58,7 +58,7 @@ CELLS = {
     },
     "global|liquidity": {
         "type": "bar", "categories": ["美联储", "欧央行", "日央行", "中国央行"],
-        "values": [6.74, 3.96, 5.8, 44.2], "colors": ["#2563eb", "#2563eb", "#2563eb", "#2563eb"], "unit": "$T/万亿",
+        "values": [6.74, 3.96, 5.8, 44.2], "colors": ["#ba8a35", "#ba8a35", "#ba8a35", "#ba8a35"], "unit": "$T/万亿",
         "source": "各央行官网：Fed总资产$6.74T(7/29, FRED WALCL)、ECB基准货币€3.96T(7/24周报)、BOJ资产约¥580万亿、PBoC约¥44.2万亿",
         "observedAt": "2026-07-29", "publishedAt": "2026-07-30", "processingVersion": "v1.1", "availability": "partial",
         "analysis": [
@@ -72,7 +72,7 @@ CELLS = {
     },
     "global|funding-price": {
         "type": "bar", "categories": ["美联储", "欧央行", "日央行", "中国央行"],
-        "values": [3.625, 2.25, 1.0, 1.40], "colors": ["#dc2626", "#dc2626", "#dc2626", "#dc2626"], "unit": "%",
+        "values": [3.625, 2.25, 1.0, 1.40], "colors": ["#bf332d", "#bf332d", "#bf332d", "#bf332d"], "unit": "%",
         "source": "各央行官网：Fed 3.50-3.75%区间中值(7/30维持)、ECB存款利率2.25%(7/23维持)、BOJ 1.0%(7/31维持)、PBoC 7天逆回购1.40%",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.1", "availability": "available",
         "analysis": [
@@ -86,7 +86,7 @@ CELLS = {
     },
     "global|risk-credit": {
         "type": "gauge", "value": 2.87, "unit": "%", "min": 0, "max": 8,
-        "name": "全球HY OAS代理", "sections": [[0.35, "#16a34a"], [0.65, "#f59e0b"], [1, "#dc2626"]],
+        "name": "全球HY OAS代理", "sections": [[0.35, "#19724b"], [0.65, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 4.61, "label": "3年高 4.61%"}],
         "source": "ice-bofa（ICE BofA US HY OAS 2.87%, 7/29 FRED；作全球信用代理；3年低2.59%/2025-01）",
         "observedAt": "2026-07-29", "publishedAt": "2026-07-30", "processingVersion": "v1.1", "availability": "partial",
@@ -101,7 +101,7 @@ CELLS = {
     },
     "global|market-breadth": {
         "type": "gauge", "value": 75, "unit": "%", "min": 0, "max": 100,
-        "name": "S&P 500 above 200D MA", "sections": [[0.3, "#dc2626"], [0.55, "#f59e0b"], [1, "#16a34a"]],
+        "name": "S&P 500 above 200D MA", "sections": [[0.3, "#bf332d"], [0.55, "#ba8a35"], [1, "#19724b"]],
         "markers": [{"value": 56, "label": "6月初 56%"}],
         "source": "global-breadth-proxies（Baird Five-for-Friday 7/31报告 S&P 500 ~75% above 200-day MA，作全球权益宽度主要代理；Investing.com S5TH 7/30收68.58%；STOXX 600/日经/MSCI ACWI 宽度公开覆盖不全）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.2", "availability": "partial",
@@ -116,7 +116,7 @@ CELLS = {
     },
     "global|institutional-positioning": {
         "type": "gauge", "value": -16.8, "unit": "K contracts", "min": -200, "max": 50,
-        "name": "S&P 500 CFTC净投机持仓", "sections": [[0.4, "#dc2626"], [0.6, "#f59e0b"], [1, "#16a34a"]],
+        "name": "S&P 500 CFTC净投机持仓", "sections": [[0.4, "#bf332d"], [0.6, "#ba8a35"], [1, "#19724b"]],
         "markers": [{"value": -42.6, "label": "7/8 -42.6K"}],
         "source": "global-positioning-proxies（CFTC COT S&P 500 净投机持仓 -16.8K contracts, 从 -38.9K 改善, CFTC 7/25周五发布, 覆盖截至7/22；作全球权益拥挤度代理；MSCI ACWI/13F合计因口径分散暂未聚合）",
         "observedAt": "2026-07-22", "publishedAt": "2026-07-25", "processingVersion": "v1.2", "availability": "partial",
@@ -133,7 +133,7 @@ CELLS = {
     # ---- 美国 ----
     "us|growth": {
         "type": "gauge", "value": 1.5, "unit": "%", "min": 0, "max": 6,
-        "name": "Q2 实际GDP年化", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "Q2 实际GDP年化", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.1, "label": "Q1 2.1%"}],
         "source": "us-bea（U.S. BEA, 二季度实际GDP年化季率初值）", "observedAt": "2026-06-30", "publishedAt": "2026-07-30",
         "processingVersion": "v1.0", "availability": "available",
@@ -148,7 +148,7 @@ CELLS = {
     },
     "us|inflation": {
         "type": "gauge", "value": 3.5, "unit": "%", "min": 0, "max": 6,
-        "name": "6月CPI同比", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "6月CPI同比", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.0, "label": "2%目标"}],
         "source": "us-bls（U.S. BLS, 6月CPI同比3.5%/核心2.6%；PCE 3.7%/核心3.3%）",
         "observedAt": "2026-06-30", "publishedAt": "2026-07-14", "processingVersion": "v1.0", "availability": "available",
@@ -192,7 +192,7 @@ CELLS = {
     },
     "us|risk-credit": {
         "type": "gauge", "value": 17.09, "unit": "", "min": 0, "max": 40,
-        "name": "VIX（7/31 -17.28%）", "sections": [[0.5, "#16a34a"], [0.75, "#f59e0b"], [1, "#dc2626"]],
+        "name": "VIX（7/31 -17.28%）", "sections": [[0.5, "#19724b"], [0.75, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 20, "label": "警戒 20"}, {"value": 35.3, "label": "年内高 35.3"}],
         "source": "us-cboe（CBOE VIX；SKEW 139.9；equity put/call 0.887；HY OAS 268bps 6%分位）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "available",
@@ -207,7 +207,7 @@ CELLS = {
     },
     "us|market-breadth": {
         "type": "bar", "categories": ["道指", "标普500", "纳指"],
-        "values": [1.2, 1.7, 2.8], "colors": ["#dc2626", "#dc2626", "#dc2626"], "unit": "%",
+        "values": [1.2, 1.7, 2.8], "colors": ["#bf332d", "#bf332d", "#bf332d"], "unit": "%",
         "source": "us-barchart（主要指数7/31涨跌幅；标普500仍低于50日均线0.42%，部分覆盖）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "partial",
         "analysis": [
@@ -221,7 +221,7 @@ CELLS = {
     },
     "us|institutional-positioning": {
         "type": "gauge", "value": 19.69, "unit": "x", "min": 10, "max": 30,
-        "name": "标普500远期PE", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "标普500远期PE", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 19.85, "label": "10年均值 19.85"}],
         "source": "us-factset（FactSet via TrendOnify, 远期PE 19.69, 10年47.5分位）",
         "observedAt": "2026-07-30", "publishedAt": "2026-07-30", "processingVersion": "v1.0", "availability": "available",
@@ -238,7 +238,7 @@ CELLS = {
     # ---- 中国 ----
     "cn|growth": {
         "type": "gauge", "value": 4.3, "unit": "%", "min": 0, "max": 8,
-        "name": "Q2 GDP同比", "sections": [[0.25, "#16a34a"], [0.5, "#f59e0b"], [0.75, "#dc2626"]],
+        "name": "Q2 GDP同比", "sections": [[0.25, "#19724b"], [0.5, "#ba8a35"], [0.75, "#bf332d"]],
         "markers": [{"value": 5.0, "label": "Q1 5.0%"}],
         "source": "cn-nbs（国家统计局, 二季度GDP同比4.3%/上半年4.7%）",
         "observedAt": "2026-06-30", "publishedAt": "2026-07-15", "processingVersion": "v1.0", "availability": "available",
@@ -298,7 +298,7 @@ CELLS = {
     },
     "cn|risk-credit": {
         "type": "gauge", "value": 84, "unit": "%", "min": 0, "max": 100,
-        "name": "A股上涨家数占比", "sections": [[0.3, "#dc2626"], [0.55, "#f59e0b"], [1, "#16a34a"]],
+        "name": "A股上涨家数占比", "sections": [[0.3, "#bf332d"], [0.55, "#ba8a35"], [1, "#19724b"]],
         "markers": [{"value": 50, "label": "涨跌平衡"}],
         "source": "cn-akshare-breadth（AkShare, 7/31上涨4691家/涨停103/跌停0；成交2.54万亿）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "available",
@@ -313,7 +313,7 @@ CELLS = {
     },
     "cn|market-breadth": {
         "type": "bar", "categories": ["上涨", "下跌", "平盘", "停牌"],
-        "values": [4691, 728, 115, 6], "colors": ["#dc2626", "#16a34a", "#94a3b8", "#cbd5e1"], "unit": "家",
+        "values": [4691, 728, 115, 6], "colors": ["#bf332d", "#19724b", "#756f66", "#d8cdbb"], "unit": "家",
         "source": "cn-akshare-index-sector（AkShare, 7/31收盘；上涨占比84%，情绪高）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "available",
         "analysis": [
@@ -326,7 +326,7 @@ CELLS = {
     },
     "cn|institutional-positioning": {
         "type": "gauge", "value": 25763, "unit": "亿元", "min": 0, "max": 40000,
-        "name": "两市融资余额", "sections": [[0.5, "#16a34a"], [0.75, "#f59e0b"], [1, "#dc2626"]],
+        "name": "两市融资余额", "sections": [[0.5, "#19724b"], [0.75, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 26065, "label": "7/30 26065亿（隔日）"}],
         "source": "cn-sse-szse（沪深交易所, 融资余额25763亿, 7/30环比-366.6亿）",
         "observedAt": "2026-07-30", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "available",
@@ -343,7 +343,7 @@ CELLS = {
     # ---- 韩国 ----
     "kr|growth": {
         "type": "gauge", "value": 3.0, "unit": "%", "min": 0, "max": 6,
-        "name": "2026 GDP增速预测", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "2026 GDP增速预测", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.0, "label": "原预测 2.0%"}],
         "source": "kr-moef（韩国企划财政部, 2026 GDP预测上调至3.0%, 7/14）",
         "observedAt": "2026-07-14", "publishedAt": "2026-07-14", "processingVersion": "v1.0", "availability": "partial",
@@ -358,7 +358,7 @@ CELLS = {
     },
     "kr|inflation": {
         "type": "gauge", "value": 3.2, "unit": "%", "min": 0, "max": 6,
-        "name": "6月CPI同比", "sections": [[0.33, "#16a34a"], [0.67, "#f59e0b"], [1, "#dc2626"]],
+        "name": "6月CPI同比", "sections": [[0.33, "#19724b"], [0.67, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.0, "label": "2%目标"}],
         "source": "kr-ecos（Bank of Korea ECOS, 6月CPI同比3.2%创30个月新高；核心2.5%）",
         "observedAt": "2026-06-30", "publishedAt": "2026-07-02", "processingVersion": "v1.0", "availability": "available",
@@ -388,7 +388,7 @@ CELLS = {
     },
     "kr|funding-price": {
         "type": "gauge", "value": 2.75, "unit": "%", "min": 0, "max": 6,
-        "name": "BOK基准利率", "sections": [[0.5, "#16a34a"], [0.75, "#f59e0b"], [1, "#dc2626"]],
+        "name": "BOK基准利率", "sections": [[0.5, "#19724b"], [0.75, "#ba8a35"], [1, "#bf332d"]],
         "markers": [{"value": 2.5, "label": "加息前 2.50%"}],
         "source": "kr-ecos（BOK, 7/16加息25bp至2.75%, 2023年1月来首次；韩3Y国债3.848%）",
         "observedAt": "2026-07-16", "publishedAt": "2026-07-16", "processingVersion": "v1.0", "availability": "available",
@@ -403,7 +403,7 @@ CELLS = {
     },
     "kr|risk-credit": {
         "type": "gauge", "value": 17.91, "unit": "%", "min": -25, "max": 25,
-        "name": "KOSPI单日涨跌", "sections": [[0.5, "#16a34a"], [0.5, "#f59e0b"]],
+        "name": "KOSPI单日涨跌", "sections": [[0.5, "#19724b"], [0.5, "#ba8a35"]],
         "markers": [{"value": 0, "label": "0%"}],
         "source": "kr-krx（Korea Exchange, KOSPI 7/31收6595.45, 单日+17.91%历史最大涨幅）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "available",
@@ -418,7 +418,7 @@ CELLS = {
     },
     "kr|market-breadth": {
         "type": "bar", "categories": ["KOSPI", "日经225"],
-        "values": [17.91, 4.03], "colors": ["#dc2626", "#dc2626"], "unit": "%",
+        "values": [17.91, 4.03], "colors": ["#bf332d", "#bf332d"], "unit": "%",
         "source": "kr-krx（7/31日韩指数涨幅；KOSDAQ 791.84(7/16), 部分覆盖）",
         "observedAt": "2026-07-31", "publishedAt": "2026-07-31", "processingVersion": "v1.0", "availability": "partial",
         "analysis": [
@@ -431,7 +431,7 @@ CELLS = {
     },
     "kr|institutional-positioning": {
         "type": "bar", "categories": ["外资", "机构", "散户"],
-        "values": [5959, 16480, -21647], "colors": ["#dc2626", "#dc2626", "#16a34a"], "unit": "亿韩元",
+        "values": [5959, 16480, -21647], "colors": ["#bf332d", "#bf332d", "#19724b"], "unit": "亿韩元",
         "source": "kr-krx（7/21外资净流入5,959亿韩元、机构净流入1.65万亿、散户净流出2.16万亿；7/15外资曾净流入2.32万亿）",
         "observedAt": "2026-07-21", "publishedAt": "2026-07-21", "processingVersion": "v1.1", "availability": "partial",
         "analysis": [
@@ -588,8 +588,6 @@ def validate_cells(cells, as_of):
 ARGS = parse_args()
 AS_OF_DATE = parse_date(ARGS.as_of, "--as-of")
 AS_OF = AS_OF_DATE.isoformat()
-YESTERDAY = (AS_OF_DATE - timedelta(days=1)).isoformat()
-LAST_WEEK = (AS_OF_DATE - timedelta(days=7)).isoformat()
 RECORD_CATALOG = load_records(ARGS.cells)
 validate_record_catalog(RECORD_CATALOG)
 CELLS = select_cells(RECORD_CATALOG, AS_OF_DATE)
@@ -811,68 +809,78 @@ template = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
 :root{
-  --canvas:#f8fafc;
-  --surface-base:#ffffff;
-  --surface-raised:#fafbfc;
-  --surface-muted:#f1f5f9;
-  --ink-primary:#0f172a;
-  --ink-secondary:#475569;
-  --ink-tertiary:#94a3b8;
-  --border-hairline:#e2e8f0;
-  --brand:#2563eb;
-  --brand-foreground:#ffffff;
-  --market-up:#16a34a;
-  --market-up-soft:#dcfce7;
-  --market-down:#dc2626;
-  --market-down-soft:#fee2e2;
+  --ink:#13211f;
+  --paper:#f6f1e7;
+  --paper-2:#eee6d7;
+  --line:#d8cdbb;
+  --red:#bf332d;
+  --green:#19724b;
+  --gold:#ba8a35;
+  --muted:#756f66;
+  --canvas:#18221f;
+  --surface-base:var(--paper);
+  --surface-raised:var(--paper);
+  --surface-muted:var(--paper-2);
+  --ink-primary:var(--ink);
+  --ink-secondary:#5f584e;
+  --ink-tertiary:var(--muted);
+  --border-hairline:var(--line);
+  --brand:var(--gold);
+  --brand-foreground:#18221f;
+  --market-up:var(--green);
+  --market-up-soft:#d8eedf;
+  --market-down:var(--red);
+  --market-down-soft:#edd8d2;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--canvas);color:var(--ink-primary);
-  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;}
+body{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}
 main{min-height:100vh}
-.container{max-width:72rem;margin:0 auto;padding:2.5rem 1.5rem}
+.container{max-width:1180px;margin:0 auto;padding:32px 20px 56px}
 .badge{display:inline-flex;align-items:center;border-radius:9999px;padding:0.125rem 0.5rem;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.7rem;line-height:1rem;white-space:nowrap}
+  font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.04em;white-space:nowrap}
 .badge-up{background:var(--market-up-soft);color:var(--market-up)}
 .badge-down{background:var(--market-down-soft);color:var(--market-down)}
 .badge-mid{background:var(--surface-muted);color:var(--ink-secondary)}
 .badge-muted{background:var(--surface-muted);color:var(--ink-tertiary)}
-.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;margin-top:1.25rem;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.68rem;color:var(--ink-secondary)}
+.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;margin-top:10px;padding:20px;
+  background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25);
+  font-family:"SFMono-Regular",Consolas,monospace;font-size:0.68rem;color:var(--ink-secondary)}
 .matrix-cell{display:flex;align-items:center;justify-content:center;padding:4px 2px;border-radius:4px;min-height:1.4rem;text-align:center}
 .matrix-cell.a{background:var(--market-up-soft);color:var(--market-up)}
 .matrix-cell.p{background:var(--surface-muted);color:var(--ink-secondary)}
 .matrix-cell.u{background:var(--market-down-soft);color:var(--market-down)}
 .matrix-cell.lbl{background:transparent;justify-content:flex-start;padding-left:2px;color:var(--ink-primary);font-weight:600}
-.matrix-legend{display:flex;gap:0.75rem;margin-top:0.5rem;font-size:0.7rem;color:var(--ink-tertiary)}
+.matrix-legend{display:flex;gap:0.75rem;margin:0.75rem 0 0;font-size:0.7rem;color:#cfc5b4}
 .matrix-legend span{display:inline-flex;align-items:center;gap:4px}
 .swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
-.empty-state{margin-top:1.25rem;padding:2.5rem 1.25rem;text-align:center;color:var(--ink-tertiary);background:var(--surface-muted);border:1px dashed var(--border-hairline);border-radius:0.5rem;font-size:0.875rem}
-.summary-box{background:var(--surface-muted);border:1px solid var(--border-hairline);border-radius:0.5rem;padding:0.875rem 1.25rem;margin-top:1.25rem}
+.empty-state{margin-top:10px;padding:72px 20px;text-align:center;color:var(--muted);background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25);font-size:17px}
+.summary-box{background:#e3d4bc;border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .summary-box p{margin:0}
 .summary-box .overview{font-size:0.875rem;color:var(--ink-secondary)}
 .summary-box .disclaimer{margin-top:0.375rem;font-size:0.7rem;color:var(--ink-tertiary)}
 /* AI 综合研判卡 */
-.takeaway-box{background:var(--surface-base);border:1px solid var(--border-hairline);border-left:3px solid var(--brand);border-radius:0.5rem;padding:0.75rem 1.25rem;margin-top:1rem}
+.takeaway-box{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .takeaway-box .tw-head{font-size:0.8rem;font-weight:600;color:var(--ink-primary);margin-bottom:0.5rem}
 .takeaway-box .tw-list{display:flex;flex-direction:column;gap:0.375rem}
 .takeaway-box .tw-item{display:flex;align-items:flex-start;gap:0.5rem;font-size:0.78rem;line-height:1.5;color:var(--ink-secondary)}
-.takeaway-box .tw-tag{flex:0 0 auto;background:var(--brand);color:var(--brand-foreground);border-radius:4px;padding:0.05rem 0.4rem;font-size:0.68rem;font-weight:600;margin-top:0.15rem}
+.takeaway-box .tw-tag{flex:0 0 auto;background:var(--gold);color:#18221f;padding:0.05rem 0.4rem;font:700 0.68rem/1.2 "SFMono-Regular",Consolas,monospace;margin-top:0.15rem}
 .takeaway-box .tw-txt{color:var(--ink-secondary)}
 /* 风险信号清单卡 */
-.risk-box{background:var(--surface-base);border:1px solid var(--border-hairline);border-left:3px solid var(--market-down);border-radius:0.5rem;padding:0.75rem 1.25rem;margin-top:0.625rem}
+.risk-box{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--red);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .risk-box .tw-head{font-size:0.8rem;font-weight:600;color:var(--ink-primary);margin-bottom:0.5rem}
 .risk-section{margin-bottom:0.5rem}
 .risk-section:last-child{margin-bottom:0}
 .risk-title{font-size:0.72rem;font-weight:600;margin-bottom:0.25rem}
 .risk-high .risk-title{color:var(--market-down)}
-.risk-medium .risk-title{color:#b45309}
+.risk-medium .risk-title{color:#a45729}
 .risk-low .risk-title{color:var(--market-up)}
 .risk-section .tw-item{font-size:0.75rem}
 .risk-section .tw-tag{background:transparent;border:1px solid var(--border-hairline);color:var(--ink-tertiary)}
 /* 板块倾向建议卡（研究参考，仅建议） */
-.sector-advice-box{background:var(--surface-base);border:1px solid var(--border-hairline);border-left:3px solid #f59e0b;border-radius:0.5rem;padding:0.75rem 1.25rem;margin-top:0.625rem}
+.sector-advice-box{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .sector-advice-box .tw-head{font-size:0.8rem;font-weight:600;color:var(--ink-primary);margin-bottom:0.375rem}
 .sa-disclaimer{margin:0 0 0.625rem 0;font-size:0.7rem;color:var(--ink-tertiary);line-height:1.5}
 .sa-mkt{margin-bottom:0.75rem;border-top:1px dashed var(--border-hairline);padding-top:0.5rem}
@@ -880,7 +888,7 @@ main{min-height:100vh}
 .sa-mkt-name{font-size:0.78rem;font-weight:600;color:var(--ink-primary);display:inline-block;margin-right:0.5rem}
 .sa-mkt-date{font-size:0.68rem;color:var(--ink-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
 .sa-list{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.375rem}
-.sa-item{border:1px solid var(--border-hairline);border-radius:0.375rem;padding:0.5rem 0.625rem;background:var(--surface-raised)}
+.sa-item{border:1px solid var(--line);padding:0.5rem 0.625rem;background:var(--paper-2)}
 .sa-item .sa-sector{font-size:0.78rem;font-weight:600;color:var(--ink-primary)}
 .sa-item .sa-stance{float:right;border-radius:9999px;padding:0.05rem 0.5rem;font-size:0.68rem;font-weight:600;margin-left:0.5rem}
 .sa-item .sa-stance.st-up{background:var(--market-up-soft);color:var(--market-up)}
@@ -892,23 +900,23 @@ main{min-height:100vh}
 /* 每格风险点 */
 .risk-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}
 .risk-dot.rk-high{background:var(--market-down)}
-.risk-dot.rk-medium{background:#f59e0b}
+.risk-dot.rk-medium{background:var(--gold)}
 .risk-dot.rk-low{background:var(--market-up)}
 
 /* 每格 AI 分析摘要 */
-.cell-analysis{margin-top:0.5rem;padding:0.5rem 0.625rem;background:var(--surface-muted);border-radius:0.375rem;border:1px dashed var(--border-hairline)}
+.cell-analysis{margin-top:0.5rem;padding:0.5rem 0.625rem;background:var(--paper-2);border-left:3px solid var(--gold)}
 .cell-analysis .an-head{font-size:0.68rem;font-weight:600;color:var(--brand);margin-bottom:0.25rem;letter-spacing:0.02em}
 .cell-analysis .an-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0.2rem}
 .cell-analysis .an-list li{display:flex;gap:0.375rem;font-size:0.7rem;line-height:1.45;color:var(--ink-secondary)}
-.cell-analysis .an-lens{flex:0 0 auto;background:var(--brand);color:var(--brand-foreground);border-radius:3px;padding:0 0.3rem;font-size:0.62rem;font-weight:600;height:1.15rem;line-height:1.15rem;margin-top:0.1rem}
+.cell-analysis .an-lens{flex:0 0 auto;background:var(--gold);color:#18221f;padding:0 0.3rem;font-size:0.62rem;font-weight:700;height:1.15rem;line-height:1.15rem;margin-top:0.1rem}
 .cell-analysis .an-txt{color:var(--ink-secondary)}
 section.market{margin-top:2rem}
-.market-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
-.market-head h2{font-size:1.125rem;font-weight:600;margin:0;color:var(--ink-primary)}
+.market-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;padding-bottom:12px;border-bottom:1px solid rgba(248,242,230,.25)}
+.market-head h2{font-size:1.25rem;font-weight:700;margin:0;color:#f8f2e6}
 .market-grid{display:grid;gap:0.625rem}
 @media (min-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1024px){.market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.cell{border:1px solid var(--border-hairline);border-radius:0.5rem;padding:0.625rem;background:var(--surface-raised)}
+.cell{border:1px solid var(--line);padding:14px;background:var(--paper);box-shadow:5px 5px 0 rgba(12,18,16,.25)}
 .cell-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.25rem}
 .cell-name{font-size:0.8rem;font-weight:500;color:var(--ink-primary)}
 .chart-box{width:100%;height:180px}
@@ -916,31 +924,24 @@ section.market{margin-top:2rem}
   font-size:0.75rem;text-align:center;padding:0 0.5rem}
 .cell-evidence{margin-top:0.25rem;padding-top:0.25rem;border-top:1px dashed var(--border-hairline);
   font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.62rem;color:var(--ink-tertiary);line-height:1.3}
-header .breadcrumb{display:flex;align-items:center;gap:0.75rem;font-size:0.875rem;color:var(--ink-tertiary)}
-header .breadcrumb a{color:var(--ink-tertiary);text-decoration:none}
-header .breadcrumb a:hover{color:var(--brand)}
-header h1{font-size:1.5rem;font-weight:700;margin:0.5rem 0 0 0}
-header .asof{color:var(--ink-secondary);margin:0.25rem 0 0 0}
-nav.dates{margin-top:1rem;display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem;font-size:0.875rem}
-nav.dates a,nav.dates button{border:1px solid var(--border-hairline);border-radius:0.375rem;padding:0.25rem 0.625rem;
-  color:var(--ink-secondary);background:transparent;text-decoration:none;font:inherit;cursor:pointer}
-nav.dates a:hover,nav.dates button:hover{background:var(--surface-muted)}
-nav.dates input[type=date]{border:1px solid var(--border-hairline);border-radius:0.375rem;background:var(--surface-base);
-  padding:0.25rem 0.5rem;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.875rem;color:var(--ink-primary)}
-nav.dates button.primary{background:var(--brand);color:var(--brand-foreground);border-color:var(--brand)}
-nav.dates button.primary:hover{opacity:0.9}
+.masthead{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}
+.eyebrow{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}
+.masthead h1{font-size:clamp(34px,6vw,68px);line-height:.95;letter-spacing:-.06em;margin:0}
+.masthead .asof{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right;margin:0}
+.snapshot-note{color:#cfc5b4;font-size:12px;line-height:1.7;margin:16px 0 24px}
+code,.cell-evidence,.sa-mkt-date{font-family:"SFMono-Regular",Consolas,monospace}
+@media(max-width:760px){.container{padding:22px 14px 40px}.masthead{display:block}.masthead .asof{text-align:left;margin-top:16px}.matrix-wrap{overflow-x:auto;padding:14px}.market-grid{grid-template-columns:1fr}.cell{padding:12px}}
 </style>
 </head>
 <body>
 <main>
 <div class="container">
-  <header>
-    <div class="breadcrumb"><a href="/console">← 返回运营台</a></div>
-    <h1>资本环境仪表盘</h1>
-    <p class="asof">回放日期：{{AS_OF}}</p>
+  <header class="masthead">
+    <div><p class="eyebrow">GLOBAL / CAPITAL ENVIRONMENT</p><h1>资本环境</h1></div>
+    <p class="asof">回放日期 {{AS_OF}}<br />静态点时快照<br />4 市场 × 7 维度</p>
   </header>
 
-  <p class="asof">这是静态点时快照；请用生成器的 <code>--as-of YYYY-MM-DD</code> 生成其他日期，避免 URL 参数显示未筛选数据。</p>
+  <p class="snapshot-note">请用生成器的 <code>--as-of YYYY-MM-DD</code> 生成其他日期，避免 URL 参数显示未筛选数据。</p>
 
   <div class="summary-box">
     <p class="overview">{{OVERVIEW}}</p>
@@ -957,8 +958,8 @@ nav.dates button.primary:hover{opacity:0.9}
 <script>
 const CELLS = {{CELLS_JSON}};
 
-const upColor = '#16a34a', downColor = '#dc2626', inkColor = '#0f172a',
-      secColor = '#475569', terColor = '#94a3b8', lineColor = '#2563eb';
+const upColor = '#19724b', downColor = '#bf332d', inkColor = '#13211f',
+      secColor = '#756f66', terColor = '#9a9287', lineColor = '#ba8a35';
 
 function evid(cfg){
   const ev = document.getElementById(cfg.evId);
@@ -1018,12 +1019,12 @@ function renderLine(el, cfg){
     grid: { left: 40, right: 14, top: 18, bottom: 22 },
     xAxis: { type: 'category', data: cfg.dates || [],
       axisLine: { lineStyle: { color: secColor } }, axisLabel: { color: terColor, fontSize: 8 }, axisTick: { show: false } },
-    yAxis: { type: 'value', scale: true, axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: { type: 'value', scale: true, axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: '#e5dac7' } } },
     series: [{
       type: 'line', data: cfg.values || [], smooth: true, symbol: 'circle', symbolSize: 5,
       lineStyle: { color: lineColor, width: 2 }, itemStyle: { color: lineColor },
       areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1,
-        colorStops: [{offset:0,color:'rgba(37,99,235,0.18)'},{offset:1,color:'rgba(37,99,235,0)'}] } },
+        colorStops: [{offset:0,color:'rgba(186,138,53,0.2)'},{offset:1,color:'rgba(186,138,53,0)'}] } },
       markLine: (cfg.markLines || []).map(function(m){
         return { name: m.label, yAxis: m.value, lineStyle: { color: downColor, type: 'dashed', width: 1 },
                  label: { formatter: m.label, color: downColor, fontSize: 8, position: 'insideEndTop' } };
@@ -1042,7 +1043,7 @@ function renderBar(el, cfg){
     xAxis: { type: 'category', data: cfg.categories || [],
       axisLabel: { color: terColor, fontSize: 9 }, axisTick: { show: false },
       axisLine: { lineStyle: { color: secColor } } },
-    yAxis: { type: 'value', axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: { type: 'value', axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: '#e5dac7' } } },
     series: [{
       type: 'bar', data: (cfg.values || []).map(function(v, i){
         return { value: v, itemStyle: { color: (cfg.colors || [])[i] || secColor, borderRadius: [3,3,0,0] } };
@@ -1078,7 +1079,7 @@ Object.keys(CELLS).forEach(function(key){ renderCell(key, CELLS[key]); });
 """
 
 html = (template
-        .replace("{{AS_OF}}", AS_OF).replace("{{YESTERDAY}}", YESTERDAY).replace("{{LAST_WEEK}}", LAST_WEEK)
+        .replace("{{AS_OF}}", AS_OF)
         .replace("{{OVERVIEW}}", overview).replace("{{DISCLAIMER}}", DISCLAIMER)
         .replace("{{TAKEAWAYS_HTML}}", takeaway_html())
         .replace("{{SECTOR_ADVICE_HTML}}", sector_advice_html())

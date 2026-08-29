@@ -107,6 +107,24 @@ class DashboardGeneratorTests(unittest.TestCase):
         self.assertLessEqual(html[takeaway_start:risk_start].count('class="tw-item"'), 8)
         self.assertLessEqual(html[risk_start:matrix_start].count('class="tw-item"'), 8)
 
+    def test_html_uses_daily_market_review_visual_system(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "styled.html"
+            self.run_generator("--as-of", "2026-07-31", "--out", out)
+            html = out.read_text(encoding="utf-8")
+
+        self.assertIn("--ink:#13211f", html)
+        self.assertIn("--paper:#f6f1e7", html)
+        self.assertIn("--line:#d8cdbb", html)
+        self.assertIn("background:#18221f", html)
+        self.assertIn('font-family:"Noto Serif SC","Songti SC",STSong,serif', html)
+        self.assertIn('class="masthead"', html)
+        self.assertIn("GLOBAL / CAPITAL ENVIRONMENT", html)
+        self.assertIn("box-shadow:5px 5px 0 rgba(12,18,16,.25)", html)
+        self.assertNotIn("--canvas:#f8fafc", html)
+        cells = html_cells(html)
+        self.assertEqual(cells["cn|market-breadth"]["colors"][:2], ["#bf332d", "#19724b"])
+
 
 if __name__ == "__main__":
     unittest.main()
