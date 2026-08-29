@@ -102,6 +102,32 @@
    - DR007、SHIBOR 隔夜、SOFR、信用利差召回失败率高 → 直接 WebSearch
    - westock-data `quote usVIX` 返回"数据为空" → WebSearch
 4. **WebSearch 鉴别内容农场**：AI 生成农场站（如 fazen.markets）数据自相矛盾，与 neodata 交叉验证矛盾即弃用。
+
+## 五·六、westock MCP 实战路由（2026-08-24 实测沉淀）
+
+> westock-mcp 已连接时优先用工具而非 neodata 脚本，一次调用可顶多轮 WebSearch。
+
+| 工具 | 用途 | 实测要点 |
+|---|---|---|
+| `data_market_overview type=all date=YYYY-MM-DD` | **A 股一格顶七格**：三大指数收盘/区间统计/技术指标/涨跌分布（涨跌家数、新高新低、涨停跌停）/两融变动/估值分位/风格轮动 | 当日复盘首选；type 子项（summary/trade/updown/valuation/rotation/technical）可单查；margin 变动表偶有空行需 WebSearch 补 |
+| `data_macro names=macro_lpr,...` | 中美宏观事件库 | **必须用 listCode**（mode=list 先查目录，如 macro_lpr/macro_us_inflation），中文名直接报"未识别"；names 传多个 listCode 一次拉全 |
+| `data_macro` 大结果落盘 | 返回 >10 万字符自动存 tool-results 目录 | 用 python 读文件按 OccurDate 过滤 2026 最新期，切忌整读 |
+| `data_kline/data_quote codes=多码` | 指数/个股行情 | 批量码一次返回，适合拉全球指数对照 |
+
+**新增免费源（本轮验证）**：
+- **chartrow.com/sp500/market-breadth**：S&P 500 多档均线占比 + 涨跌家数 + 52 周新高新低，实时刷新，优于 Barchart（后者只给 S5TH 单档）。
+- **MOEF 官网英文版（english.mofe.go.kr）最新指标栏**：韩国利率体系一次拿全（BOK 基准/隔夜拆借/KORIBOR/CD/3Y/5Y 国债/公司债 AA-），日更新，是韩国「资金价格」格最优源。
+- **MOEF 官网 LATEST INDICATORS 同时给 KOSPI/KOSDAQ/汇率**：韩国宽度格可复用。
+- **证券时报数据宝两融周报**（stcn.com）：两融余额逐日序列 + 分行业融资流向，比交易所原始披露更易采信。
+
+**事件时间锚（本轮）**：美 Q2 GDP 二读 8/26、BOK 议息 8/27、Jackson Hole 8/27-29、9/4 非农——复盘报告中应标注「即将到来的验证点」。
+
+## 五·七、westock MCP 补充实测（2026-08-29 沉淀）
+
+- **`data_macro` 两类 listCode 必须区分**：指标库类（`macro_gdp`/`macro_cpi_ppi`/`macro_financing`/`macro_fundquantity`，带 `*_INFO_DATE` 发布日期字段）数据新鲜可用；**事件日历类（`macro_lpr`/`macro_us_*`/`macro_caixin_pmi`）数据陈旧错乱**（会返回 2025/12、2026/2 等过期期次），最新值一律 WebSearch 交叉，勿信接口。
+- **`data_market_overview type=margin`**：row 偶发为空（仅返回 schema），连续多日（8/26-8/28 实测）无数据 → 两融改走证券时报数据宝（stcn.com）WebSearch。
+- **韩国收盘与外资流向一条龙**：`data_finsearch` 关键词「韩国 KOSPI 外资」可命中 ajudaily（亚洲日报中文版）单条新闻全覆盖（KOSPI/KOSDAQ 收盘、外资/机构/个人净流向、汇率），比 KRX 官网易取。
+- **禁词扫描（生成 HTML 交付前）**：grep 连「融资买入额」「净卖出」等资金术语都会命中「买入/卖出」禁词——统一改写为「融资额」「净流出」措辞；生成器 `--check` 通过后仍要对最终 HTML 再跑一遍 `grep -oE` 确认。
 5. **时效口径**：先确定今天是否交易日、指标发布频率，禁止把上月值说成当月。
 6. **asOf 回放语义**：asOf 必须严格大于等于所有 published_at；越界数据剔除，缺数据 = `未知`。
 7. **跨市场不串味**：任何一格只能填该市场的数据，缺数据 = `未知` + statusReason。

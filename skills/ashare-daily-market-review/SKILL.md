@@ -87,6 +87,15 @@ python3 scripts/generate_daily_review.py \
 - 相同输入和as-of是否产生相同Markdown、JSON和SHA。
 - 是否避免隐藏总分、个股推荐、买卖、目标价和仓位指令；情绪状态是否只作为市场观察。
 
+## 实测口径经验（2026-08-29 沉淀）
+
+- **涨停家数供应商口径差**：腾讯自选股 `data_changedist`（全样本含ST）与财联社盘后统计（不含ST/退市）存在 ±1 家差异（如 8/28：83 vs 82）。处理：`breadth` 用腾讯全样本口径、`short_term_sentiment` 用财联社口径，在 `methodology` 中并列说明；并核验差异不改变情绪状态触发。
+- **封板尝试次数反推**：财联社披露炸板数与封板率时，`limit_attempts = 涨停数 + 炸板数`（同一来源同一口径），勿用"最终涨停家数"替代分母。
+- **两融滞后**：`data_market_overview type=margin` 的 row 常为空（仅 schema），当日复盘若两融未发布，标 partial 或改用证券时报数据宝 WebSearch。
+- **5日成交均值口径**：用上证+深证成指指数 K 线 amount 加总近似（不含北交所），口径写入 `status_reason`。
+- **`data_quote` 历史日期参数**可取前一交易日收盘，用于 `previous_amount` 核验。
+- **事件文本禁词**：质量门 FORBIDDEN 检查覆盖事件描述——写事件时避免「目标价」等词（如"机构上调目标价"改为"上调其股价预期"）。
+
 修改脚本后运行：
 
 ```bash
