@@ -39,10 +39,12 @@ class CompanyResearchHtmlTests(unittest.TestCase):
         self.assertIn('font-family:"Noto Serif SC","Songti SC",STSong,serif', html)
         self.assertIn("A-SHARE / COMPANY RESEARCH", html)
         self.assertIn("box-shadow:5px 5px 0 rgba(12,18,16,.25)", html)
-        for heading in ("研究结论", "关键证据台账", "业务与利润引擎", "催化剂日历", "估值与情景", "风险与证伪", "技术面", "信息来源"):
+        for heading in ("当前研究命题", "市场定价什么", "已验证事实", "下一步验证", "催化剂", "证伪信号", "技术面", "信息来源"):
             self.assertIn(heading, html)
         self.assertIn("技术面未验证", html)
         self.assertIn("样例设备2026年半年度报告", html)
+        self.assertEqual(html.count('class="signal '), 5)
+        self.assertIn("展开关键证据台账", html)
 
     def test_rejects_fact_without_source(self):
         data = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -70,6 +72,24 @@ class CompanyResearchHtmlTests(unittest.TestCase):
             result = self.run_generator(path, Path(tmp) / "report.html", expected_returncode=2)
 
         self.assertIn("来源 URL 必须是 http 或 https", result.stderr)
+
+    def test_rejects_dashboard_without_five_compact_signals(self):
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        data["dashboard"]["signals"] = data["dashboard"]["signals"][:4]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_input(tmp, data)
+            result = self.run_generator(path, Path(tmp) / "report.html", expected_returncode=2)
+
+        self.assertIn("恰好包含5个关键信号", result.stderr)
+
+    def test_rejects_overlong_dashboard_signal(self):
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        data["dashboard"]["signals"][0]["detail"] = "过长" * 31
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_input(tmp, data)
+            result = self.run_generator(path, Path(tmp) / "report.html", expected_returncode=2)
+
+        self.assertIn("首层必须可扫读", result.stderr)
 
     def test_output_is_deterministic(self):
         with tempfile.TemporaryDirectory() as first_tmp, tempfile.TemporaryDirectory() as second_tmp:
