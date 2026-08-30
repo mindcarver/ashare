@@ -21,6 +21,7 @@ description: 生成可审计的A股每日盘面复盘，覆盖主要指数、成
 
 - `market_date`：正在复盘的交易日。
 - `as_of`：报告可使用信息的截止日期。
+- `snapshot.type/cutoff_at/revision`：区分收盘、盘后和周末补充；同日修订不能覆盖旧快照。
 - 板块分类体系，例如申万一级；不能混合多个体系排序。
 - 资金数据的方法定义；“主力资金”等供应商推导值必须说明方法。
 
@@ -49,7 +50,8 @@ python3 scripts/generate_daily_review.py \
   --as-of 2026-08-25 \
   --output daily-review-2026-08-25.md \
   --summary-out daily-review-2026-08-25.json \
-  --html-out daily-review-2026-08-25.html
+  --html-out daily-review-2026-08-25.html \
+  --history-dir ~/.ashare/daily-market-history
 ```
 
 生成器确定性计算：
@@ -60,6 +62,10 @@ python3 scripts/generate_daily_review.py \
 - 领涨/领跌板块。
 - 显式指数—宽度背离。
 - 可得且口径明确时的炸板率与短线情绪观察。
+- 前一交易日变化、20/60日分位和情绪状态连续天数；样本不足时保持unknown。
+- 上一期已到期验证点的`passed/failed/unknown`结算。
+
+`--history-dir`可选但推荐。它按交易日和修订追加保存已验证输入；相同SHA幂等跳过，同日不同SHA必须用递增revision和`supersedes_sha256`连接，不能覆盖历史。
 
 `--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、下一交易日验证、限制与来源。板块默认只展示涨幅前10与跌幅前10，完整榜单折叠；条形按真实绝对涨跌幅绘制，不人为放大接近零的波动。HTML不依赖在线图表库；数据缺失时展示unknown/原因，不绘制零值替代图表。
 
@@ -73,7 +79,7 @@ python3 scripts/generate_daily_review.py \
 2. 再看指数与成交。
 3. 检查上涨参与度、涨跌停和指数—宽度关系；短线情绪字段完整时再报告状态与触发依据。
 4. 分析板块、资金和风格，但保留分类与供应商口径。
-5. 列出公开事件和未来验证点。
+5. 先结算上一期验证点，再列出公开事件和结构化未来验证点。
 6. 最后只写显式结构信号、限制和需要后续验证的条件。
 
 ## 六、质量门
@@ -84,12 +90,17 @@ python3 scripts/generate_daily_review.py \
 - 板块是否来自同一分类体系。
 - 资金数据是否说明方法，避免把模型推导当客观资金流。
 - unknown/partial是否保留原因，没有用0补齐；短线情绪的分母是否口径明确且大于0。
+- 快照截止时间是否覆盖所有证据；close/盘后/周末信息是否分开。
+- breadth与short-term sentiment是否使用完全一致的结构化股票池；不一致时必须partial/unknown。
+- 滚动指标是否显式保存`window`，没有把5日值命名为当日。
+- funds是否保存`method_category`；仅有供应商模型或活跃度代理时不能标available。
+- 自设验证点是否使用结构化condition和派生证据引用，没有伪造来源URL。
 - 相同输入和as-of是否产生相同Markdown、JSON和SHA。
 - 是否避免隐藏总分、个股推荐、买卖、目标价和仓位指令；情绪状态是否只作为市场观察。
 
 ## 实测口径经验（2026-08-29 沉淀）
 
-- **涨停家数供应商口径差**：腾讯自选股 `data_changedist`（全样本含ST）与财联社盘后统计（不含ST/退市）存在 ±1 家差异（如 8/28：83 vs 82）。处理：`breadth` 用腾讯全样本口径、`short_term_sentiment` 用财联社口径，在 `methodology` 中并列说明；并核验差异不改变情绪状态触发。
+- **涨停家数供应商口径差**：腾讯自选股 `data_changedist`（全样本含ST）与财联社盘后统计（不含ST/退市）可能存在差异。即使差异不改变某次阈值结果，也不能把两个股票池声明为完全一致；`short_term_sentiment`最多标partial并输出unknown，或改采同一股票池的完整数据。
 - **封板尝试次数反推**：财联社披露炸板数与封板率时，`limit_attempts = 涨停数 + 炸板数`（同一来源同一口径），勿用"最终涨停家数"替代分母。
 - **两融滞后**：`data_market_overview type=margin` 的 row 常为空（仅 schema），当日复盘若两融未发布，标 partial 或改用证券时报数据宝 WebSearch。
 - **5日成交均值口径**：用上证+深证成指指数 K 线 amount 加总近似（不含北交所），口径写入 `status_reason`。

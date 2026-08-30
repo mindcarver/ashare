@@ -1,9 +1,11 @@
 import copy
+import hashlib
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -15,7 +17,15 @@ UNKNOWN = FIXTURES / "unknown.json"
 
 
 class DailyMarketReviewTests(unittest.TestCase):
-    def run_generator(self, input_path, directory, expected_returncode=0, html_out=None):
+    def run_generator(
+        self,
+        input_path,
+        directory,
+        expected_returncode=0,
+        html_out=None,
+        history_dir=None,
+        as_of="2026-08-25",
+    ):
         markdown = Path(directory) / "report.md"
         summary = Path(directory) / "summary.json"
         command = [
@@ -24,7 +34,7 @@ class DailyMarketReviewTests(unittest.TestCase):
                 "--input",
                 str(input_path),
                 "--as-of",
-                "2026-08-25",
+                as_of,
                 "--output",
                 str(markdown),
                 "--summary-out",
@@ -32,6 +42,8 @@ class DailyMarketReviewTests(unittest.TestCase):
             ]
         if html_out is not None:
             command.extend(["--html-out", str(html_out)])
+        if history_dir is not None:
+            command.extend(["--history-dir", str(history_dir)])
         result = subprocess.run(
             command,
             text=True,
@@ -51,6 +63,48 @@ class DailyMarketReviewTests(unittest.TestCase):
         path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
         return path
 
+    def write_history_entry(self, history_dir, market, input_sha):
+        directory = Path(history_dir) / market["market_date"]
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"r{market['snapshot']['revision']:03d}-{input_sha[:12]}.json"
+        content_sha = hashlib.sha256(
+            json.dumps(
+                market,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        path.write_text(
+            json.dumps(
+                {
+                    "input_sha256": input_sha,
+                    "snapshot_content_sha256": content_sha,
+                    "snapshot": market,
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    def retime_snapshot(self, value, market_date):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in {"observed_at", "published_at"}:
+                    value[key] = market_date
+                elif key == "fetched_at":
+                    value[key] = f"{market_date}T16:00:00+08:00"
+                elif key == "end_at":
+                    value[key] = market_date
+                else:
+                    self.retime_snapshot(child, market_date)
+        elif isinstance(value, list):
+            for child in value:
+                self.retime_snapshot(child, market_date)
+
     @staticmethod
     def evidence(value, observed_at="2026-08-25"):
         return {
@@ -67,11 +121,19 @@ class DailyMarketReviewTests(unittest.TestCase):
         }
 
     def with_sentiment(self, market, current, previous=None):
-        market["sections"]["breadth"]["universe"] = "全A非ST普通股"
+        universe = {
+            "id": "all-a-non-st",
+            "label": "全A非ST普通股",
+            "population_rule": "沪深京A股，排除ST、退市整理与停牌",
+            "includes_st": False,
+            "includes_bse": True,
+            "exclusions": ["ST", "退市整理", "停牌"],
+        }
+        market["sections"]["breadth"]["universe"] = copy.deepcopy(universe)
         market["sections"]["short_term_sentiment"] = {
             "availability": "available",
             "status_reason": "同一股票池的短线情绪数据完整",
-            "universe": "全A非ST普通股",
+            "universe": universe,
             "methodology": "供应商按盘中封板尝试和炸板事件计数",
             "metrics": {
                 name: self.evidence(value) for name, value in current.items()
@@ -124,7 +186,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             future_result, _, _ = self.run_generator(future_path, tmp, expected_returncode=2)
             missing_result, _, _ = self.run_generator(missing_path, tmp, expected_returncode=2)
 
-        self.assertIn("published_at 晚于 as-of", future_result.stderr)
+        self.assertIn("published_at 晚于snapshot.cutoff_at", future_result.stderr)
         self.assertIn("source.url", missing_result.stderr)
 
     def test_all_unknown_preserves_reasons_and_does_not_fill_zero(self):
@@ -246,7 +308,10 @@ class DailyMarketReviewTests(unittest.TestCase):
             mismatched,
             {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 4},
         )
-        mismatched["sections"]["short_term_sentiment"]["universe"] = "沪深300"
+        mismatched["sections"]["short_term_sentiment"]["universe"] = copy.deepcopy(
+            mismatched["sections"]["breadth"]["universe"]
+        )
+        mismatched["sections"]["short_term_sentiment"]["universe"]["id"] = "csi-300"
         invalid = json.loads(MARKET.read_text(encoding="utf-8"))
         self.with_sentiment(
             invalid,
@@ -264,6 +329,150 @@ class DailyMarketReviewTests(unittest.TestCase):
 
         self.assertIn("universe 必须与breadth.universe一致", mismatched_result.stderr)
         self.assertIn("open_board_failed 不能大于limit_attempts", invalid_result.stderr)
+
+    def test_rejects_invalid_snapshot_cutoff_window_and_fund_tier(self):
+        cutoff = json.loads(MARKET.read_text(encoding="utf-8"))
+        cutoff["snapshot"]["cutoff_at"] = "2026-08-25T15:00:00+08:00"
+        window = json.loads(MARKET.read_text(encoding="utf-8"))
+        window["sections"]["turnover"]["metrics"]["avg_5d_amount"]["window"][
+            "trading_days"
+        ] = 20
+        funds = json.loads(MARKET.read_text(encoding="utf-8"))
+        funds["sections"]["funds"]["availability"] = "available"
+        funds["sections"]["funds"]["items"][0]["method_category"] = "provider_model"
+        with tempfile.TemporaryDirectory() as tmp:
+            cutoff_path = self.write_json(tmp, "cutoff.json", cutoff)
+            window_path = self.write_json(tmp, "window.json", window)
+            funds_path = self.write_json(tmp, "funds.json", funds)
+            cutoff_result, _, _ = self.run_generator(
+                cutoff_path, tmp, expected_returncode=2
+            )
+            window_result, _, _ = self.run_generator(
+                window_path, tmp, expected_returncode=2
+            )
+            funds_result, _, _ = self.run_generator(
+                funds_path, tmp, expected_returncode=2
+            )
+
+        self.assertIn("fetched_at 晚于snapshot.cutoff_at", cutoff_result.stderr)
+        self.assertIn("avg_5d_amount.window.trading_days 必须是5", window_result.stderr)
+        self.assertIn("funds仅含供应商模型或活跃度代理", funds_result.stderr)
+
+    def test_derived_verification_source_does_not_accept_fake_url(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["verification_points"][0]["source"]["url"] = "https://example.com/fake"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "fake-derived-source.json", market)
+            result, _, _ = self.run_generator(path, tmp, expected_returncode=2)
+
+        self.assertIn("kind=derived 时不能伪造url", result.stderr)
+
+    def test_history_is_append_only_idempotent_and_requires_revision_chain(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            history_dir = Path(tmp) / "history"
+            path = self.write_json(tmp, "market.json", market)
+            first, _, first_summary_path = self.run_generator(
+                path, tmp, history_dir=history_dir
+            )
+            first_summary = json.loads(first_summary_path.read_text(encoding="utf-8"))
+            second, _, second_summary_path = self.run_generator(
+                path, tmp, history_dir=history_dir
+            )
+            second_summary = json.loads(second_summary_path.read_text(encoding="utf-8"))
+            first_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+
+            revised = copy.deepcopy(market)
+            revised["snapshot"]["revision"] = 2
+            revised["snapshot"]["supersedes_sha256"] = first_sha
+            revised["snapshot"]["raw_evidence_sha256"] = "c" * 64
+            revised["sections"]["breadth"]["metrics"]["advancers"]["value"] += 1
+            revised_path = self.write_json(tmp, "market-r2.json", revised)
+            third, _, third_summary_path = self.run_generator(
+                revised_path, tmp, history_dir=history_dir
+            )
+            third_summary = json.loads(third_summary_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(first_summary["run"]["history_appended"])
+        self.assertFalse(second_summary["run"]["history_appended"])
+        self.assertTrue(third_summary["run"]["history_appended"])
+        self.assertIn('"history_appended": true', first.stdout)
+        self.assertIn('"history_appended": false', second.stdout)
+        self.assertIn('"history_appended": true', third.stdout)
+
+    def test_history_rejects_broken_revision_and_tampered_snapshot(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            history_dir = Path(tmp) / "history"
+            path = self.write_json(tmp, "market.json", market)
+            self.run_generator(path, tmp, history_dir=history_dir)
+
+            first_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            broken = copy.deepcopy(market)
+            broken["snapshot"]["revision"] = 2
+            broken["snapshot"]["supersedes_sha256"] = "d" * 64
+            broken["snapshot"]["raw_evidence_sha256"] = "e" * 64
+            broken_path = self.write_json(tmp, "broken.json", broken)
+            broken_result, _, _ = self.run_generator(
+                broken_path, tmp, history_dir=history_dir, expected_returncode=2
+            )
+
+            history_path = next(history_dir.glob("*/*.json"))
+            envelope = json.loads(history_path.read_text(encoding="utf-8"))
+            envelope["snapshot"]["sections"]["breadth"]["metrics"]["advancers"][
+                "value"
+            ] += 10
+            history_path.write_text(
+                json.dumps(envelope, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            tampered_result, _, _ = self.run_generator(
+                path, tmp, history_dir=history_dir, expected_returncode=2
+            )
+
+        self.assertNotEqual(first_sha, "d" * 64)
+        self.assertIn("supersedes_sha256 必须指向同日上一修订", broken_result.stderr)
+        self.assertIn("历史快照内容SHA不匹配", tampered_result.stderr)
+
+    def test_history_derives_percentiles_and_resolves_previous_verification(self):
+        current = json.loads(MARKET.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            history_dir = Path(tmp) / "history"
+            for day in range(1, 61):
+                prior = copy.deepcopy(current)
+                prior_date = (date(2026, 6, 20) + timedelta(days=day - 1)).isoformat()
+                prior["market_date"] = prior_date
+                prior["as_of"] = prior_date
+                prior["snapshot"]["cutoff_at"] = f"{prior_date}T18:00:00+08:00"
+                prior["snapshot"]["raw_evidence_sha256"] = f"{day:064x}"
+                self.retime_snapshot(prior["sections"], prior_date)
+                self.retime_snapshot(prior["verification_points"], prior_date)
+                for event in prior["sections"]["events"]["items"]:
+                    event["event_date"] = prior_date
+                prior["sections"]["breadth"]["metrics"]["advancers"]["value"] = 2000 + day
+                prior["sections"]["turnover"]["metrics"]["amount"]["value"] = (
+                    1_000_000_000_000 + day * 1_000_000_000
+                )
+                if day == 60:
+                    prior["verification_points"][0]["event_date"] = current["market_date"]
+                self.write_history_entry(history_dir, prior, f"{day + 100:064x}")
+
+            path = self.write_json(tmp, "current.json", current)
+            _, markdown_path, summary_path = self.run_generator(
+                path, tmp, history_dir=history_dir
+            )
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            markdown = markdown_path.read_text(encoding="utf-8")
+
+        self.assertEqual(summary["history"]["sample_size"], 61)
+        self.assertIsNotNone(
+            summary["history"]["metrics"]["turnover_amount"]["percentile_20d"]
+        )
+        self.assertIsNotNone(
+            summary["history"]["metrics"]["turnover_amount"]["percentile_60d"]
+        )
+        self.assertEqual(summary["resolved_verifications"][0]["status"], "passed")
+        self.assertIn("上一期验证结果", markdown)
+        self.assertIn("成立｜次日成交额是否保持在一万亿元上方", markdown)
 
     def test_generates_self_contained_visual_html_and_escapes_input(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))

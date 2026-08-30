@@ -42,6 +42,24 @@
       "prompt": "把今天的每日盘面复盘做成好看的 HTML。",
       "expected_output": "对同一份已校验的market.json增加--html-out，生成静态可视化 HTML：市场脉搏、宽度、短线情绪指标卡、下一交易日验证、板块温度、事件、限制和来源；板块默认显示涨幅前10与跌幅前10，完整榜单折叠，缺失数据保留unknown与原因，不画零值替代图表，也不输出交易或仓位指令。",
       "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "把每天复盘连续保存，今天顺便验证昨天的成交额判断。",
+      "expected_output": "使用Schema 1.1和--history-dir追加版本化快照；相同SHA幂等，同日不同输入以revision和supersedes_sha256连接；报告展示前一交易日、20/60日分位，并把上一交易日到期的结构化验证条件结算为passed/failed/unknown。",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "腾讯宽度含ST，财联社连板不含ST，但只差一只，不影响结论，就都标available吧。",
+      "expected_output": "拒绝以结果不变绕过股票池门禁；结构化universe不一致时短线情绪最多partial并输出unknown，直到取得同一股票池的完整证据。",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "资金只有供应商主力流入和北向成交额，也标available。",
+      "expected_output": "按method_category标为provider_model/activity_proxy；仅有这两类时funds不能available，说明北向成交额不是方向性净流入，并保留partial原因。",
+      "files": []
     }
   ]
 }
