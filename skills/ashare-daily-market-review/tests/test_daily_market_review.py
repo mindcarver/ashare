@@ -240,6 +240,32 @@ class DailyMarketReviewTests(unittest.TestCase):
 
         self.assertIn("market_date 不能晚于 as-of", result.stderr)
 
+    def test_legacy_schema_is_conservatively_normalized(self):
+        legacy = json.loads(MARKET.read_text(encoding="utf-8"))
+        legacy["schema_version"] = "1.0"
+        legacy.pop("snapshot")
+        legacy["sections"]["breadth"]["universe"] = "全A非ST普通股"
+        legacy["sections"]["turnover"]["metrics"]["avg_5d_amount"].pop("window")
+        legacy["sections"]["funds"]["items"][0].pop("method_category")
+        legacy["sections"]["style"]["items"][0].pop("window")
+        legacy["verification_points"][0].pop("id")
+        legacy["verification_points"][0].pop("condition")
+        legacy["verification_points"][0]["source"] = {
+            "id": "legacy-calendar",
+            "name": "旧版日历来源",
+            "url": "https://example.com/calendar",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "legacy.json", legacy)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(summary["schema_version"], "1.1")
+        self.assertEqual(summary["legacy_migration"]["from"], "1.0")
+        self.assertIn("兼容归一化", markdown)
+        self.assertIn("定性观察点（不自动结算）", markdown)
+
     def test_available_daily_evidence_must_match_market_date(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
         market["sections"]["indices"]["items"][0]["change_pct"]["observed_at"] = "2026-08-24"

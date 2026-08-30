@@ -2,9 +2,11 @@
 """Generate an auditable A-share daily market review from normalized evidence."""
 
 import argparse
+import copy
 import hashlib
 import json
 import math
+import re
 import sys
 from datetime import date, datetime
 from html import escape
@@ -83,7 +85,139 @@ def load_input(path: Path) -> tuple[dict[str, Any], str]:
         raise ReviewError(f"输入不是有效JSON：{exc}") from exc
     if not isinstance(value, dict):
         raise ReviewError("输入顶层必须是object")
-    return value, hashlib.sha256(raw).hexdigest()
+    input_sha256 = hashlib.sha256(raw).hexdigest()
+    return upgrade_legacy_input(value, input_sha256), input_sha256
+
+
+def collect_fetched_at(value: Any) -> list[datetime]:
+    found: list[datetime] = []
+    if isinstance(value, dict):
+        if "fetched_at" in value:
+            found.append(parse_datetime(value["fetched_at"], "legacy.fetched_at"))
+        for child in value.values():
+            found.extend(collect_fetched_at(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.extend(collect_fetched_at(child))
+    return found
+
+
+def legacy_universe(label: str, status_reason: str) -> dict[str, Any]:
+    combined = f"{label} {status_reason}"
+    return {
+        "id": "legacy-" + hashlib.sha256(combined.encode("utf-8")).hexdigest()[:12],
+        "label": label,
+        "population_rule": f"由Schema 1.0文本保守迁移：{combined}",
+        "includes_st": "含ST" in combined and "不含ST" not in combined,
+        "includes_bse": "北交" in combined,
+        "exclusions": [],
+    }
+
+
+def infer_legacy_window(item: dict[str, Any]) -> int:
+    text = f"{item.get('name', '')} {item.get('interpretation', '')}"
+    if re.search(r"(?:近)?20日|二十日", text):
+        return 20
+    if re.search(r"(?:近)?5日|五日", text):
+        return 5
+    return 1
+
+
+def infer_legacy_fund_method(item: dict[str, Any]) -> str:
+    text = f"{item.get('name', '')} {item.get('methodology', '')}"
+    if "交易所" in text and any(word in text for word in ("事实", "公布", "披露")):
+        return "exchange_fact"
+    if any(word in text for word in ("成交额", "活跃度代理", "非净买入")):
+        return "activity_proxy"
+    return "provider_model"
+
+
+def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, Any]:
+    if data.get("schema_version") != "1.0":
+        return data
+    migrated = copy.deepcopy(data)
+    market_date = require_text(migrated, "market_date")
+    fetched = collect_fetched_at(migrated)
+    if not fetched:
+        raise ReviewError("Schema 1.0输入缺少fetched_at，无法确定快照截止时间")
+    cutoff = max(fetched)
+    migrated["schema_version"] = SCHEMA_VERSION
+    migrated["snapshot"] = {
+        "type": "close" if cutoff.date().isoformat() == market_date else "post_close",
+        "cutoff_at": cutoff.isoformat(),
+        "revision": 1,
+        "supersedes_sha256": None,
+        "raw_evidence_sha256": input_sha256,
+    }
+    warnings = ["输入由Schema 1.0保守归一化为1.1；未伪造缺失字段"]
+    sections = migrated.get("sections", {})
+    breadth = sections.get("breadth", {})
+    sentiment = sections.get("short_term_sentiment", {})
+    if breadth.get("availability") != "unknown":
+        label = breadth.get("universe")
+        if not isinstance(label, str) or not label.strip():
+            label = breadth.get("status_reason", "Schema 1.0股票池未命名")
+        breadth["universe"] = legacy_universe(label, breadth.get("status_reason", ""))
+    if sentiment.get("availability") != "unknown":
+        label = sentiment.get("universe")
+        if not isinstance(label, str) or not label.strip():
+            label = sentiment.get("status_reason", "Schema 1.0短线股票池未命名")
+        methodology = sentiment.get("methodology", "")
+        mismatch_markers = ("口径差", "不含ST", "统计时点", "股票池定义不同")
+        if any(marker in methodology for marker in mismatch_markers):
+            sentiment["availability"] = "partial"
+            sentiment["status_reason"] = (
+                f"{sentiment.get('status_reason', '')}；Schema 1.0方法文本显示股票池不一致，不能计算状态"
+            ).strip("；")
+            sentiment["universe"] = legacy_universe(label, methodology)
+            warnings.append("短线情绪因旧输入披露股票池差异而降为partial")
+        elif breadth.get("universe"):
+            sentiment["universe"] = copy.deepcopy(breadth["universe"])
+
+    turnover_metrics = sections.get("turnover", {}).get("metrics", {})
+    for name, days in (("avg_5d_amount", 5), ("avg_20d_amount", 20)):
+        if name in turnover_metrics:
+            turnover_metrics[name]["window"] = {
+                "trading_days": days,
+                "end_at": market_date,
+            }
+    for item in sections.get("style", {}).get("items", []):
+        item["window"] = {
+            "trading_days": infer_legacy_window(item),
+            "end_at": market_date,
+        }
+    funds = sections.get("funds", {})
+    if funds.get("availability") != "unknown":
+        for item in funds.get("items", []):
+            item["method_category"] = infer_legacy_fund_method(item)
+        if funds.get("availability") == "available" and not any(
+            item["method_category"] in HIGH_TRUST_FUND_METHODS
+            for item in funds.get("items", [])
+        ):
+            funds["availability"] = "partial"
+            funds["status_reason"] = (
+                f"{funds.get('status_reason', '')}；Schema 1.0资金证据仅含模型或活跃度代理"
+            ).strip("；")
+            warnings.append("资金章节因旧输入仅含模型或代理数据而降为partial")
+
+    qualitative = migrated.get("verification_points", [])
+    for point in qualitative:
+        source = point.get("source", {})
+        if source.get("id") == "self-derived" or source.get("url", "").startswith(
+            "https://example.com"
+        ):
+            point["source"] = {
+                "id": source.get("id", "legacy-derived"),
+                "name": source.get("name", "旧版派生观察点"),
+                "kind": "derived",
+                "evidence_refs": ["legacy.qualitative_verification_points"],
+            }
+    migrated["qualitative_verification_points"] = qualitative
+    migrated["verification_points"] = []
+    if qualitative:
+        warnings.append("旧版定性验证点保留展示，但不冒充机器可结算条件")
+    migrated["legacy_migration"] = {"from": "1.0", "warnings": warnings}
+    return migrated
 
 
 def parse_date(value: Any, field: str) -> date:
@@ -562,6 +696,16 @@ def validate_input(
         if item["id"] in point_ids:
             raise ReviewError("verification_points.id 不能重复")
         point_ids.add(item["id"])
+    qualitative_points = data.get("qualitative_verification_points", [])
+    if not isinstance(qualitative_points, list):
+        raise ReviewError("qualitative_verification_points 必须是数组")
+    for index, item in enumerate(qualitative_points):
+        validate_event(
+            item,
+            f"qualitative_verification_points[{index}]",
+            requested_as_of,
+            True,
+        )
     return sections
 
 
@@ -1213,6 +1357,10 @@ def build_html(
         f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["condition"]["metric"])} {html_text(item["condition"]["operator"])} {html_text(item["condition"]["value"])} {html_text(item["condition"]["unit"])} · {html_text(item["source"]["name"])}</small></li>'
         for item in data.get("verification_points", [])
     )
+    event_items.extend(
+        f'<li class="future qualitative"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>定性观察点 · 不自动结算 · {html_text(item["source"]["name"])}</small></li>'
+        for item in data.get("qualitative_verification_points", [])
+    )
     events_html = '<ul class="timeline">' + "".join(event_items) + "</ul>" if event_items else '<p class="empty">暂无可得事件或验证点</p>'
 
     signal_html = "".join(f'<li><strong>{html_text(signal["label"])}：</strong>{html_text(signal["evidence"])}<small>{html_text(signal["rule"])}</small></li>' for signal in signals)
@@ -1269,6 +1417,12 @@ def build_markdown(
         "- 结论属性：盘面证据与结构观察，不构成投资建议",
         "",
     ]
+    if data.get("legacy_migration"):
+        lines.append(
+            "- 兼容归一化："
+            + "；".join(data["legacy_migration"].get("warnings", []))
+        )
+        lines.append("")
     if coverage_counts["unknown"] == len(SECTION_NAMES):
         lines.extend(["## 无可得盘面数据", "", "本次八个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
 
@@ -1442,6 +1596,14 @@ def build_markdown(
     if data.get("verification_points"):
         lines.append("后续验证点：")
         lines.append("")
+    if data.get("qualitative_verification_points"):
+        lines.append("定性观察点（不自动结算）：")
+        lines.append("")
+        for item in data["qualitative_verification_points"]:
+            lines.append(
+                f"- {item['event_date']}｜{item['title']}｜{item['source']['name']}"
+            )
+        lines.append("")
         for item in data["verification_points"]:
             condition = item["condition"]
             lines.append(
@@ -1499,6 +1661,7 @@ def generate(
         "signals": signals,
         "history": history,
         "resolved_verifications": resolved_verifications,
+        "legacy_migration": data.get("legacy_migration"),
         "sections": {
             name: {
                 "availability": section["availability"],

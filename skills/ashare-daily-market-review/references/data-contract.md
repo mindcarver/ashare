@@ -41,6 +41,17 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 - 摘要计算前一交易日、20/60日分位和情绪状态连续天数；样本不足时输出`null/样本不足`。
 - 历史比较按每个交易日的最高修订计算。
 
+### 1.0兼容归一化
+
+生成器可以直接读取历史`schema_version=1.0`产物，以便真实旧复盘继续重放。归一化遵循fail closed：
+
+- 原始输入文件SHA作为`raw_evidence_sha256`，最晚`fetched_at`作为`cutoff_at`。
+- 能从字段名明确识别的5日、20日或当日窗口才补入`window`。
+- 旧方法文本披露供应商或股票池差异时，短线情绪降为partial。
+- 旧资金按方法文本分为交易所事实、供应商模型或活跃度代理；证据等级不足时降为partial。
+- 没有结构化condition的旧验证点保留为`qualitative_verification_points`，展示但不自动结算。
+- 摘要和Markdown公开`legacy_migration.warnings`，不静默美化旧输入。
+
 ## 章节状态
 
 八个章节统一使用`available/partial/unknown`和非空`status_reason`。
