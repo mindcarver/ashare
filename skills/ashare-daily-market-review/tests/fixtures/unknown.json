@@ -1,7 +1,14 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "market_date": "2026-08-25",
   "as_of": "2026-08-25",
+  "snapshot": {
+    "type": "close",
+    "cutoff_at": "2026-08-25T18:00:00+08:00",
+    "revision": 1,
+    "supersedes_sha256": null,
+    "raw_evidence_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
   "sections": {
     "indices": {"availability": "unknown", "status_reason": "指数源不可用"},
     "breadth": {"availability": "unknown", "status_reason": "宽度源不可用"},

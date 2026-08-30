@@ -1,7 +1,14 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "market_date": "2026-08-25",
   "as_of": "2026-08-25",
+  "snapshot": {
+    "type": "close",
+    "cutoff_at": "2026-08-25T18:00:00+08:00",
+    "revision": 1,
+    "supersedes_sha256": null,
+    "raw_evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
   "sections": {
     "indices": {
       "availability": "available",
@@ -54,6 +61,14 @@
     "breadth": {
       "availability": "available",
       "status_reason": "全A股涨跌家数口径",
+      "universe": {
+        "id": "all-a-non-st",
+        "label": "全A非ST普通股",
+        "population_rule": "沪深京A股，排除ST、退市整理与停牌",
+        "includes_st": false,
+        "includes_bse": true,
+        "exclusions": ["ST", "退市整理", "停牌"]
+      },
       "metrics": {
         "advancers": {"value": 3000, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
         "decliners": {"value": 2000, "unit": "count", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-breadth", "name": "测试宽度源", "url": "https://example.com/breadth"}},
@@ -68,7 +83,7 @@
       "metrics": {
         "amount": {"value": 1500000000000, "unit": "CNY", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}},
         "previous_amount": {"value": 1200000000000, "unit": "CNY", "observed_at": "2026-08-24", "published_at": "2026-08-24", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}},
-        "avg_5d_amount": {"value": 1300000000000, "unit": "CNY", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}}
+        "avg_5d_amount": {"value": 1300000000000, "unit": "CNY", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "window": {"trading_days": 5, "end_at": "2026-08-25"}, "source": {"id": "fixture-turnover", "name": "测试成交源", "url": "https://example.com/turnover"}}
       }
     },
     "sectors": {
@@ -88,6 +103,7 @@
         {
           "name": "融资余额日变化",
           "methodology": "交易所公布融资余额差分，不等同主力资金",
+          "method_category": "exchange_fact",
           "metric": {"value": -10000000000, "unit": "CNY", "observed_at": "2026-08-24", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-margin", "name": "测试两融源", "url": "https://example.com/margin"}}
         }
       ]
@@ -99,6 +115,7 @@
         {
           "name": "小盘相对大盘",
           "interpretation": "正值表示本样本内小盘相对占优",
+          "window": {"trading_days": 1, "end_at": "2026-08-25"},
           "metric": {"value": 0.5, "unit": "percent", "observed_at": "2026-08-25", "published_at": "2026-08-25", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-style", "name": "测试风格源", "url": "https://example.com/style"}}
         }
       ]
@@ -112,6 +129,6 @@
     }
   },
   "verification_points": [
-    {"title": "次日宏观数据发布", "event_date": "2026-08-26", "published_at": "2026-08-20", "fetched_at": "2026-08-25T16:00:00+08:00", "source": {"id": "fixture-calendar", "name": "测试日历源", "url": "https://example.com/calendar"}}
+    {"id": "verify-turnover", "title": "次日成交额是否保持在一万亿元上方", "event_date": "2026-08-26", "published_at": "2026-08-20", "fetched_at": "2026-08-25T16:00:00+08:00", "condition": {"metric": "turnover_amount", "operator": ">=", "value": 1000000000000, "unit": "CNY"}, "source": {"id": "derived-turnover-threshold", "name": "复盘派生验证点", "kind": "derived", "evidence_refs": ["sections.turnover.metrics.amount"]}}
   ]
 }

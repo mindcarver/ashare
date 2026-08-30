@@ -8,6 +8,7 @@
 - `open_board_rate_pct = open_board_failed / limit_attempts × 100`。
 - `highest_streak`是该股票池当日可验证的最高连板高度。
 - 计数口径、供应商、观察日或股票池不一致时，不得计算状态。
+- 股票池使用结构化`universe`；名称相似但`population_rule/includes_st/includes_bse/exclusions`不同仍视为不一致。
 
 ## 初始状态规则
 
