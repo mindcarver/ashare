@@ -1,6 +1,6 @@
 ---
 name: ashare-research-journal
-description: 持久记录并事后复核A股研究判断，冻结“当时证据、研究假设、评价日期、成功标准和证伪条件”，到期后计算真实收益、基准超额、最大回撤、MFE/MAE、命中率和概率校准。当用户说“记录这次研究”“到期复盘”“看看以前判断准不准”“统计AI研究命中率”时使用；不用于生成新的公司研究、交割单分析或自动交易。
+description: 持久记录并事后复核A股研究判断，冻结“当时证据、研究假设、评价日期、成功标准和证伪条件”，到期后计算真实收益、基准超额、最大回撤、MFE/MAE、命中率和概率校准。查看(show)与统计(stats)输出自包含HTML复盘报告，记录/复核/导出保持JSON。当用户说“记录这次研究”“到期复盘”“看看以前判断准不准”“统计AI研究命中率”时使用；不用于生成新的公司研究、交割单分析或自动交易。
 ---
 
 # A股研究结论事后复盘
@@ -64,11 +64,23 @@ python3 scripts/research_journal.py --db journal.sqlite3 \
 
 ## 四、查看和统计
 
+`show` 与 `stats` 直接产出**自包含 HTML 报告**（不再打印 JSON），默认写到
+`research/research-journal/`，可用 `--out` 覆盖；stdout 只回一行落盘路径与字节数。
+
 ```bash
+# 单条复盘报告 → research/research-journal/<research_id>.html
 python3 scripts/research_journal.py --db journal.sqlite3 show --id RESEARCH_ID
+
+# 命中率统计看板 → research/research-journal/research-journal-stats-<as-of>.html
 python3 scripts/research_journal.py --db journal.sqlite3 stats --as-of 2026-12-31
+
+# 机器可读的导出仍是 JSON（保持管道可用）
 python3 scripts/research_journal.py --db journal.sqlite3 export
+python3 scripts/research_journal.py --db journal.sqlite3 due --as-of 2026-12-31
 ```
+
+`record` / `observe` / `due` / `export` 仍是 JSON 输出，方便脚本消费；只有给人看的两条
+（`show`、`stats`）改成了 HTML。
 
 统计只使用已成熟且已有结果的记录：
 
@@ -78,15 +90,34 @@ python3 scripts/research_journal.py --db journal.sqlite3 export
 
 统计结果描述历史样本，不代表未来能力。样本量、行业集中、市场阶段和选择偏差必须同时说明。
 
-## 五、输出
+## 五、输出与交付
 
-向用户汇报时读取[复盘模板](references/report-template.md)，至少展示：
+`show` / `stats` 生成的 HTML 是最终交付物，生成后用 `present_files` 交给用户查看。
 
-1. 原始快照SHA和当时证据。
-2. 成功标准与证伪条件。
-3. 到期表现和计算口径。
-4. 命中、证伪和校准结论。
-5. 对研究流程的可复用改进，不把一次输赢归因成普遍规律。
+报告由 `scripts/render.py` 组装、`page_template.py` 提供模板，末尾统一经
+`inject_shared_css()` 注入 `skills/_shared/` 的设计令牌与页面外壳——配色、报头、徽章基座
+都来自共享层，**不要在模板里回填色值或骨架规则**。
+
+报告结构见[复盘模板](references/report-template.md)：
+
+1. 记录标识与不可变性（原快照 SHA、结果输入 SHA、记录时间）。
+2. 当时判断：逐字引用冻结的研究假设、概率、成功标准、催化剂与证伪条件。
+3. 当时证据表（论断 / 取值 / 观察日 / 发布日 / 来源）。
+4. 到期结果：股票与基准价格路径图、区间收益、超额、回撤、MFE/MAE、成功标准判定。
+5. 统计看板：命中率仪表、超额分布（红正绿负）、Brier 校准散点与逐条明细。
+
+### 报告性质声明（本技能为何没有禁词硬门禁）
+
+其余四个 HTML 生成器都对报告文字跑禁词 tier 硬门禁。本技能**不设**——报告逐字引用
+用户当时冻结的研究原文（假设、催化剂、证伪条件），审查性引用不可改写，扫描禁词只会命中
+不可避免的引用（例如用户自己写的「止损」「目标价」），拦下来只会逼人篡改历史。
+
+替代方案是**固定的「报告性质」声明**，必须出现在每份报告里：
+
+> 本报告为研究结论的事后复盘……报告不构成投资建议，也不预测未来表现。
+
+这条声明留在 `render.py`（`RECORD_FOOT` / `STATS_FOOT`），`make audit` 与 `make test`
+都会检查它是否还在；豁免技能若反过来加载禁词 tier，审计同样会失败。
 
 ## 六、质量门
 
@@ -96,6 +127,7 @@ python3 scripts/research_journal.py --db journal.sqlite3 export
 - 是否保留原快照、结果输入和两个SHA。
 - 是否把触发证伪与市场结果分别说明。
 - 是否只用成熟样本计算统计。
+- HTML 是否注入了共享令牌与品牌层、是否保留「不构成投资建议」声明、未写结果前是否只降级不评分。
 
 修改脚本后运行：
 

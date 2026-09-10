@@ -62,16 +62,24 @@
 <table>
   <tbody>
     <tr>
-      <td align="center"><b>目录</b></td>
-      <td align="left"><code>skills/ashare-daily-market-review</code><br /><code>skills/ashare-stock-screening</code><br /><code>skills/ashare-company-research</code><br /><code>skills/ashare-research-journal</code><br /><code>skills/ashare-news-investment-targets</code><br /><code>skills/ashare-capital-environment-dashboard</code></td>
+      <td align="center"><b>技能目录</b></td>
+      <td align="left"><code>skills/</code> —— 每个技能一个子目录（含 <code>SKILL.md</code>）。<br />清单以文件系统为准，不在本 README 重复维护；<code>install.sh</code> 会自动发现全部技能。</td>
+    </tr>
+    <tr>
+      <td align="center"><b>共享层</b></td>
+      <td align="left"><code>skills/_shared/</code> —— 禁词表、设计令牌、技术面口径的唯一真源。<br />它不是技能（没有 <code>SKILL.md</code>），但四个可视化生成器都依赖它，因此 <b>技能目录不能单独拷出仓库使用</b>。详见 <code>skills/_shared/README.md</code>。</td>
     </tr>
     <tr>
       <td align="center"><b>安装</b></td>
-      <td align="left"><code>./install.sh</code></td>
+      <td align="left"><code>./install.sh</code>（软链全部技能到各 AI 工具；<code>--dry-run</code> 可先预览）</td>
     </tr>
     <tr>
-      <td align="center"><b>同步</b></td>
-      <td align="left"><code>~/.codex/skills/</code><br /><code>~/.claude/skills/</code></td>
+      <td align="center"><b>同步目标</b></td>
+      <td align="left"><code>~/.workbuddy/skills/</code><br /><code>~/.codex/skills/</code><br /><code>~/.claude/skills/</code></td>
+    </tr>
+    <tr>
+      <td align="center"><b>测试</b></td>
+      <td align="left"><code>make test</code> —— 跑共享层 + 全部技能测试<br /><code>make test S=&lt;技能名&gt;</code> 只跑一个<br /><code>make audit</code> —— 检查禁词/令牌/技术面是否被复制回技能目录<br /><code>make clean</code> 清理 <code>__pycache__</code></td>
     </tr>
     <tr>
       <td align="center"><b>每日盘面与短线情绪</b></td>

@@ -1,0 +1,275 @@
+/* A 股报告族共用组件层 —— 唯一真源
+ *
+ * 5 个 HTML 报告生成器共用同一套组件词汇：主卡 / 提示框 / 脚注 / KPI 磁贴 /
+ * 方角徽章 / 表格 / 列表 / 栅格 / 图表框 / 行式组件。
+ *
+ * 注入位置：由 ashare_shared.inject_brand_css() 与 shell.css 一起插在 </head> 之前，
+ * **排在各技能自己的 <style> 之后**，所以本文件对同名选择器具有最终解释权。
+ * 各技能模板里不要再重复本文件的任何规则——只留它们独有布局（见文件末「技能保留项」）。
+ *
+ * 本文件的注释在注入时会被剥除，不会出现在报告里。
+ *
+ * ============================================================
+ * 视觉系统：ASHARE EDITORIAL（新瑞士平面设计 / 柔和粗野主义）
+ * ============================================================
+ * 白纸黑字 + 纯黑发丝边框 + 零圆角 + 7px 硬投影 + 可见网格 + 等宽数据。
+ * 三条硬约束：
+ *   1. 任何组件都不得出现 border-radius（方角是这套身份的一部分）。
+ *   2. 边框只用两档：--hair 发丝线（1px，--line）与 --rule-w 结构线（2px，--rule）。
+ *      组件之间的分隔用发丝线，组件自身的轮廓用结构线。
+ *   3. 投影只用一种：--shadow-off 0 实色 --shadow，零模糊。不要写柔和阴影。
+ *
+ * 三组语义色（轴不同，不要串用；同名色相在不同组件家族内出现是有意的）：
+ *   --gain/--loss  只给涨跌数字（区间收益、涨跌幅、超额）
+ *   --state-*      只给状态（可得性、覆盖度、通过与否、证据等级）
+ *   --accent       只给结构性强调（面板左规、眉题、链接），不承载语义
+ * 等级/优先级刻意使用「黑→灰」明度阶梯（--rule / --ink-secondary / --line），
+ * 避免与涨跌或状态色相互污染。
+ */
+
+/* ============ 1. 排版基座 ============ */
+h1,h2,h3,p{margin:0}
+h2{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+h3{font-family:var(--font-display);font-size:14px;font-weight:700;line-height:1.3;letter-spacing:.01em}
+small{font-family:var(--font-ui);font-size:11px;line-height:1.55}
+code,.mono,.num{font-family:var(--font-mono)}
+a{color:var(--accent);text-decoration:none;border-bottom:var(--hair) solid var(--accent-soft);word-break:break-all}
+a:hover{background:var(--accent-soft)}
+.num{display:block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+
+/* ============ 2. 主卡 / 单元格 / 空态 ============ */
+.panel,.card,.cell,.candidate-card,.signal,.empty-state,.no-data,.matrix-wrap,.source-box{
+  background:var(--paper);border:var(--hair) solid var(--rule);border-radius:0;
+  box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow)}
+.panel,.cell,.candidate-card,.signal,.matrix-wrap,.source-box{padding:18px}
+.source-box{overflow:auto}
+.card{padding:18px;margin-top:10px;border-left:6px solid var(--accent)}
+.empty-state,.no-data{padding:72px 20px;text-align:center;font-family:var(--font-display);font-size:16px;color:var(--ink-secondary);margin-top:10px}
+.empty{color:var(--ink-tertiary);line-height:1.7}
+/* 面板头：通栏发丝底线，标题与右侧状态同高 */
+.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:var(--hair) solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.card-title{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--ink);margin:0 0 10px}
+/* 分级头：市场段 / 板块段用结构线分隔 */
+.market-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:var(--rule-w) solid var(--rule)}
+.market-head h2{font-family:var(--font-display);font-size:21px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+section.market{margin-top:34px}
+.sector-divider{margin:20px 0 8px;font-family:var(--font-mono);font-size:10px;line-height:1;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-tertiary)}
+
+/* ============ 3. 提示框（callout：纸色 + 左粗规） ============ */
+.summary-box,.takeaway-box,.risk-box,.sector-advice-box,.chain,.signal-area,.notice{
+  background:var(--paper-2);border:var(--hair) solid var(--line);border-left:6px solid var(--accent);
+  border-radius:0;box-shadow:none;padding:16px 18px;margin-top:10px;line-height:1.7}
+.risk-box{border-left-color:var(--state-bad)}
+.notice{border-left-color:var(--state-warn)}
+/* 脚注 / 口径说明：更小一号，左规退成发丝线 */
+.note,.snapshot-note,.sa-disclaimer,.lists-note{
+  background:var(--paper-2);border:var(--hair) solid var(--line);border-left:4px solid var(--line);
+  border-radius:0;box-shadow:none;padding:12px 14px;font-family:var(--font-ui);font-size:12px;
+  line-height:1.75;color:var(--ink-secondary);margin-top:10px}
+.snapshot-note{border-left-color:var(--accent);margin:16px 0 20px}
+.limits{margin-top:14px;font-family:var(--font-ui);font-size:12px;line-height:1.7;color:var(--ink-secondary)}
+/* 折叠区：用 <details> 收纳全量明细 */
+.method-details,.full-list,.details{margin-top:12px;border-top:var(--hair) dashed var(--line);padding-top:10px}
+.method-details summary,.full-list summary,.details summary{cursor:pointer;font-family:var(--font-display);font-weight:700;color:var(--accent);list-style:none}
+.method-details summary::-webkit-details-marker,.full-list summary::-webkit-details-marker,.details summary::-webkit-details-marker{display:none}
+.details summary{background:var(--paper);border:var(--hair) solid var(--rule);box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow);padding:14px 16px}
+.details[open] summary{margin-bottom:10px}
+.full-list[open]{padding-top:14px}
+.full-list summary{margin-bottom:12px}
+.method-details summary:focus-visible,.details summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* ============ 4. KPI 磁贴 ============ */
+.metric-card,.tile{
+  background:var(--paper);border:var(--hair) solid var(--rule);border-top:4px solid var(--accent);
+  border-radius:0;box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow);
+  padding:15px 16px;min-width:0}
+.metric-card{min-height:118px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.metric-card strong{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-.05em;overflow-wrap:anywhere}
+/* 承载整句结论的指标卡：换正文体与小字号，否则一句话会被排成巨字 */
+.metric-card.metric-text strong{font-family:var(--font-body);font-size:15px;font-weight:600;line-height:1.6;letter-spacing:0}
+.metric-card p,.metric-card small{font-family:var(--font-ui);color:var(--ink-tertiary);font-size:11px;line-height:1.5}
+.tile .t-label{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-tertiary)}
+.tile .t-value{font-family:var(--font-mono);font-size:19px;font-weight:700;line-height:1.15;color:var(--ink);margin-top:6px;letter-spacing:-.03em}
+.tile .t-sub{font-family:var(--font-ui);font-size:11px;color:var(--ink-tertiary);margin-top:4px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.tile.tone-pos .t-value{color:var(--gain)}
+.tile.tone-neg .t-value{color:var(--loss)}
+/* 情绪小卡带（每日复盘） */
+.sentiment-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.sentiment-kpis div{padding:10px 12px;background:var(--paper);border:var(--hair) solid var(--rule);border-top:4px solid var(--accent)}
+.sentiment-kpis span{display:block;font-family:var(--font-ui);color:var(--ink-tertiary);font-size:11px}
+.sentiment-kpis strong{display:block;margin-top:4px;font-family:var(--font-mono);font-size:19px;font-weight:700}
+
+/* ============ 5. 徽章与等级 ============ */
+.badges,.coverage{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}
+.badge.b-ok,.badge-available,.badge-fact,.badge.b-pass{background:var(--state-ok-soft);color:var(--state-ok);border-color:var(--state-ok)}
+.badge.b-warn,.badge-partial,.badge-inference{background:var(--state-warn-soft);color:var(--state-warn);border-color:var(--state-warn)}
+.badge.b-bad,.badge-unknown,.badge-judgment,.badge.b-fail{background:var(--state-bad-soft);color:var(--state-bad);border-color:var(--state-bad)}
+.badge.b-mid{background:var(--paper-2);color:var(--ink-secondary);border-color:var(--line)}
+.badge.b-muted,.badge-muted,.badge.b-unknown{background:var(--state-unknown-soft);color:var(--state-unknown);border-color:var(--line)}
+/* 刻意不提供 .badge-up/.badge-down 别名：那是「行情词」，与红涨绿跌互串是明确事故源。
+   状态一律用 available/partial/unknown（或 b-ok/b-warn/b-bad）。 */
+/* 覆盖格（资本环境 28 格矩阵） */
+.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;font-family:var(--font-mono);font-size:11px;color:var(--ink-secondary)}
+.matrix-cell{display:flex;align-items:center;justify-content:center;padding:5px 2px;border-radius:0;min-height:1.6rem;text-align:center}
+.matrix-cell.a{background:var(--state-ok-soft);color:var(--state-ok)}
+.matrix-cell.p{background:var(--state-warn-soft);color:var(--state-warn)}
+.matrix-cell.u{background:var(--state-bad-soft);color:var(--state-bad)}
+.matrix-cell.lbl{background:transparent;justify-content:flex-start;padding-left:2px;color:var(--ink);font-weight:700}
+.matrix-legend{display:flex;gap:14px;margin:12px 0 0;font-family:var(--font-ui);font-size:11px;color:var(--ink-secondary)}
+.matrix-legend span{display:inline-flex;align-items:center;gap:5px}
+/* 等级：黑→灰明度阶梯，刻意不用彩色以免与涨跌混淆 */
+.tier-one{border-top-color:var(--rule)}
+.tier-two{border-top-color:var(--ink-secondary)}
+.tier-three{border-top-color:var(--line)}
+.tier-risk{border-top-color:var(--state-warn)}
+
+/* ============ 6. 表格 ============ */
+table,.tbl{border-collapse:collapse;width:100%;font-family:var(--font-ui);font-size:12px}
+.table-wrap{overflow:auto}
+td,th,.tbl td,.tbl th{text-align:left;padding:9px 10px;border-bottom:var(--hair) solid var(--line);vertical-align:top;line-height:1.6}
+th,.tbl th{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-tertiary);border-bottom:var(--hair) solid var(--rule)}
+tbody tr:last-child td{border-bottom:none}
+.tbl .num,.score-table td:not(:first-child){text-align:right;font-family:var(--font-mono)}
+.tbl .mono,.score-table{font-family:var(--font-mono)}
+.tbl .src,.src{font-family:var(--font-mono);font-size:11px;color:var(--ink-tertiary);word-break:break-all}
+.score-table{font-size:11px}
+.score-table th,.score-table td{white-space:nowrap}
+
+/* ============ 7. 列表 ============ */
+.list,.evidence-list,.update-list,.technical-list,.signal-list,.timeline{margin:0;padding-left:0;list-style:none;font-size:13px;line-height:1.7;color:var(--ink-secondary)}
+.evidence-list li,.update-list li,.technical-list li,.signal-list li,.timeline li{padding:10px 0;border-bottom:var(--hair) solid var(--line);display:grid;gap:3px}
+.evidence-list li:last-child,.update-list li:last-child,.technical-list li:last-child,.signal-list li:last-child,.timeline li:last-child{border-bottom:none}
+.list{list-style:none}
+.list li{padding-left:20px;position:relative;margin-bottom:5px}
+.list li:before{content:"—";position:absolute;left:0;color:var(--accent);font-weight:700}
+.list.dim li:before{color:var(--line)}
+.timeline time,.timeline small{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:.04em}
+.timeline strong{display:block;font-family:var(--font-display);font-size:13px}
+.gaps{margin:0;padding-left:22px;list-style:"— " outside;font-size:13px;line-height:1.75;color:var(--ink-secondary)}
+.update-list strong,.technical-list strong{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em}
+.update-list small,.evidence-list span,.signal-list small{font-family:var(--font-ui);font-size:11px;color:var(--ink-tertiary);line-height:1.55}
+
+/* ============ 8. 栅格 ============ */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hero-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.signal-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:10px 0}
+.candidate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.chain-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.market-grid{display:grid;gap:10px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.chart-grid{display:grid;gap:14px;margin-top:10px}
+@media(min-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:940px){.chart-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1024px){.market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.wide{grid-column:span 2}
+
+/* ============ 9. 图表框 / 环图 / 条形 / 色块 ============ */
+.chart-box{width:100%;height:180px;margin-top:8px}
+.chart{width:100%;height:280px;margin-top:10px}
+.chart.tall{height:330px}
+.chart-box .unknown-msg{display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--font-ui);
+  font-size:12px;color:var(--ink-tertiary);text-align:center;padding:0 8px}
+.donut{width:140px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--gain) 0 var(--advance),var(--loss) var(--advance) 100%);position:relative;display:grid;place-items:center;flex:none}
+.donut:before{content:"";position:absolute;width:74%;aspect-ratio:1;border-radius:50%;background:var(--paper)}
+.donut span{position:relative;text-align:center;font-family:var(--font-mono);font-size:24px;font-weight:700;line-height:1.1}
+.donut small{display:block;font-family:var(--font-body);font-size:11px}
+.bar-track{height:10px;background:var(--paper-2);border:var(--hair) solid var(--line);display:flex}
+.bar-track.positive{justify-content:flex-start}
+.bar-track.negative{justify-content:flex-end}
+.bar-track i{height:100%;background:var(--gain)}
+.bar-track.negative i{background:var(--loss)}
+.swatch{width:11px;height:11px;border:var(--hair) solid var(--rule);display:inline-block}
+
+/* ============ 10. 行式组件 ============ */
+.index-row{display:grid;grid-template-columns:1.2fr .8fr .55fr 1.75fr;gap:10px;padding:11px 0;border-bottom:var(--hair) solid var(--line);align-items:baseline}
+.index-row strong,.index-row b,.sector-row b,.breadth-list strong,.sentiment-state strong{font-family:var(--font-mono)}
+.sector-row{display:grid;grid-template-columns:74px 1fr 70px;gap:10px;align-items:center;margin:13px 0;font-size:13px}
+.breadth-wrap{display:flex;gap:22px;align-items:center}
+.breadth-list{width:100%}
+.breadth-list p{display:flex;justify-content:space-between;border-bottom:var(--hair) solid var(--line);padding:7px 0;font-size:13px}
+.sentiment-state{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0 7px;border-bottom:var(--hair) solid var(--rule)}
+.sentiment-state strong{font-size:28px;font-weight:700;letter-spacing:-.04em}
+.verify-strip,.history-strip{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin:0 0 10px;padding:14px 18px;background:var(--paper-2);border:var(--hair) solid var(--line);border-left:6px solid var(--state-ok)}
+.history-strip{border-left-color:var(--state-warn)}
+.verify-strip span,.history-strip span{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--state-ok)}
+.history-strip span{color:var(--state-warn)}
+.verify-strip strong,.history-strip strong{font-family:var(--font-display);font-size:15px}
+.verify-strip small,.history-strip small{white-space:nowrap}
+.sector-summary{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;font-family:var(--font-mono);font-size:11px;color:var(--ink-tertiary)}
+.rule{font-size:14px;line-height:1.7;margin:12px 0}
+dl{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0;font-size:13px}
+dt{font-family:var(--font-ui);color:var(--ink-tertiary)}
+dd{margin:0;font-family:var(--font-mono)}
+/* 键值表（研究复盘 / 资本环境） */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;margin:6px 0 0;font-size:12px}
+.kv dt{color:var(--ink-tertiary);white-space:nowrap}
+.kv dd{margin:0;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-secondary);word-break:break-all}
+
+/* ============ 11. 色调工具类 ============ */
+.thesis{border-left:6px solid var(--accent)}
+.pos,.value-rise{color:var(--gain)}
+.neg,.value-fall{color:var(--loss)}
+.value-neutral{color:var(--ink-tertiary)}
+.tone-rise{border-top-color:var(--gain) !important}
+.tone-fall{border-top-color:var(--loss) !important}
+.signal.red{border-top-color:var(--gain)}
+.signal.green{border-top-color:var(--loss)}
+.signal.gold{border-top-color:var(--state-warn)}
+.signal.muted{border-top-color:var(--state-unknown)}
+.card.pass{border-left-color:var(--state-ok)}
+.card.fail{border-left-color:var(--state-bad)}
+.card.wait{border-left-color:var(--state-warn)}
+.resolved.passed small{color:var(--state-ok)}
+.resolved.failed small{color:var(--state-bad)}
+.risk-high .risk-title{color:var(--state-bad)}
+.risk-medium .risk-title{color:var(--state-warn)}
+.risk-low .risk-title{color:var(--state-ok)}
+.risk-dot{display:inline-block;width:8px;height:8px;margin-left:6px;vertical-align:middle}
+.risk-dot.rk-high{background:var(--state-bad)}
+.risk-dot.rk-medium{background:var(--state-warn)}
+.risk-dot.rk-low{background:var(--state-ok)}
+.verdict{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink);margin:0 0 6px}
+.dot{width:10px;height:10px;display:inline-block;flex:0 0 auto}
+.dot.ok,.dot.no,.dot.wait{background:var(--state-ok)}
+.dot.no{background:var(--state-bad)}
+.dot.wait{background:var(--state-warn)}
+
+/* ============ 12. 响应式 ============ */
+@media(max-width:900px){
+  .signal-grid,.chain-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .candidate-grid,.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-grid,.grid,.split,.candidate-grid,.signal-grid,.chain-grid{grid-template-columns:1fr}
+  .wide{grid-column:auto}
+  .metric-card{min-height:104px}
+  .metric-card strong{font-size:20px}
+  .index-row{grid-template-columns:1fr auto;gap:5px}
+  .index-row span{grid-column:1;grid-row:1}
+  .index-row strong{grid-column:2;grid-row:1}
+  .index-row b{grid-column:1;grid-row:2}
+  .index-row small{grid-column:1/-1;grid-row:3}
+  .breadth-wrap{align-items:flex-start;gap:14px}
+  .donut{width:116px}
+  .score-table{font-size:10px}
+  .score-table th:nth-child(n+5),.score-table td:nth-child(n+5){display:none}
+  .matrix-wrap{overflow-x:auto;padding:12px}
+  .cell,.panel,.card{padding:13px}
+  .sector-row{grid-template-columns:66px 1fr 58px;gap:7px}
+  .verify-strip,.history-strip{grid-template-columns:1fr;gap:5px}
+  .verify-strip small,.history-strip small{white-space:normal}
+  .sentiment-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sentiment-kpis strong{font-size:16px}
+}
+
+/* ============ 技能保留项（不在本文件，各技能模板自带） ============
+ * capital : .takeaway-box/.risk-box/.sector-advice-box 的 tw-* 与 sa-* 内部结构、
+ *           .cell-head/.cell-name/.cell-evidence、.an-* 分析摘要
+ * daily   : .state-ice/-euphoria/-divergence/-repair 的语义色、.sector-row 三段布局
+ * company : .badge-* 三档证据等级文案、.split 内容
+ * news    : .candidate-head/.candidate-meta、.chain-grid 内部排版
+ * journal : .judge/.crit（冻结原文块）、.sa-* 无
+ * ========================================================================== */

@@ -1,0 +1,77 @@
+{
+  "_comment": "全库禁词唯一真源。四个 HTML 生成器必须从本文件读取，不得各自维护副本。修改禁词只改这里。",
+  "_version": "1.0.0",
+  "_updated": "2026-09-10",
+  "_tiers": {
+    "core": "所有技能无条件适用：交易指令、收益承诺、绝对化断言。任何 tier 都隐含包含 core。",
+    "no_price": "在 core 之上，禁止输出具体价位。适用于所有『只做结构观察、不给价格锚点』的技能。",
+    "strict": "在 core 之上，禁止裸口径的买卖词与聚合评分词。适用于完全不产生任何评分的技能（资本环境面板）。",
+    "score_ok": "在 core 之上，允许使用『总分』等评分聚合词，但仍禁止价位。适用于自有评分模型且不输出价位的技能（新闻标的评分）。"
+  },
+  "core": {
+    "trade_instruction": [
+      "建议买",
+      "建议卖",
+      "建议买入",
+      "建议卖出",
+      "建议加仓",
+      "建议减仓",
+      "建议满仓",
+      "建议清仓",
+      "建议轻仓",
+      "建议半仓",
+      "建议重仓",
+      "建议空仓"
+    ],
+    "price_target": [
+      "目标价",
+      "目标仓位"
+    ],
+    "return_promise": [
+      "保证收益",
+      "承诺收益",
+      "稳赚",
+      "必赚"
+    ],
+    "absolute_claim": [
+      "必然涨",
+      "必然跌",
+      "必然上涨",
+      "必然下跌",
+      "确定牛",
+      "确定熊",
+      "确定牛市",
+      "确定熊市"
+    ]
+  },
+  "no_price": {
+    "price_level": [
+      "止损",
+      "止盈",
+      "买入观察价",
+      "目标价位",
+      "建仓价",
+      "加仓价",
+      "减仓价"
+    ],
+    "fabricated_data": [
+      "数据为估算"
+    ]
+  },
+  "strict": {
+    "bare_trade_word": [
+      "买入",
+      "卖出"
+    ],
+    "aggregate_score": [
+      "牛熊分数",
+      "总分"
+    ]
+  },
+  "tier_map": {
+    "ashare-capital-environment-dashboard": "strict",
+    "ashare-daily-market-review": "no_price",
+    "ashare-company-research": "no_price",
+    "ashare-news-investment-targets": "score_ok"
+  }
+}

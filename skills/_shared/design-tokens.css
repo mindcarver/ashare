@@ -1,0 +1,87 @@
+/* A 股研究技能库 —— 设计令牌唯一真源
+ *
+ * 5 个 HTML 报告生成器（daily / capital / company / news / research-journal）在渲染时由
+ * ashare_shared.inject_shared_css() 注入本文件，脚本内不再保留 :root。
+ * 改配色只改这里。
+ *
+ * 本文件的注释在注入时会被剥除，不会出现在报告里；因此可以放心在这里写
+ * 维护者说明，而不必担心泄漏进交付物。
+ *
+ * 声明格式保持「冒号后不留空格」（如 --ink:#111417），因为压缩器依赖它与
+ * 测试断言。新增令牌请沿用同一格式。
+ *
+ * ============================================================
+ * 视觉系统 v2（2026-09-10 换装）：ASHARE EDITORIAL
+ * 新瑞士平面设计 / 现代科技编辑系统 / 柔和粗野主义
+ * ============================================================
+ * 白纸黑字最高对比 + 可见 32px 网格 + 纯黑 2px 结构线 + 零圆角 + 7px 硬投影
+ * + grotesk 标题与等宽数据 + 宋体长文。
+ *
+ * 三组语义色，各司其职，不得串用：
+ *   1. 涨跌（--gain / --loss）——A 股口径「红涨绿跌」，只给收益、涨跌幅上色
+ *   2. 状态（--state-*）——「可得 / 待定 / 缺失」，给覆盖度、通过与否、风险等级
+ *   3. 品牌（--accent）——钴蓝点色，只给眉题、规线、链接、编号，不承载语义
+ *
+ * 旧版把「可得」命名为 --market-up（取绿色），与「红涨」正好相反，是明确的事故源；
+ * v2 已删除该别名，统一用 --state-ok / --state-bad。新代码不要再引入行情词命名。
+ *
+ * 尚未令牌化：各技能的组件内边距与栅格列数，仍留在各自模板里。
+ */
+
+:root {
+/* —— 面：暖灰纸底 + 纯白卡面，最大化对比 —— */
+--canvas:#e9e6e0;
+--paper:#ffffff;
+--paper-2:#f3f1ed;
+--surface-base:var(--paper);
+--surface-raised:var(--paper);
+--surface-muted:var(--paper-2);
+/* —— 墨：近黑正文 + 两级灰 —— */
+--ink:#111417;
+--ink-primary:var(--ink);
+--ink-secondary:#4b5158;
+--ink-tertiary:#7d838a;
+--muted:var(--ink-tertiary);
+/* —— 线：发丝线（网格）+ 纯黑结构线（硬边框、上下粗规） —— */
+--line:#c9c6c0;
+--rule:#111417;
+--border-hairline:var(--line);
+--grid-line:rgba(17,20,23,.07);
+--shadow:#111417;
+/* —— 涨跌：A 股口径，红涨绿跌 —— */
+--red:#d2231b;
+--green:#0e7a45;
+--gain:var(--red);
+--loss:var(--green);
+--gain-soft:#fbe2df;
+--loss-soft:#dcefe4;
+/* —— 品牌：钴蓝点色（无涨跌含义） —— */
+--accent:#1b39d8;
+--accent-soft:#e1e5fc;
+--accent-foreground:#ffffff;
+--brand:var(--accent);
+--brand-foreground:var(--accent-foreground);
+/* —— 待定 / 注意：暖琥珀 —— */
+--gold:#a9761a;
+--gold-soft:#f7edda;
+/* —— 状态：可得性语义，勿用于涨跌 —— */
+--state-ok:#0e7a45;
+--state-ok-soft:#dcefe4;
+--state-warn:var(--gold);
+--state-warn-soft:var(--gold-soft);
+--state-bad:var(--red);
+--state-bad-soft:var(--gain-soft);
+--state-unknown:var(--ink-tertiary);
+--state-unknown-soft:#eceae6;
+/* —— 字体：grotesk 标题 / 宋体长文 / 等宽数据 —— */
+--font-display:"Inter","Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--font-ui:var(--font-display);
+--font-body:"Noto Serif SC","Songti SC",STSong,serif;
+--font-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+/* —— 版面常量：结构线宽 / 硬投影偏移 / 网格与栅格间距 —— */
+--rule-w:2px;
+--hair:1px;
+--shadow-off:7px;
+--grid:32px;
+--gap:20px;
+}

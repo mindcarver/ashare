@@ -55,7 +55,9 @@ python3 scripts/generate_news_targets_html.py --input news-targets.json --check
 ## 评分与缺口规则
 
 - 每个候选使用 100 分维度：新闻强度20、关联强度20、预期差15、业绩弹性15、股价位置10、板块强度10、资金痕迹10。
+- `score` 对象必须同时包含全部 7 个维度键（`news_intensity` / `relevance` / `expectation_gap` / `earnings_elasticity` / `price_position` / `sector_strength` / `fund_trace`）与 `pending` 数组——缺任一键会报"score 必须是对象"（2026-08-30 实测踩坑），无需 `total` 字段（生成器自动求和）。
 - 实时股价、板块强度、资金痕迹无法核验时，写入 `pending`，该维度必须按 0 分处理；生成器显示“调整后分”和待核验项数。
+- `candidates[].rank` 为评分排序（1=最高），候选数组顺序不影响渲染；`tier` 只能取四个固定层级之一。
 - `ticker` 可以为空或写“代码待核验”；生成器绝不补代码。
 - 新闻的 `published_at` 必须不晚于 `as_of`；新闻来源必须在 `sources` 中存在，且 URL 只能是 HTTP(S)。
 - `technical.availability != available` 时只显示“技术面未验证”和原因，不显示K线、均线、MACD、支撑压力或任何价格。
@@ -63,4 +65,4 @@ python3 scripts/generate_news_targets_html.py --input news-targets.json --check
 
 ## 视觉交付
 
-HTML必须显示新闻传导链、候选分层、评分与待核验、前3名深度补充、技术面与资金确认、观察计划、数据缺口与来源。页面沿用 `ashare-daily-market-review` 与 `ashare-capital-environment-dashboard` 的深墨绿网格、宋体正文、金色眉题、米白硬投影卡和红涨绿跌研报风。
+HTML必须显示新闻传导链、候选分层、评分与待核验、前3名深度补充、技术面与资金确认、观察计划、数据缺口与来源。视觉沿用报告族共享的「ASHARE EDITORIAL」品牌设计系统（`skills/_shared/`：白纸黑字最高对比、可见 32px 网格、纯黑 2px 结构线、零圆角、7px 硬投影、宋体正文 + 等宽评分），本技能只保留 `.candidate-head` / `.candidate-meta` 与 `.chain-grid` 内部排版；A 股涨跌保持红涨绿跌。

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="DnAtU77vFzZthAxHiYVi3B">
+<head data-page-node-id="xwMazfA8AENkTqCHwL156W">
+<meta charset="utf-8" data-page-node-id="bcNszpwIqATb7QQ1clAt3E" />
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="xg3NfTh2EKtr2shR7o1DBI" />
+<title>研究结论命中率统计 · 截至 2026-08-31</title>
+<meta name="description" content="A股研究结论的事后统计看板：命中率、超额分布与概率校准（本地研究工具）" data-page-node-id="cG0UFhEV259Ayc8ebg0ftR" />
+<meta name="robots" content="noindex, nofollow" data-page-node-id="Np0pVHSBXlYWMskEccaxqe" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--ink:#13211f;--paper:#f6f1e7;--paper-2:#eee6d7;--line:#d8cdbb;--red:#bf332d;--green:#19724b;--gold:#ba8a35;--muted:#756f66;--canvas:#18221f;--surface-base:var(--paper);--surface-raised:var(--paper);--surface-muted:var(--paper-2);--ink-primary:var(--ink);--ink-secondary:#5f584e;--ink-tertiary:var(--muted);--border-hairline:var(--line);--brand:var(--gold);--brand-foreground:#18221f;--market-up:var(--green);--market-up-soft:#d8eedf;--market-down:var(--red);--market-down-soft:#edd8d2;}*{box-sizing:border-box}body{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}.masthead{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}.eyebrow{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}.badge{display:inline-flex;align-items:center;font:700 11px/1 "SFMono-Regular",Consolas,monospace;padding:6px 8px;border-radius:999px;letter-spacing:.04em}@media(max-width:760px){.masthead{display:block}}
+
+main{max-width:1180px;margin:auto;padding:32px 20px 56px}
+.masthead h1{font-size:clamp(30px,5vw,56px);line-height:.95;letter-spacing:-.05em;margin:0}
+.masthead .asof{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right;margin:0}
+.lede{color:#cfc5b4;font-size:12px;line-height:1.75;margin:16px 0 8px}
+.card{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
+.card.pass{border-left-color:var(--market-up)}
+.card.fail{border-left-color:var(--market-down)}
+.card.wait{border-left-color:var(--gold)}
+.card-title{font-size:0.9rem;font-weight:600;color:var(--ink-primary);margin:0 0 0.5rem;letter-spacing:0.01em}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:0.3rem 1rem;margin:0.375rem 0 0;font-size:0.75rem}
+.kv dt{color:var(--ink-tertiary);white-space:nowrap}
+.kv dd{margin:0;color:var(--ink-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.72rem;word-break:break-all}
+.list{margin:0.375rem 0 0;padding-left:1.15rem;font-size:0.79rem;line-height:1.7;color:var(--ink-secondary)}
+.list li{margin-bottom:0.2rem}
+.list.dim{color:var(--ink-tertiary)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.625rem;margin-top:0.5rem}
+.tile{background:var(--paper-2);border:1px solid var(--line);padding:0.625rem 0.75rem}
+.tile .t-label{font-size:0.68rem;color:var(--ink-tertiary);letter-spacing:0.02em}
+.tile .t-value{font-size:1.05rem;font-weight:600;color:var(--ink-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:0.2rem;line-height:1.2}
+.tile .t-sub{font-size:0.66rem;color:var(--ink-tertiary);margin-top:0.15rem}
+.tbl{width:100%;border-collapse:collapse;margin-top:0.5rem;font-size:0.78rem}
+.tbl th{text-align:left;font-weight:600;color:var(--ink-primary);padding:0.4rem 0.5rem;border-bottom:1px solid var(--line);font-size:0.72rem;letter-spacing:0.02em}
+.tbl td{padding:0.4rem 0.5rem;border-bottom:1px dashed var(--border-hairline);color:var(--ink-secondary);vertical-align:top;line-height:1.55}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .num{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
+.tbl .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.7rem}
+.tbl .src{font-size:0.7rem;color:var(--ink-tertiary);word-break:break-all}
+.pos{color:var(--red)}
+.neg{color:var(--green)}
+.badge.b-pass{background:var(--market-up-soft);color:var(--market-up)}
+.badge.b-fail{background:var(--market-down-soft);color:var(--market-down)}
+.badge.b-muted{background:var(--surface-muted);color:var(--ink-tertiary)}
+.chart{width:100%;height:280px;margin-top:0.5rem}
+.chart.tall{height:330px}
+.chart-grid{display:grid;gap:0.75rem;margin-top:0.5rem}
+@media (min-width:940px){.chart-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.note{margin-top:0.75rem;padding:0.55rem 0.7rem;background:var(--paper-2);border-left:3px solid var(--gold);font-size:0.7rem;line-height:1.65;color:var(--ink-tertiary)}
+.empty{margin-top:10px;padding:56px 20px;text-align:center;color:var(--muted);background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25);font-size:15px}
+.verdict{display:flex;align-items:center;gap:0.5rem;font-size:0.95rem;font-weight:600;color:var(--ink-primary);margin:0 0 0.375rem}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.dot.ok{background:var(--market-up)}
+.dot.no{background:var(--market-down)}
+.dot.wait{background:var(--gold)}
+.foot{margin-top:1.25rem;color:#cfc5b4;font-size:11px;line-height:1.75}
+code,.mono{font-family:"SFMono-Regular",Consolas,monospace}
+@media(max-width:760px){.container{padding:22px 14px 40px}.masthead .asof{text-align:left;margin-top:16px}.chart{height:240px}}
+
+
+.sample-note{font-size:0.72rem;color:var(--ink-tertiary);line-height:1.7;margin:0.5rem 0 0}
+
+</style>
+</head>
+<body data-page-node-id="7EU72Hj0YUBbvesT48nE2O">
+<main data-page-node-id="3uxJigYReZjKK4D3GHQ31c">
+<div class="container" data-page-node-id="5TYOEVxfo3hMUWq5EQ36uQ">
+  <header class="masthead" data-page-node-id="uk0hlBUHznkHvvuoIutrqf">
+    <div data-page-node-id="W9gWy1KFdoKSWJNej83F1O"><p class="eyebrow" data-page-node-id="KpnA1EV8I2b2vFqsDGGGEW">A-SHARE / RESEARCH JOURNAL STATS</p><h1 data-page-node-id="gP7i0xqVCf4kjQB4h75NfD">命中率统计</h1></div>
+    <p class="asof" data-page-node-id="9K3DOWJ6gW8Zk09FNtq02W">截至 2026-08-31<br  data-page-node-id="D41DFtNzBWLVnGmpinRCl3"/>（全部标的）<br  data-page-node-id="mLH7GE3JMUOl5aQ9bktOmE"/>成熟样本 1 条</p>
+  </header>
+
+  <p class="lede" data-page-node-id="h1zYyA95LNhtizUVb8GuWe">截至 2026-08-31 共 1 条成熟样本（全部标的），命中 1 条。</p>
+
+  <section class="card" data-page-node-id="DJwwwOo3uObM4y5LZCABsr">
+    <h2 class="card-title" data-page-node-id="1Ew5u9O3z6y6SS60m8FYnP">总体指标</h2>
+    <div class="tiles" data-page-node-id="nTrs8byK0tWgwP7GZF0Ymu">
+<div class="tile" data-page-node-id="oKtn6XjFXPqjXwppHpD1lL"><div class="t-label" data-page-node-id="QyGjYHrfM5DRoU2JPHKJv2">成熟样本</div><div class="t-value" data-page-node-id="XRL15lcA9MwSNxcW4YmxFa">1</div><div class="t-sub" data-page-node-id="S10rBAvpSsKOgLCU12YnHU">（全部标的）</div></div><div class="tile" data-page-node-id="QlsfCRC6jUAjkO8ozr560D"><div class="t-label" data-page-node-id="DXH3rCVBiwiWkis5ZtqBF1">命中数</div><div class="t-value" data-page-node-id="qmm3nGA9LujUEK1stWyIus">1</div></div><div class="tile" data-page-node-id="5st3ec7A0ywBuHWoYruHso"><div class="t-label" data-page-node-id="CGv1z9zL9bsljvwaPrFXEg">命中率</div><div class="t-value" data-page-node-id="Me8RZFJLHI2LCuG2XVcFMM">100.0%</div></div><div class="tile" data-page-node-id="jYMzBXtE34xQ17hLH5kC7p"><div class="t-label" data-page-node-id="vu6fvMnUQa0ZsiEE2ihmus">Brier 分数</div><div class="t-value" data-page-node-id="Bl4XsUmhPw4pHsTtWBGROU">0.0900</div><div class="t-sub" data-page-node-id="nPiaZTNvxv2QKHsaRIdu1p">校准分母 1 条</div></div><div class="tile" data-page-node-id="3p4d9SDxgrULXSxyimy841"><div class="t-label" data-page-node-id="4OmEbOfGEkETJyB5hLohcm">平均股票收益</div><div class="t-value pos" data-page-node-id="gCKX7PimWN8z7n6jFSWFYu">+10.00%</div></div><div class="tile" data-page-node-id="uq66MIwYiSBjBjocOQobQH"><div class="t-label" data-page-node-id="jHWuPuYEy0FJDVzwmH2znd">平均超额</div><div class="t-value pos" data-page-node-id="7f6WhmQFjRUCJNeIU0xWkn">+7.50%</div></div><div class="tile" data-page-node-id="kYxIdq7kPBvyxRHbjwL90J"><div class="t-label" data-page-node-id="nMlEHMPRvvS1DBMiU8PIJx">平均最大回撤</div><div class="t-value neg" data-page-node-id="QSwVtl8IGudzQTtBF6Idzg">-10.00%</div></div>
+    </div>
+    <div class="chart-grid two" data-page-node-id="QRNjXjVCokeA98LXAhHqPK">
+      <div class="chart" id="ch-hit" data-page-node-id="qWi9DtXVulKPhirjsWfWlL"></div>
+      <div class="chart" id="ch-excess" data-page-node-id="yybyhehHJTEbuDXZMhoZV9"></div>
+    </div>
+    <div class="chart tall" id="ch-calibration" data-page-node-id="2Lc1TqiiyB4uKWIlu642GI"></div>
+    <div class="note" data-page-node-id="3IpDkOnXjFdXbcjiQUqa0p">超额分布按 Research ID 排序，红=正超额、绿=负超额（A 股口径）。Brier 分数 = 平均（当时概率 − 实际结果）²，越小越接近校准；虚线为「概率=实际」的完美校准线，散点越贴近虚线校准越好。</div>
+  </section>
+
+  <section class="card" data-page-node-id="GKo2EkdMOwOAZX8TlwKFXH">
+    <h2 class="card-title" data-page-node-id="v5t5rgb8tP3KLPD2lDNWs5">逐条明细</h2>
+    <table class="tbl" data-page-node-id="3RDfuj7TmRfLDF0odqGjRL">
+      <thead data-page-node-id="VDxxUxnWws1oH5MYmplHyA"><tr data-page-node-id="5Qc6YaWCIyXvpLy81Knavr"><th data-page-node-id="cCGLh6EuANMZMCajG5IUhn">Research ID</th><th data-page-node-id="kAaI0wsXgpFFMQCI6huCzP">标的</th><th data-page-node-id="i8ufrg63trZbV4rHWRGvSa">评价日</th><th class="num" data-page-node-id="KF2i8eXoykRjr4TDtA2eLc">当时概率</th><th class="num" data-page-node-id="0ERKCgmVnZjHCc69Ursl2F">股票收益</th><th class="num" data-page-node-id="XMCXdEGwjzE7xpHAJiXMb2">超额</th><th class="num" data-page-node-id="Qd7n4F5XVdgU7rWzqqfA1c">最大回撤</th><th data-page-node-id="eJGAz9GIByhwQFH1c8Xh5M">判定</th></tr></thead>
+    <tbody data-page-node-id="z7voBvPyjJKOzutRyqZF7N">
+      <tr data-page-node-id="3oGkfytyBNnFBKGygsrWMA"><td class="mono" data-page-node-id="Jbzyt8jzmKLq3IWKdSQT5o">r-600001-20260801-30d</td><td data-page-node-id="ev7HC8EZmnbDe7Ff3m01Tw">甲公司<br  data-page-node-id="umCSVRaCHyaDr3w0YO8rpE"/><span class="src" data-page-node-id="PiS3Lq9wZhWloLLPgKt9KY">600001</span></td><td class="mono" data-page-node-id="JpHmsrMgXORCZ7ubqLigxD">2026-08-31</td><td class="num" data-page-node-id="XamF3NGrY5jTpVkU3HE15a">70.00%</td><td class="num pos" data-page-node-id="4Y88V799i9vmoRw0mvGpBg">+10.00%</td><td class="num pos" data-page-node-id="bBBeMsmHqROygZHOhi320X">+7.50%</td><td class="num neg" data-page-node-id="eaHwWZsbkMf64K1T7Yjl7l">-10.00%</td><td data-page-node-id="7hdnCRsKPXsQ82nBrYuueB"><span class="badge b-pass" data-page-node-id="i2bYQEhICgcJobpODytEF6">通过</span></td></tr>
+    </tbody>
+    </table>
+  </section>
+
+  <section class="card" data-page-node-id="7qZEI4FgWEBXGatru7iDDy">
+    <h2 class="card-title" data-page-node-id="TunUQgMI9NZEQBCzynDYiK">必须同时阅读的限定</h2>
+    <ul class="list" data-page-node-id="e5riU7knlj4QYLj0K8Fv2U">
+      <li data-page-node-id="fau2LtadNoRXDg2CitafP2">样本量：本次仅 1 条成熟记录，任何比例都接近噪声，不要据此推断能力。</li>
+      <li data-page-node-id="oWqhSuSU4sYiGK2XWIWxH2">行业集中：记录来自主观选题，行业分布未经加权。</li>
+      <li data-page-node-id="DUO8U0HbODhllWkXoD3ptj">市场阶段：所有样本落在同一市场阶段时，结果很大程度上是阶段收益。</li>
+      <li data-page-node-id="CdyLENET5jhDt6UFbjhUdt">选择偏差：只有被记录下来的研究进入样本，未记录的研究不在分母里。</li>
+      <li data-page-node-id="eoKyPAqIDHE1uk4iDwG19B">命中率不等于赚钱：成功标准可以是任意指标，且未计入仓位与成本。</li>
+    </ul>
+    <div class="note" data-page-node-id="CPDIGGUoHMPQbC1pWNe5ee">统计结果描述历史样本，不代表未来能力。</div>
+  </section>
+
+  <p class="foot" data-page-node-id="yjBvbGW1xYECxVzHa9KJRP">统计结果描述历史样本，不代表未来能力。样本量、行业集中、市场阶段与选择偏差必须与数值同时阅读。报告不构成投资建议。</p>
+</div>
+</main>
+<script>
+const STATS = {"hitRate": 100.0, "records": [{"label": "甲公司", "id": "r-600001-20260801-30d", "excess": 7.5, "probability": 0.7, "passed": 1, "date": "2026-08-31"}]};
+const inkColor = '#13211f', secColor = '#756f66', terColor = '#9a9287',
+      gridColor = '#e5dac7', goldColor = '#ba8a35',
+      gainColor = '#bf332d', lossColor = '#19724b';
+(function(){
+  if (typeof echarts === 'undefined') return;
+  const charts = [];
+  function mount(id, option){
+    const el = document.getElementById(id);
+    if (!el) return;
+    const chart = echarts.init(el);
+    chart.setOption(option);
+    charts.push(chart);
+  }
+  if (STATS.hitRate !== null && STATS.hitRate !== undefined) {
+    mount('ch-hit', {
+      series: [{
+        type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: 100,
+        radius: '95%', center: ['50%','60%'],
+        axisLine: { lineStyle: { width: 14, color: [[1, gridColor]] } },
+        progress: { show: true, width: 14, itemStyle: { color: goldColor } },
+        pointer: { itemStyle: { color: inkColor }, length: '58%', width: 4 },
+        axisTick: { distance: -16, length: 3, lineStyle: { color: '#fff', width: 1 } },
+        splitLine: { distance: -18, length: 10, lineStyle: { color: '#fff', width: 2 } },
+        axisLabel: { distance: 20, color: terColor, fontSize: 9 },
+        title: { offsetCenter: [0, '74%'], fontSize: 10, color: secColor },
+        detail: { valueAnimation: true, formatter: '{value}%', color: inkColor,
+          fontSize: 22, fontWeight: 600, offsetCenter: [0, '36%'] },
+        data: [{ value: STATS.hitRate, name: '命中率' }]
+      }]
+    });
+  }
+  const withExcess = STATS.records.filter(function(r){ return r.excess !== null && r.excess !== undefined; });
+  if (withExcess.length) {
+    const showLabel = withExcess.length <= 12;
+    mount('ch-excess', {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+        formatter: function(ps){ const r = withExcess[ps[0].dataIndex];
+          return r.label + '<br/>' + r.id + '<br/>超额：' + r.excess + '%<br/>' + (r.passed ? '通过' : '未通过'); } },
+      grid: { left: 52, right: 16, top: 22, bottom: 62 },
+      xAxis: { type: 'category', data: withExcess.map(function(r){ return r.label; }),
+        axisLabel: { color: terColor, fontSize: 9, rotate: 38, interval: 0 },
+        axisTick: { show: false }, axisLine: { lineStyle: { color: secColor } } },
+      yAxis: { type: 'value', name: '超额 %', nameTextStyle: { color: terColor, fontSize: 9 },
+        axisLabel: { color: terColor, fontSize: 9 }, splitLine: { lineStyle: { color: gridColor } } },
+      series: [{ type: 'bar', barWidth: '52%',
+        data: withExcess.map(function(r){ return { value: r.excess,
+          itemStyle: { color: r.excess >= 0 ? gainColor : lossColor, borderRadius: [3,3,0,0] } }; }),
+        label: { show: showLabel, position: 'top', color: inkColor, fontSize: 9, fontWeight: 600,
+          formatter: function(p){ return p.value + '%'; } } }]
+    });
+  }
+  const withProb = STATS.records.filter(function(r){ return r.probability !== null && r.probability !== undefined; });
+  if (withProb.length) {
+    mount('ch-calibration', {
+      tooltip: { formatter: function(p){ const r = withProb[p.dataIndex];
+        return r.label + '<br/>' + r.id + '<br/>当时概率：' + r.probability + '<br/>实际：' + (r.passed ? '通过' : '未通过'); } },
+      grid: { left: 66, right: 20, top: 22, bottom: 34 },
+      xAxis: { type: 'value', min: 0, max: 1, name: '当时概率', nameLocation: 'middle', nameGap: 24,
+        nameTextStyle: { color: terColor, fontSize: 9 },
+        axisLabel: { color: terColor, fontSize: 9 }, splitLine: { lineStyle: { color: gridColor } } },
+      yAxis: { type: 'value', min: -0.08, max: 1.08, name: '实际结果', nameLocation: 'middle', nameGap: 34,
+        nameTextStyle: { color: terColor, fontSize: 9 },
+        axisLabel: { color: terColor, fontSize: 9,
+          formatter: function(v){ return v === 1 ? '通过' : (v === 0 ? '未通过' : ''); } },
+        splitLine: { lineStyle: { color: gridColor } } },
+      series: [
+        { type: 'line', data: [[0,0],[1,1]], symbol: 'none', silent: true,
+          lineStyle: { color: terColor, type: 'dashed', width: 1 } },
+        { type: 'scatter', symbolSize: 11, itemStyle: { color: goldColor },
+          data: withProb.map(function(r){ return [r.probability, r.passed]; }) }
+      ]
+    });
+  }
+  window.addEventListener('resize', function(){ charts.forEach(function(c){ c.resize(); }); });
+})();
+</script>
+</body>
+</html>

@@ -69,7 +69,7 @@ python3 scripts/generate_daily_review.py \
 
 生成器可直接读取旧`schema_version=1.0`真实产物并保守归一化：用原始输入SHA作为证据包SHA，根据最晚`fetched_at`建立快照，把可识别的窗口和资金方法显式化；无法证明股票池一致的情绪降为partial，无法机器计算的旧验证点保留为“定性观察点”而不自动判定。新输入必须直接使用1.1。
 
-`--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、下一交易日验证、限制与来源。板块默认只展示涨幅前10与跌幅前10，完整榜单折叠；条形按真实绝对涨跌幅绘制，不人为放大接近零的波动。HTML不依赖在线图表库；数据缺失时展示unknown/原因，不绘制零值替代图表。
+`--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、下一交易日验证、限制与来源。板块默认只展示涨幅前10与跌幅前10，完整榜单折叠；条形按真实绝对涨跌幅绘制，不人为放大接近零的波动。HTML不依赖在线图表库；数据缺失时展示unknown/原因，不绘制零值替代图表。视觉由报告族共享的「ASHARE EDITORIAL」品牌层统一提供（`skills/_shared/design-tokens.css` + `shell.css` + `components.css`，由 `inject_shared_css()` 注入，注入点在 head 结束标签之前，对同名选择器有最终解释权）；本技能模板只保留短线情绪五态语义色（`.state-ice/-euphoria/-divergence/-repair`）与 `.section-note` / `.evidence` 附注小字，**不得回填骨架或组件规则**。
 
 内置背离和情绪规则公开在JSON摘要中。读取[短线情绪规则](references/short-term-sentiment.md)以确认所需字段、口径和状态优先级。例如：主要指数上涨但上涨家数占比低于40%，标记“指数上涨但宽度偏窄”；这只是结构观察，不预测次日方向。
 
@@ -100,17 +100,20 @@ python3 scripts/generate_daily_review.py \
 - 相同输入和as-of是否产生相同Markdown、JSON和SHA。
 - 是否避免隐藏总分、个股推荐、买卖、目标价和仓位指令；情绪状态是否只作为市场观察。
 
-## 实测口径经验（2026-08-29 沉淀）
+## 七、实测口径与避坑
 
-- **涨停家数供应商口径差**：腾讯自选股 `data_changedist`（全样本含ST）与财联社盘后统计（不含ST/退市）可能存在差异。即使差异不改变某次阈值结果，也不能把两个股票池声明为完全一致；`short_term_sentiment`最多标partial并输出unknown，或改采同一股票池的完整数据。
-- **封板尝试次数反推**：财联社披露炸板数与封板率时，`limit_attempts = 涨停数 + 炸板数`（同一来源同一口径），勿用"最终涨停家数"替代分母。
-- **两融滞后**：`data_market_overview type=margin` 的 row 常为空（仅 schema），当日复盘若两融未发布，标 partial 或改用证券时报数据宝 WebSearch。
-- **5日成交均值口径**：用上证+深证成指指数 K 线 amount 加总近似（不含北交所），口径写入 `status_reason`。
-- **`data_quote` 历史日期参数**可取前一交易日收盘，用于 `previous_amount` 核验。
-- **事件文本禁词**：质量门 FORBIDDEN 检查覆盖事件描述——写事件时避免「目标价」等词（如"机构上调目标价"改为"上调其股价预期"）。
+完整清单（股票池口径、备用主机矩阵、滚动窗口、资金断供、脚本维护）见 [实测口径与避坑清单](references/data-pitfalls.md)。**每次跑复盘前读该文件**；新增经验也追加到那里，不要写回本文件。
+
+先记住最高频三条：
+
+1. **采集通道故障 ≠ 数据缺失**：`push2` 报 `ProxyError` / `RemoteDisconnected` 时先换备用主机（`push2delay` 供 clist/ulist，`push2his` 供 K 线）并串行长重试（≥8 次、指数退避），不要直接判 unknown。
+2. **不同来源的涨停家数不能互认**：东财涨停池不含 ST，指数级涨跌家数含 ST，两者不是同一股票池；`short_term_sentiment` 最多 partial，除非重建同池宽度。
+3. **滚动均值窗口必须显式声明**：取 5/20 日均值时 `lmt` 至少 25，否则 20 日会被静默算成更短窗口；输出时写 `window.trading_days`。
 
 修改脚本后运行：
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
+
+或在仓库根跑 `make test`（会连同共享层一起验证）。

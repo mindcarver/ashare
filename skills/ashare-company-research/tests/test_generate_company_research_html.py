@@ -34,11 +34,14 @@ class CompanyResearchHtmlTests(unittest.TestCase):
             self.run_generator(FIXTURE, out)
             html = out.read_text(encoding="utf-8")
 
-        self.assertIn("--ink:#13211f", html)
-        self.assertIn("background:#18221f", html)
-        self.assertIn('font-family:"Noto Serif SC","Songti SC",STSong,serif', html)
+        # 共享设计令牌与品牌层（外壳 + 组件）
+        self.assertIn("--ink:#111417", html)
+        self.assertIn("--accent:#1b39d8", html)
+        self.assertIn('"Noto Serif SC","Songti SC",STSong,serif', html)
         self.assertIn("A股 / 公司研究", html)
-        self.assertIn("box-shadow:5px 5px 0 rgba(12,18,16,.25)", html)
+        self.assertIn('<style id="ashare-brand">', html)
+        self.assertIn("box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow)", html)
+        self.assertNotIn("background:#18221f", html)
         for heading in ("当前研究命题", "市场定价什么", "已验证事实", "下一步验证", "催化剂", "证伪信号", "技术面", "信息来源"):
             self.assertIn(heading, html)
         self.assertIn("技术面未验证", html)

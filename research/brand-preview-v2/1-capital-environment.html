@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>资本环境仪表盘 · 2026-08-01</title>
+<meta name="description" content="全球、美国、中国、韩国资本环境的多维状态与证据（内部研究工具）" />
+<meta name="robots" content="noindex, nofollow" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--canvas:#e9e6e0;--paper:#ffffff;--paper-2:#f3f1ed;--surface-base:var(--paper);--surface-raised:var(--paper);--surface-muted:var(--paper-2);--ink:#111417;--ink-primary:var(--ink);--ink-secondary:#4b5158;--ink-tertiary:#7d838a;--muted:var(--ink-tertiary);--line:#c9c6c0;--rule:#111417;--border-hairline:var(--line);--grid-line:rgba(17,20,23,.07);--shadow:#111417;--red:#d2231b;--green:#0e7a45;--gain:var(--red);--loss:var(--green);--gain-soft:#fbe2df;--loss-soft:#dcefe4;--accent:#1b39d8;--accent-soft:#e1e5fc;--accent-foreground:#ffffff;--brand:var(--accent);--brand-foreground:var(--accent-foreground);--gold:#a9761a;--gold-soft:#f7edda;--state-ok:#0e7a45;--state-ok-soft:#dcefe4;--state-warn:var(--gold);--state-warn-soft:var(--gold-soft);--state-bad:var(--red);--state-bad-soft:var(--gain-soft);--state-unknown:var(--ink-tertiary);--state-unknown-soft:#eceae6;--font-display:"Inter","Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;--font-ui:var(--font-display);--font-body:"Noto Serif SC","Songti SC",STSong,serif;--font-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;--rule-w:2px;--hair:1px;--shadow-off:7px;--grid:32px;--gap:20px;}
+main{min-height:100vh}
+.container{max-width:1180px;margin:0 auto;padding:32px 20px 56px}
+
+/* 概览卡内文（.summary-box 骨架来自共享组件层） */
+.summary-box .overview{font-family:var(--font-body);font-size:15px;color:var(--ink);margin:0}
+.summary-box .disclaimer{margin-top:8px;font-family:var(--font-ui);font-size:11px;color:var(--ink-tertiary)}
+
+/* —— AI 研判 / 风险 / 板块建议三卡的内部结构（卡骨架来自共享层） —— */
+.tw-head{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--ink);margin-bottom:10px}
+.tw-list{display:flex;flex-direction:column;gap:8px}
+.tw-item{display:flex;align-items:flex-start;gap:9px;font-family:var(--font-body);font-size:13px;line-height:1.65;color:var(--ink-secondary)}
+.tw-tag{flex:0 0 auto;background:var(--rule);color:var(--paper);padding:3px 6px;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;line-height:1;margin-top:2px}
+.tw-txt{color:var(--ink-secondary)}
+
+/* 风险清单：三档标题色由共享层 .risk-high/-medium/-low 提供，标签退成空心 */
+.risk-section{margin-bottom:12px}
+.risk-section:last-child{margin-bottom:0}
+.risk-title{font-family:var(--font-display);font-size:12px;font-weight:700;margin-bottom:6px}
+.risk-section .tw-item{font-size:12.5px}
+.risk-section .tw-tag{background:transparent;border:var(--hair) solid var(--line);color:var(--ink-tertiary)}
+
+/* 板块倾向建议：按市场分组，每条带证据与证伪条件 */
+.sa-disclaimer{margin:0 0 10px;font-size:11px;color:var(--ink-tertiary);line-height:1.6}
+.sa-mkt{margin-bottom:12px;border-top:var(--hair) dashed var(--line);padding-top:9px}
+.sa-mkt:first-of-type{border-top:none;padding-top:0}
+.sa-mkt-name{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--ink);display:inline-block;margin-right:8px}
+.sa-mkt-date{font-family:var(--font-mono);font-size:11px;color:var(--ink-tertiary)}
+.sa-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.sa-item{border:var(--hair) solid var(--line);padding:9px 11px;background:var(--paper-2)}
+.sa-item .sa-sector{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--ink)}
+.sa-item .sa-stance{float:right;padding:3px 7px;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.06em;margin-left:8px;border:var(--hair) solid currentColor}
+.sa-item .sa-stance.st-up{background:var(--gain-soft);color:var(--gain)}
+.sa-item .sa-stance.st-mid{background:var(--paper);color:var(--ink-secondary)}
+.sa-item .sa-stance.st-down{background:var(--loss-soft);color:var(--loss)}
+.sa-item .sa-ev,.sa-item .sa-tr{font-family:var(--font-body);font-size:11.5px;line-height:1.6;color:var(--ink-secondary);margin-top:5px}
+.sa-item .sa-tr{color:var(--ink-tertiary)}
+.sa-item .sa-ev b,.sa-item .sa-tr b{font-family:var(--font-ui);color:var(--ink);font-weight:700}
+
+/* 每格 AI 分析摘要（透镜式） */
+.cell-analysis{margin-top:8px;padding:9px 11px;background:var(--paper-2);border-left:3px solid var(--accent)}
+.cell-analysis .an-head{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.cell-analysis .an-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.cell-analysis .an-list li{display:flex;gap:7px;font-family:var(--font-body);font-size:11.5px;line-height:1.55;color:var(--ink-secondary)}
+.cell-analysis .an-lens{flex:0 0 auto;background:var(--rule);color:var(--paper);padding:1px 5px;font-family:var(--font-mono);font-size:9.5px;font-weight:700;line-height:1.4;margin-top:1px}
+.cell-analysis .an-txt{color:var(--ink-secondary)}
+
+/* 28 格：单元格头部 + 证据脚注（.cell 骨架来自共享层，这里只收紧内边距） */
+.market-grid .cell{padding:14px}
+.cell-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.cell-name{font-family:var(--font-display);font-size:12.5px;font-weight:600;color:var(--ink)}
+.cell-evidence{margin-top:6px;padding-top:6px;border-top:var(--hair) dashed var(--line);font-family:var(--font-mono);font-size:9.5px;color:var(--ink-tertiary);line-height:1.4}
+
+@media(max-width:760px){
+  .container{padding:22px 14px 40px}
+  .market-grid .cell{padding:12px}
+}
+</style>
+<style id="ashare-brand">*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(to right,var(--grid-line) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 1px,transparent 1px);background-size:var(--grid) var(--grid)}.masthead{color:var(--ink);border-bottom:var(--rule-w) solid var(--rule);padding:0 0 20px;display:flex;justify-content:space-between;gap:24px;align-items:end}.masthead h1{font-family:var(--font-display);font-size:clamp(30px,4.8vw,54px);line-height:.96;letter-spacing:-.04em;font-weight:800;margin:0}.eyebrow{font-family:var(--font-mono);font-size:11px;line-height:1;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}.asof,.masthead .asof{font-family:var(--font-mono);font-size:12px;line-height:1.75;color:var(--ink-secondary);text-align:right;margin:0;letter-spacing:.01em}.lede{font-family:var(--font-display);font-size:13px;line-height:1.7;color:var(--ink-secondary);margin:18px 0 6px;max-width:78ch}.badge{display:inline-flex;align-items:center;gap:.35em;font-family:var(--font-mono);font-size:10px;line-height:1;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 7px;border-radius:0;border:var(--hair) solid var(--rule);background:var(--paper);color:var(--ink)}.foot,footer{margin-top:28px;padding-top:14px;border-top:var(--hair) solid var(--line);color:var(--ink-tertiary);font-family:var(--font-mono);font-size:11px;line-height:1.8}@media(max-width:760px){.masthead{display:block}.asof,.masthead .asof{text-align:left;margin-top:16px}}h1,h2,h3,p{margin:0}h2{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.25}h3{font-family:var(--font-display);font-size:14px;font-weight:700;line-height:1.3;letter-spacing:.01em}small{font-family:var(--font-ui);font-size:11px;line-height:1.55}code,.mono,.num{font-family:var(--font-mono)}a{color:var(--accent);text-decoration:none;border-bottom:var(--hair) solid var(--accent-soft);word-break:break-all}a:hover{background:var(--accent-soft)}.num{display:block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}.panel,.card,.cell,.candidate-card,.signal,.empty-state,.no-data,.matrix-wrap,.source-box{background:var(--paper);border:var(--hair) solid var(--rule);border-radius:0;box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow)}.panel,.cell,.candidate-card,.signal,.matrix-wrap,.source-box{padding:18px}.source-box{overflow:auto}.card{padding:18px;margin-top:10px;border-left:6px solid var(--accent)}.empty-state,.no-data{padding:72px 20px;text-align:center;font-family:var(--font-display);font-size:16px;color:var(--ink-secondary);margin-top:10px}.empty{color:var(--ink-tertiary);line-height:1.7}.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:var(--hair) solid var(--line);padding-bottom:12px;margin-bottom:14px}.card-title{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--ink);margin:0 0 10px}.market-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:var(--rule-w) solid var(--rule)}.market-head h2{font-family:var(--font-display);font-size:21px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}section.market{margin-top:34px}.sector-divider{margin:20px 0 8px;font-family:var(--font-mono);font-size:10px;line-height:1;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-tertiary)}.summary-box,.takeaway-box,.risk-box,.sector-advice-box,.chain,.signal-area,.notice{background:var(--paper-2);border:var(--hair) solid var(--line);border-left:6px solid var(--accent);border-radius:0;box-shadow:none;padding:16px 18px;margin-top:10px;line-height:1.7}.risk-box{border-left-color:var(--state-bad)}.notice{border-left-color:var(--state-warn)}.note,.snapshot-note,.sa-disclaimer,.lists-note{background:var(--paper-2);border:var(--hair) solid var(--line);border-left:4px solid var(--line);border-radius:0;box-shadow:none;padding:12px 14px;font-family:var(--font-ui);font-size:12px;line-height:1.75;color:var(--ink-secondary);margin-top:10px}.snapshot-note{border-left-color:var(--accent);margin:16px 0 20px}.limits{margin-top:14px;font-family:var(--font-ui);font-size:12px;line-height:1.7;color:var(--ink-secondary)}.method-details,.full-list,.details{margin-top:12px;border-top:var(--hair) dashed var(--line);padding-top:10px}.method-details summary,.full-list summary,.details summary{cursor:pointer;font-family:var(--font-display);font-weight:700;color:var(--accent);list-style:none}.method-details summary::-webkit-details-marker,.full-list summary::-webkit-details-marker,.details summary::-webkit-details-marker{display:none}.details summary{background:var(--paper);border:var(--hair) solid var(--rule);box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow);padding:14px 16px}.details[open] summary{margin-bottom:10px}.full-list[open]{padding-top:14px}.full-list summary{margin-bottom:12px}.method-details summary:focus-visible,.details summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.metric-card,.tile{background:var(--paper);border:var(--hair) solid var(--rule);border-top:4px solid var(--accent);border-radius:0;box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow);padding:15px 16px;min-width:0}.metric-card{min-height:118px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.metric-card strong{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-.05em;overflow-wrap:anywhere}.metric-card.metric-text strong{font-family:var(--font-body);font-size:15px;font-weight:600;line-height:1.6;letter-spacing:0}.metric-card p,.metric-card small{font-family:var(--font-ui);color:var(--ink-tertiary);font-size:11px;line-height:1.5}.tile .t-label{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-tertiary)}.tile .t-value{font-family:var(--font-mono);font-size:19px;font-weight:700;line-height:1.15;color:var(--ink);margin-top:6px;letter-spacing:-.03em}.tile .t-sub{font-family:var(--font-ui);font-size:11px;color:var(--ink-tertiary);margin-top:4px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.tile.tone-pos .t-value{color:var(--gain)}.tile.tone-neg .t-value{color:var(--loss)}.sentiment-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.sentiment-kpis div{padding:10px 12px;background:var(--paper);border:var(--hair) solid var(--rule);border-top:4px solid var(--accent)}.sentiment-kpis span{display:block;font-family:var(--font-ui);color:var(--ink-tertiary);font-size:11px}.sentiment-kpis strong{display:block;margin-top:4px;font-family:var(--font-mono);font-size:19px;font-weight:700}.badges,.coverage{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.badge.b-ok,.badge-available,.badge-fact,.badge.b-pass{background:var(--state-ok-soft);color:var(--state-ok);border-color:var(--state-ok)}.badge.b-warn,.badge-partial,.badge-inference{background:var(--state-warn-soft);color:var(--state-warn);border-color:var(--state-warn)}.badge.b-bad,.badge-unknown,.badge-judgment,.badge.b-fail{background:var(--state-bad-soft);color:var(--state-bad);border-color:var(--state-bad)}.badge.b-mid{background:var(--paper-2);color:var(--ink-secondary);border-color:var(--line)}.badge.b-muted,.badge-muted,.badge.b-unknown{background:var(--state-unknown-soft);color:var(--state-unknown);border-color:var(--line)}.matrix-wrap{display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;font-family:var(--font-mono);font-size:11px;color:var(--ink-secondary)}.matrix-cell{display:flex;align-items:center;justify-content:center;padding:5px 2px;border-radius:0;min-height:1.6rem;text-align:center}.matrix-cell.a{background:var(--state-ok-soft);color:var(--state-ok)}.matrix-cell.p{background:var(--state-warn-soft);color:var(--state-warn)}.matrix-cell.u{background:var(--state-bad-soft);color:var(--state-bad)}.matrix-cell.lbl{background:transparent;justify-content:flex-start;padding-left:2px;color:var(--ink);font-weight:700}.matrix-legend{display:flex;gap:14px;margin:12px 0 0;font-family:var(--font-ui);font-size:11px;color:var(--ink-secondary)}.matrix-legend span{display:inline-flex;align-items:center;gap:5px}.tier-one{border-top-color:var(--rule)}.tier-two{border-top-color:var(--ink-secondary)}.tier-three{border-top-color:var(--line)}.tier-risk{border-top-color:var(--state-warn)}table,.tbl{border-collapse:collapse;width:100%;font-family:var(--font-ui);font-size:12px}.table-wrap{overflow:auto}td,th,.tbl td,.tbl th{text-align:left;padding:9px 10px;border-bottom:var(--hair) solid var(--line);vertical-align:top;line-height:1.6}th,.tbl th{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-tertiary);border-bottom:var(--hair) solid var(--rule)}tbody tr:last-child td{border-bottom:none}.tbl .num,.score-table td:not(:first-child){text-align:right;font-family:var(--font-mono)}.tbl .mono,.score-table{font-family:var(--font-mono)}.tbl .src,.src{font-family:var(--font-mono);font-size:11px;color:var(--ink-tertiary);word-break:break-all}.score-table{font-size:11px}.score-table th,.score-table td{white-space:nowrap}.list,.evidence-list,.update-list,.technical-list,.signal-list,.timeline{margin:0;padding-left:0;list-style:none;font-size:13px;line-height:1.7;color:var(--ink-secondary)}.evidence-list li,.update-list li,.technical-list li,.signal-list li,.timeline li{padding:10px 0;border-bottom:var(--hair) solid var(--line);display:grid;gap:3px}.evidence-list li:last-child,.update-list li:last-child,.technical-list li:last-child,.signal-list li:last-child,.timeline li:last-child{border-bottom:none}.list{list-style:none}.list li{padding-left:20px;position:relative;margin-bottom:5px}.list li:before{content:"—";position:absolute;left:0;color:var(--accent);font-weight:700}.list.dim li:before{color:var(--line)}.timeline time,.timeline small{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:.04em}.timeline strong{display:block;font-family:var(--font-display);font-size:13px}.gaps{margin:0;padding-left:22px;list-style:"— " outside;font-size:13px;line-height:1.75;color:var(--ink-secondary)}.update-list strong,.technical-list strong{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em}.update-list small,.evidence-list span,.signal-list small{font-family:var(--font-ui);font-size:11px;color:var(--ink-tertiary);line-height:1.55}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.hero-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.signal-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:10px 0}.candidate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.chain-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.market-grid{display:grid;gap:10px}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.chart-grid{display:grid;gap:14px;margin-top:10px}@media(min-width:640px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:940px){.chart-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:1024px){.market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}.wide{grid-column:span 2}.chart-box{width:100%;height:180px;margin-top:8px}.chart{width:100%;height:280px;margin-top:10px}.chart.tall{height:330px}.chart-box .unknown-msg{display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--font-ui);font-size:12px;color:var(--ink-tertiary);text-align:center;padding:0 8px}.donut{width:140px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--gain) 0 var(--advance),var(--loss) var(--advance) 100%);position:relative;display:grid;place-items:center;flex:none}.donut:before{content:"";position:absolute;width:74%;aspect-ratio:1;border-radius:50%;background:var(--paper)}.donut span{position:relative;text-align:center;font-family:var(--font-mono);font-size:24px;font-weight:700;line-height:1.1}.donut small{display:block;font-family:var(--font-body);font-size:11px}.bar-track{height:10px;background:var(--paper-2);border:var(--hair) solid var(--line);display:flex}.bar-track.positive{justify-content:flex-start}.bar-track.negative{justify-content:flex-end}.bar-track i{height:100%;background:var(--gain)}.bar-track.negative i{background:var(--loss)}.swatch{width:11px;height:11px;border:var(--hair) solid var(--rule);display:inline-block}.index-row{display:grid;grid-template-columns:1.2fr .8fr .55fr 1.75fr;gap:10px;padding:11px 0;border-bottom:var(--hair) solid var(--line);align-items:baseline}.index-row strong,.index-row b,.sector-row b,.breadth-list strong,.sentiment-state strong{font-family:var(--font-mono)}.sector-row{display:grid;grid-template-columns:74px 1fr 70px;gap:10px;align-items:center;margin:13px 0;font-size:13px}.breadth-wrap{display:flex;gap:22px;align-items:center}.breadth-list{width:100%}.breadth-list p{display:flex;justify-content:space-between;border-bottom:var(--hair) solid var(--line);padding:7px 0;font-size:13px}.sentiment-state{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0 7px;border-bottom:var(--hair) solid var(--rule)}.sentiment-state strong{font-size:28px;font-weight:700;letter-spacing:-.04em}.verify-strip,.history-strip{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin:0 0 10px;padding:14px 18px;background:var(--paper-2);border:var(--hair) solid var(--line);border-left:6px solid var(--state-ok)}.history-strip{border-left-color:var(--state-warn)}.verify-strip span,.history-strip span{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--state-ok)}.history-strip span{color:var(--state-warn)}.verify-strip strong,.history-strip strong{font-family:var(--font-display);font-size:15px}.verify-strip small,.history-strip small{white-space:nowrap}.sector-summary{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;font-family:var(--font-mono);font-size:11px;color:var(--ink-tertiary)}.rule{font-size:14px;line-height:1.7;margin:12px 0}dl{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0;font-size:13px}dt{font-family:var(--font-ui);color:var(--ink-tertiary)}dd{margin:0;font-family:var(--font-mono)}.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;margin:6px 0 0;font-size:12px}.kv dt{color:var(--ink-tertiary);white-space:nowrap}.kv dd{margin:0;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-secondary);word-break:break-all}.thesis{border-left:6px solid var(--accent)}.pos,.value-rise{color:var(--gain)}.neg,.value-fall{color:var(--loss)}.value-neutral{color:var(--ink-tertiary)}.tone-rise{border-top-color:var(--gain) !important}.tone-fall{border-top-color:var(--loss) !important}.signal.red{border-top-color:var(--gain)}.signal.green{border-top-color:var(--loss)}.signal.gold{border-top-color:var(--state-warn)}.signal.muted{border-top-color:var(--state-unknown)}.card.pass{border-left-color:var(--state-ok)}.card.fail{border-left-color:var(--state-bad)}.card.wait{border-left-color:var(--state-warn)}.resolved.passed small{color:var(--state-ok)}.resolved.failed small{color:var(--state-bad)}.risk-high .risk-title{color:var(--state-bad)}.risk-medium .risk-title{color:var(--state-warn)}.risk-low .risk-title{color:var(--state-ok)}.risk-dot{display:inline-block;width:8px;height:8px;margin-left:6px;vertical-align:middle}.risk-dot.rk-high{background:var(--state-bad)}.risk-dot.rk-medium{background:var(--state-warn)}.risk-dot.rk-low{background:var(--state-ok)}.verdict{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink);margin:0 0 6px}.dot{width:10px;height:10px;display:inline-block;flex:0 0 auto}.dot.ok,.dot.no,.dot.wait{background:var(--state-ok)}.dot.no{background:var(--state-bad)}.dot.wait{background:var(--state-warn)}@media(max-width:900px){.signal-grid,.chain-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.candidate-grid,.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid,.grid,.split,.candidate-grid,.signal-grid,.chain-grid{grid-template-columns:1fr}.wide{grid-column:auto}.metric-card{min-height:104px}.metric-card strong{font-size:20px}.index-row{grid-template-columns:1fr auto;gap:5px}.index-row span{grid-column:1;grid-row:1}.index-row strong{grid-column:2;grid-row:1}.index-row b{grid-column:1;grid-row:2}.index-row small{grid-column:1/-1;grid-row:3}.breadth-wrap{align-items:flex-start;gap:14px}.donut{width:116px}.score-table{font-size:10px}.score-table th:nth-child(n+5),.score-table td:nth-child(n+5){display:none}.matrix-wrap{overflow-x:auto;padding:12px}.cell,.panel,.card{padding:13px}.sector-row{grid-template-columns:66px 1fr 58px;gap:7px}.verify-strip,.history-strip{grid-template-columns:1fr;gap:5px}.verify-strip small,.history-strip small{white-space:normal}.sentiment-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.sentiment-kpis strong{font-size:16px}}</style></head>
+<body>
+<main>
+<div class="container">
+  <header class="masthead">
+    <div><p class="eyebrow">GLOBAL / CAPITAL ENVIRONMENT</p><h1>资本环境</h1></div>
+    <p class="asof">回放日期 2026-08-01<br />静态点时快照<br />4 市场 × 7 维度</p>
+  </header>
+
+  <p class="snapshot-note">请用生成器的 <code>--as-of YYYY-MM-DD</code> 生成其他日期，避免 URL 参数显示未筛选数据。</p>
+
+  <div class="summary-box">
+    <p class="overview">截至 2026-08-01 的资本环境：完全覆盖。以下为各市场维度的可观测状态，区分已观测事实与未知。</p>
+    <p class="disclaimer">以上为证据约束下的环境解释与研究辅助，不代表未来收益、因果关系或投资建议。</p>
+  </div>
+
+  <div class="takeaway-box"><div class="tw-head">AI 综合研判 · 跨格交叉验证</div><div class="tw-list"><div class="tw-item"><span class="tw-tag">中国资金价格</span><span class="tw-txt">10Y 1.714% 历史低位，中美利差倒挂 2.9pp</span></div><div class="tw-item"><span class="tw-tag">中国增长</span><span class="tw-txt">Q2 GDP 4.3% 放缓 + 7月 PMI 49.2 跌破荣枯线，稳增长压力上升</span></div><div class="tw-item"><span class="tw-tag">中国通胀</span><span class="tw-txt">CPI 1.0% 低通胀、PPI 4.1% 剪刀差 3pp，上游挤压下游</span></div><div class="tw-item"><span class="tw-tag">A股机构持仓</span><span class="tw-txt">两融 25763 亿高位单日 -367 亿去化，ETF 净申购接棒，杠杆资金谨慎</span></div><div class="tw-item"><span class="tw-tag">中国流动性</span><span class="tw-txt">M2 8.0% 宽松但 M1 活化不足、社融-M2 剪刀差 -0.6%，宽货币未传导到实体</span></div><div class="tw-item"><span class="tw-tag">A股宽度</span><span class="tw-txt">涨跌比 6.4:1 极端普涨，小盘成长领跑</span></div><div class="tw-item"><span class="tw-tag">A股风险偏好</span><span class="tw-txt">上涨占比 84% + 涨停 103/跌停 0 + 成交 2.54 万亿，情绪高热</span></div><div class="tw-item"><span class="tw-tag">全球紧缩</span><span class="tw-txt">欧日韩已先行加息，美联储按兵不动——全球紧缩周期重启但美国滞后</span></div></div></div><div class="risk-box"><div class="tw-head">风险信号清单 · 投资视角</div><div class="risk-section risk-high"><div class="risk-title">高优先级风险</div><div class="tw-list"><div class="tw-item"><span class="tw-tag">中国增长</span><span class="tw-txt">Q2 GDP 4.3% 放缓 + 7月 PMI 49.2 跌破荣枯线，稳增长压力上升</span></div><div class="tw-item"><span class="tw-tag">全球增长</span><span class="tw-txt">类滞胀钳制：3.0% 低增长 + 4.4% 高通胀，政策宽松空间被通胀封死</span></div><div class="tw-item"><span class="tw-tag">全球通胀</span><span class="tw-txt">下行趋势停止，中东油价若再涨，不利情景通胀 5.4%——二次抬升风险</span></div></div></div><div class="risk-section risk-medium"><div class="risk-title">需验证信号</div><div class="tw-list"><div class="tw-item"><span class="tw-tag">中国资金价格</span><span class="tw-txt">10Y 1.714% 历史低位 + 中美利差倒挂 2.9pp，汇率承压</span></div><div class="tw-item"><span class="tw-tag">A股机构持仓</span><span class="tw-txt">两融高位单日 -367 亿去化 + ETF 接棒：杠杆撤、被动资金进，反弹质量待验证</span></div><div class="tw-item"><span class="tw-tag">中国流动性</span><span class="tw-txt">M2 8.0% 宽松但 M1 活化不足、社融-M2 剪刀差 -0.6%，宽货币未传导实体</span></div></div></div><div class="risk-section risk-low"><div class="risk-title">缓解因素</div><div class="tw-list"><div class="tw-item"><span class="tw-tag">中国通胀</span><span class="tw-txt">CPI 1.0% 温和、PPI 4.1% 剪刀差 3pp，上游挤压下游利润</span></div><div class="tw-item"><span class="tw-tag">A股宽度</span><span class="tw-txt">涨跌比 6.4:1 极端普涨，小盘成长领跑，结构健康但拥挤</span></div></div></div></div>
+
+  
+
+  <div class="matrix-wrap">
+  <div class="matrix-cell lbl">市场/维度</div>
+  <div class="matrix-cell lbl">增长</div>
+  <div class="matrix-cell lbl">通胀</div>
+  <div class="matrix-cell lbl">流动性</div>
+  <div class="matrix-cell lbl">资金价格</div>
+  <div class="matrix-cell lbl">风险偏好与信用</div>
+  <div class="matrix-cell lbl">市场宽度</div>
+  <div class="matrix-cell lbl">机构持仓与拥挤度</div>
+    <div class="matrix-cell lbl">全球</div>
+    <div class="matrix-cell a">▲</div>
+    <div class="matrix-cell a">▲</div>
+    <div class="matrix-cell p">▲</div>
+    <div class="matrix-cell a">▲</div>
+    <div class="matrix-cell p">▲</div>
+    <div class="matrix-cell p">▲</div>
+    <div class="matrix-cell p">▲</div>
+    <div class="matrix-cell lbl">美国</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell p">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell lbl">中国</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell lbl">韩国</div>
+    <div class="matrix-cell p">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell a">●</div>
+    <div class="matrix-cell p">●</div>
+    <div class="matrix-cell p">●</div>
+</div>
+<div class="matrix-legend">
+  <span><i class="swatch" style="background:var(--state-ok-soft)"></i>可得</span>
+  <span><i class="swatch" style="background:var(--state-warn-soft)"></i>部分/待复核</span>
+  <span><i class="swatch" style="background:var(--state-bad-soft)"></i>未知/失败/无法还原</span>
+</div>
+<div id="markets">
+<section class="market" aria-label="全球资本环境">
+  <div class="market-head"><h2>全球</h2><span class="badge badge-partial">部分</span></div>
+  <div class="market-grid">
+        <div class="cell" data-key="global|growth"><div class="cell-head"><span class="cell-name">增长<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-global-growth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">3.0% 处近十年中枢下沿，略低于潜在增速，属「低增长」区间</span></li><li><span class="an-lens">趋势</span><span class="an-txt">7 月版较 4 月微降 0.1pp，主因中东战争拖累能源进口国；但 AI 链国家上修</span></li><li><span class="an-lens">结构</span><span class="an-txt">分化是关键词：发达经济体 ~1.5% vs 新兴市场 ~4%，AI 受益国 vs 能源进口国剪刀差扩大</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">增长放缓 + 通胀回升的组合压缩央行宽松空间，财政空间普遍偏薄</span></li></ul></div><div class="cell-evidence" id="ev-global-growth"></div></div>
+        <div class="cell" data-key="global|inflation"><div class="cell-head"><span class="cell-name">通胀<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-global-inflation"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">4.4% 为目标 2% 的两倍多，仍处高位</span></li><li><span class="an-lens">趋势</span><span class="an-txt">关键信号：IMF 7 月版明确「下行趋势已停止」，通胀二次抬升风险上升</span></li><li><span class="an-lens">结构</span><span class="an-txt">中东油价主导输入型通胀，叠加能源进口国压力；AI 需求推升部分商品</span></li><li><span class="an-lens">预期差</span><span class="an-txt">若战争升级，IMF 不利情景下通胀可达 5.4%——这是最大尾部风险</span></li></ul></div><div class="cell-evidence" id="ev-global-inflation"></div></div>
+        <div class="cell" data-key="global|liquidity"><div class="cell-head"><span class="cell-name">流动性<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-global-liquidity"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">Fed 6.74T 处 10 年 51 分位，QT 后回到中性水平；ECB 继续收缩</span></li><li><span class="an-lens">趋势</span><span class="an-txt">Fed 总资产同比 +0.4% 基本走平，RRP 已降至 $1B 枯竭——流动性边际由紧转稳</span></li><li><span class="an-lens">结构</span><span class="an-txt">美元流动性（Fed）走稳 vs 欧元流动性（ECB）收缩，全球资金再平衡</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">RRP 枯竭意味着银行准备金成为边际约束，QT 接近尾部</span></li></ul></div><div class="cell-evidence" id="ev-global-liquidity"></div></div>
+        <div class="cell" data-key="global|funding-price"><div class="cell-head"><span class="cell-name">资金价格<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-global-funding-price"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">四大央行利率 1.0%-3.625%，美联储最高、日央行最低</span></li><li><span class="an-lens">趋势</span><span class="an-txt">ECB 6月已加息、BOJ 6月加息至 31 年高位、BOK 7/16 三年半首次加息——全球重回紧缩周期</span></li><li><span class="an-lens">相对</span><span class="an-txt">Fed 7/30 按兵不动（3 票反对加息）成紧缩阵营中的「孤岛」，政策分化加剧</span></li><li><span class="an-lens">政策路径</span><span class="an-txt">BOJ 暗示 9/10 月或再加息；Fed 加息 vs 降息方向未明，市场定价摇摆</span></li></ul></div><div class="cell-evidence" id="ev-global-funding-price"></div></div>
+        <div class="cell" data-key="global|risk-credit"><div class="cell-head"><span class="cell-name">风险偏好与信用<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-global-risk-credit"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">2.87% 处近 3 年 6% 分位，信用定价极度宽松</span></li><li><span class="an-lens">趋势</span><span class="an-txt">从 4.61% 高位回落至 2.67%-2.87%，risk-on 情绪明显修复</span></li><li><span class="an-lens">背离</span><span class="an-txt">信用利差极窄 vs 权益波动率仍高（SKEW 139.9）——股债市场对风险定价分歧</span></li><li><span class="an-lens">逆向</span><span class="an-txt">利差逼近 3 年低位意味着补偿极薄，小冲击易放大波动</span></li></ul></div><div class="cell-evidence" id="ev-global-risk-credit"></div></div>
+        <div class="cell" data-key="global|market-breadth"><div class="cell-head"><span class="cell-name">市场宽度<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-global-market-breadth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">75% above 200D 处健康区间，较 6 月初 56% 显著改善</span></li><li><span class="an-lens">趋势</span><span class="an-txt">从「少数股拉动指数」转向普涨——7 月 AI 回调后小盘/价值补涨</span></li><li><span class="an-lens">结构</span><span class="an-txt">等权跑赢市值加权= 宽度改善；半导体回调但市场未崩 = 韧性信号</span></li><li><span class="an-lens">相对</span><span class="an-txt">这是代理口径：仅覆盖美股，欧亚市场宽度未纳入，跨市场结论需谨慎</span></li></ul></div><div class="cell-evidence" id="ev-global-market-breadth"></div></div>
+        <div class="cell" data-key="global|institutional-positioning"><div class="cell-head"><span class="cell-name">机构持仓与拥挤度<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-global-institutional-positioning"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">净投机 -16.8K 仍偏空，但已从 -42.6K 大幅收窄</span></li><li><span class="an-lens">趋势</span><span class="an-txt">连续两周空头回补（-38.9K → -16.8K），机构态度从防御转向中性</span></li><li><span class="an-lens">结构</span><span class="an-txt">7/31 微软财报后 AI 情绪反转，空头加速平仓与指数 +1.7% 形成正反馈</span></li><li><span class="an-lens">逆向</span><span class="an-txt">净持仓仍为负 = 机构尚未全面转多，反弹的机构参与度存疑</span></li></ul></div><div class="cell-evidence" id="ev-global-institutional-positioning"></div></div>
+  </div>
+</section>
+
+<section class="market" aria-label="美国资本环境">
+  <div class="market-head"><h2>美国</h2><span class="badge badge-partial">部分</span></div>
+  <div class="market-grid">
+        <div class="cell" data-key="us|growth"><div class="cell-head"><span class="cell-name">增长<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-growth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">1.5% 低于 Q1 2.1% 与市场预期（~2.3%），增长动能明显放缓</span></li><li><span class="an-lens">结构</span><span class="an-txt">消费仍有韧性但投资降温；6月非农仅 +57K（预期 110K）验证放缓</span></li><li><span class="an-lens">预期差</span><span class="an-txt">GDP 与 PCE 同时弱于预期，市场开始削减加息押注</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">增长走弱 + 通胀仍高 = 美联储「滞胀式」两难，加息选项仍在桌上</span></li></ul></div><div class="cell-evidence" id="ev-us-growth"></div></div>
+        <div class="cell" data-key="us|inflation"><div class="cell-head"><span class="cell-name">通胀<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-inflation"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">CPI 3.5% 仍高于 2% 目标，但核心 CPI 2.6% 明显温和</span></li><li><span class="an-lens">趋势</span><span class="an-txt">PCE 从 5月 4.1% → 6月 3.7%（核心 3.4→3.3%），通胀下行通道延续</span></li><li><span class="an-lens">结构</span><span class="an-txt">6月 CPI 环比 -0.4% 转负，能源/商品贡献回落，服务粘性仍在</span></li><li><span class="an-lens">预期差</span><span class="an-txt">6月 CPI 3.5% 低于市场预测 3.8%——利好风险资产的软数据</span></li></ul></div><div class="cell-evidence" id="ev-us-inflation"></div></div>
+        <div class="cell" data-key="us|liquidity"><div class="cell-head"><span class="cell-name">流动性<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-liquidity"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">M2 同比 5.53% 显著高于一年前 4.14%，货币环境转松</span></li><li><span class="an-lens">趋势</span><span class="an-txt">从 2月 4.2% 一路回升至 5.5%+，5月见顶后 6月微降，量能仍在扩张区间</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">M2 回升与 Fed 资产负债表走平一致，流动性对资产价格由拖累转支撑</span></li></ul></div><div class="cell-evidence" id="ev-us-liquidity"></div></div>
+        <div class="cell" data-key="us|funding-price"><div class="cell-head"><span class="cell-name">资金价格<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-funding-price"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">10Y 4.65% 处 19 年高位附近（FOMC 后冲高 5.19%/30Y）</span></li><li><span class="an-lens">趋势</span><span class="an-txt">4.16% → 4.65% 半年上行近 50bp，长端利率持续承压成长估值</span></li><li><span class="an-lens">实际利率</span><span class="an-txt">10Y 4.65% − breakeven ~2.2% = 实际利率 ~2.4%，处历史偏高水平</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">市场曾定价 9 月加息 70%，GDP/PCE 弱于预期后回落——利率路径高度不确定</span></li></ul></div><div class="cell-evidence" id="ev-us-funding-price"></div></div>
+        <div class="cell" data-key="us|risk-credit"><div class="cell-head"><span class="cell-name">风险偏好与信用<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-risk-credit"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">VIX 17.09 处中低位，情绪平稳</span></li><li><span class="an-lens">趋势</span><span class="an-txt">单日 -17.28%（35.3 → 17），AI 恐慌一周内基本出清</span></li><li><span class="an-lens">尾部</span><span class="an-txt">SKEW 139.9 仍远高于中性区（100-120），尾部对冲需求高企——表面平静下有防备</span></li><li><span class="an-lens">信用</span><span class="an-txt">HY OAS 268bps 6% 分位极宽松，与 SKEW 高企构成「信用松、尾部防」的分歧</span></li></ul></div><div class="cell-evidence" id="ev-us-risk-credit"></div></div>
+        <div class="cell" data-key="us|market-breadth"><div class="cell-head"><span class="cell-name">市场宽度<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-us-market-breadth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">结构</span><span class="an-txt">7/31 三大指数齐涨（道1.2/标1.7/纳2.8），普涨而非独涨</span></li><li><span class="an-lens">趋势</span><span class="an-txt">纳指 6 连跌后终结、费半单日 +8.2%——AI 主线的超跌反弹</span></li><li><span class="an-lens">相对</span><span class="an-txt">标普 500 仍低于 50 日均线 0.42%，指数在均线附近拉锯</span></li><li><span class="an-lens">局限</span><span class="an-txt">仅覆盖指数涨跌，个股级宽度（%above MA）需 Barchart 付费口径</span></li></ul></div><div class="cell-evidence" id="ev-us-market-breadth"></div></div>
+        <div class="cell" data-key="us|institutional-positioning"><div class="cell-head"><span class="cell-name">机构持仓与拥挤度<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-us-institutional-positioning"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">远期 PE 19.69 处 10 年 47.5 分位，估值中性不贵不便宜</span></li><li><span class="an-lens">趋势</span><span class="an-txt">从 22.6x（2025-08）回落至 19.69，估值消化 + 盈利上修共同作用</span></li><li><span class="an-lens">结构</span><span class="an-txt">科技/半导体 PE 偏高（28x vs 均值 20x），集中度风险（前 5 权重 ~22%）仍在</span></li><li><span class="an-lens">拥挤度</span><span class="an-txt">估值中性 + 持仓集中 = 系统性不贵，但结构性拥挤（AI 权重）</span></li></ul></div><div class="cell-evidence" id="ev-us-institutional-positioning"></div></div>
+  </div>
+</section>
+
+<section class="market" aria-label="中国资本环境">
+  <div class="market-head"><h2>中国</h2><span class="badge badge-available">可得</span></div>
+  <div class="market-grid">
+        <div class="cell" data-key="cn|growth"><div class="cell-head"><span class="cell-name">增长<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-growth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">Q2 GDP 4.3% 低于 Q1 5.0%，处全年目标（~5%）下方</span></li><li><span class="an-lens">趋势</span><span class="an-txt">上半年 4.7%，环比 Q2 +0.9%——增速放缓但未失速</span></li><li><span class="an-lens">结构</span><span class="an-txt">第三产业 5.1% 好于第二产业 3.0%，服务业贡献 69.4%；地产 -0.2% 拖累</span></li><li><span class="an-lens">领先</span><span class="an-txt">7月制造业 PMI 49.2 跌破荣枯线（6月 50.3）——增长动能转弱信号</span></li></ul></div><div class="cell-evidence" id="ev-cn-growth"></div></div>
+        <div class="cell" data-key="cn|inflation"><div class="cell-head"><span class="cell-name">通胀<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-inflation"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">CPI 1.0% 处温和区间，远低于 2% 目标——内需偏弱的价格映射</span></li><li><span class="an-lens">结构</span><span class="an-txt">PPI 4.1% vs CPI 1.0% = PPI-CPI 剪刀差 3pp，上游涨价未传导到消费端</span></li><li><span class="an-lens">趋势</span><span class="an-txt">CPI 上半年 1.0% 温和回升后走平，核心 CPI 1.0% 显示需求复苏力度有限</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">低通胀给宽松政策留出空间，但 PPI 高位挤压中下游利润</span></li></ul></div><div class="cell-evidence" id="ev-cn-inflation"></div></div>
+        <div class="cell" data-key="cn|liquidity"><div class="cell-head"><span class="cell-name">流动性<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-liquidity"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">M2 同比 8.0% 处宽松区间，但社融-M2 剪刀差 -0.6% 仍为负</span></li><li><span class="an-lens">趋势</span><span class="an-txt">从 9.0% 缓降至 8.0%，货币供应温和收敛</span></li><li><span class="an-lens">结构</span><span class="an-txt">M1 增速慢于 M2 = 资金活化不足，企业短期活钱仍少——「宽货币、弱活化」</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">剪刀差为负指向需求侧偏弱，政策或需继续加力宽信用</span></li></ul></div><div class="cell-evidence" id="ev-cn-liquidity"></div></div>
+        <div class="cell" data-key="cn|funding-price"><div class="cell-head"><span class="cell-name">资金价格<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-funding-price"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">10Y 1.714% 处历史极低位，债市定价深度宽松预期</span></li><li><span class="an-lens">趋势</span><span class="an-txt">一周内 1.735 → 1.714 持续下行，配置盘需求旺盛</span></li><li><span class="an-lens">相对</span><span class="an-txt">中美 10Y 利差倒挂 ~2.9pp（4.65% vs 1.71%），人民币汇率承压</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">低利率支撑宽财政，但也压缩了货币政策进一步宽松的边际空间</span></li></ul></div><div class="cell-evidence" id="ev-cn-funding-price"></div></div>
+        <div class="cell" data-key="cn|risk-credit"><div class="cell-head"><span class="cell-name">风险偏好与信用<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-risk-credit"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">上涨占比 84%，为过去一年 16% 时间才出现的高热度区间</span></li><li><span class="an-lens">结构</span><span class="an-txt">涨停 103 家 vs 跌停 0 家，赚钱效应极强；成交 2.54 万亿放量 1991 亿</span></li><li><span class="an-lens">趋势</span><span class="an-txt">半导体/算力超跌反弹主导，与日韩芯片股共振</span></li><li><span class="an-lens">逆向</span><span class="an-txt">情绪指标触及高位，短期波动易放大</span></li></ul></div><div class="cell-evidence" id="ev-cn-risk-credit"></div></div>
+        <div class="cell" data-key="cn|market-breadth"><div class="cell-head"><span class="cell-name">市场宽度<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-market-breadth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">结构</span><span class="an-txt">涨 4691 : 跌 728 = 6.4:1 极端偏多，普涨行情</span></li><li><span class="an-lens">板块</span><span class="an-txt">小盘跑赢大盘、成长跑赢价值；传媒/机器人/AI 领涨，油气/白酒垫底</span></li><li><span class="an-lens">趋势</span><span class="an-txt">7 月科技主线去化后进入底部区间，超跌反弹主导宽度修复</span></li></ul></div><div class="cell-evidence" id="ev-cn-market-breadth"></div></div>
+        <div class="cell" data-key="cn|institutional-positioning"><div class="cell-head"><span class="cell-name">机构持仓与拥挤度<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-cn-institutional-positioning"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">两融 25763 亿处历史高位区（历史第 130 位），杠杆资金活跃</span></li><li><span class="an-lens">趋势</span><span class="an-txt">单日 -366.6 亿显著去化，与 7/31 指数大涨形成「减杠杆 + 上涨」的背离</span></li><li><span class="an-lens">结构</span><span class="an-txt">ETF 净申购 137.66 亿，沪深300 ETF 连续 5 日净申购——被动资金替代融资盘</span></li><li><span class="an-lens">逆向</span><span class="an-txt">融资余额下跌 + 指数上涨 = 反弹由被动/长线资金驱动而非杠杆，持续性或更好</span></li></ul></div><div class="cell-evidence" id="ev-cn-institutional-positioning"></div></div>
+  </div>
+</section>
+
+<section class="market" aria-label="韩国资本环境">
+  <div class="market-head"><h2>韩国</h2><span class="badge badge-partial">部分</span></div>
+  <div class="market-grid">
+        <div class="cell" data-key="kr|growth"><div class="cell-head"><span class="cell-name">增长<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-kr-growth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">2026 GDP 预测 3.0%，政府从 2.0% 大幅上调 1pp</span></li><li><span class="an-lens">趋势</span><span class="an-txt">半导体出口强劲 + Q1 增速创近 6 年最快，经济过热迹象显现</span></li><li><span class="an-lens">结构</span><span class="an-txt">增长主要由出口/投资驱动，内需消费相对偏弱</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">高增长是 BOK 敢于加息的底气——「经济过热 + 通胀超标」组合</span></li></ul></div><div class="cell-evidence" id="ev-kr-growth"></div></div>
+        <div class="cell" data-key="kr|inflation"><div class="cell-head"><span class="cell-name">通胀<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-kr-inflation"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">CPI 3.2% 创 30 个月新高，连续 4 个月超 2% 目标</span></li><li><span class="an-lens">结构</span><span class="an-txt">核心 2.5% 温和，主因能源（汽油+23%/柴油+34%）与韩元贬值输入型通胀</span></li><li><span class="an-lens">趋势</span><span class="an-txt">5 月起突破 3% 持续高位，下半年或维持 ~3%</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">通胀超标是 BOK 7/16 加息 25bp 的直接导火索</span></li></ul></div><div class="cell-evidence" id="ev-kr-inflation"></div></div>
+        <div class="cell" data-key="kr|liquidity"><div class="cell-head"><span class="cell-name">流动性<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-kr-liquidity"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">M2 4,184.4 万亿韩元，环比 +0.8% 创 9 个月最大增幅</span></li><li><span class="an-lens">趋势</span><span class="an-txt">old M2（含 ETF）同比 +11.7%，2022/2 以来新高——资金大幅流向股市</span></li><li><span class="an-lens">结构</span><span class="an-txt">企业（半导体）资金流入 MMF/存款 +30.1 万亿，居民减持存款转投股票 -19 万亿</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">流动性宽松 + 股市过热，强化 BOK 紧缩必要性</span></li></ul></div><div class="cell-evidence" id="ev-kr-liquidity"></div></div>
+        <div class="cell" data-key="kr|funding-price"><div class="cell-head"><span class="cell-name">资金价格<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-kr-funding-price"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">基准利率 2.75%，7/16 加息 25bp（2023/1 来首次加息）</span></li><li><span class="an-lens">趋势</span><span class="an-txt">结束 8 次按兵不动，进入渐进紧缩周期，市场预期 8 或 10 月再加 25bp</span></li><li><span class="an-lens">相对</span><span class="an-txt">韩元年内贬值超 4%，美韩利差驱动资本外流压力——加息含稳汇率意图</span></li><li><span class="an-lens">政策含义</span><span class="an-txt">控通胀 + 稳汇率 + 抑楼市三重目标下被迫紧缩</span></li></ul></div><div class="cell-evidence" id="ev-kr-funding-price"></div></div>
+        <div class="cell" data-key="kr|risk-credit"><div class="cell-head"><span class="cell-name">风险偏好与信用<span class="risk-dot rk-high" title="高风险"></span></span><span class="badge badge-available">可得</span></div><div class="chart-box" id="ch-kr-risk-credit"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">水平</span><span class="an-txt">KOSPI 7/31 单日 +17.91% 至 6595.45，创历史最大单日涨幅</span></li><li><span class="an-lens">趋势</span><span class="an-txt">前 3 日跌超 17% 后暴力反转，微软财报缓解 AI 支出担忧触发芯片股回补</span></li><li><span class="an-lens">结构</span><span class="an-txt">SK 海力士 +17.5%、三星 +19%，存储链主导；外资净流入 2.32 万亿韩元推升</span></li><li><span class="an-lens">波动</span><span class="an-txt">单日 ±17% 级别的极端波动，显示市场在 AI 叙事与恐慌间剧烈摇摆</span></li></ul></div><div class="cell-evidence" id="ev-kr-risk-credit"></div></div>
+        <div class="cell" data-key="kr|market-breadth"><div class="cell-head"><span class="cell-name">市场宽度<span class="risk-dot rk-medium" title="需验证"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-kr-market-breadth"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">结构</span><span class="an-txt">7/31 日韩共振反弹：KOSPI +17.91%、日经 +4.03%，亚太芯片链同步修复</span></li><li><span class="an-lens">趋势</span><span class="an-txt">KOSDAQ 7/16 收 791.84 后随主板巨震，小盘弹性更大</span></li><li><span class="an-lens">局限</span><span class="an-txt">仅覆盖指数级涨幅，个股涨跌家数分布未纳入（KRX 无免费明细）</span></li></ul></div><div class="cell-evidence" id="ev-kr-market-breadth"></div></div>
+        <div class="cell" data-key="kr|institutional-positioning"><div class="cell-head"><span class="cell-name">机构持仓与拥挤度<span class="risk-dot rk-low" title="缓解"></span></span><span class="badge badge-partial">部分</span></div><div class="chart-box" id="ch-kr-institutional-positioning"></div><div class="cell-analysis"><div class="an-head">AI 分析</div><ul class="an-list"><li><span class="an-lens">结构</span><span class="an-txt">7/21 外资净流入 5,959 亿 + 机构净流入 1.65 万亿 vs 散户净流出 2.16 万亿</span></li><li><span class="an-lens">趋势</span><span class="an-txt">外资连续两日净流入（7/15 曾单日 2.32 万亿），从 7 月大跌抛售转向回流</span></li><li><span class="an-lens">相对</span><span class="an-txt">韩元 7/21 走强至 1474（最强 5/11 以来），外资流入 + 汇率升值互相印证</span></li><li><span class="an-lens">局限</span><span class="an-txt">仅覆盖单日流向，月度持仓总量（FSS）滞后约 2 周未纳入</span></li></ul></div><div class="cell-evidence" id="ev-kr-institutional-positioning"></div></div>
+  </div>
+</section>
+</div>
+</div>
+</main>
+<script>
+const CELLS = {
+ "cn|funding-price": {
+  "type": "line",
+  "dates": [
+   "07-27",
+   "07-28",
+   "07-29",
+   "07-30",
+   "07-31"
+  ],
+  "values": [
+   1.734,
+   1.735,
+   1.733,
+   1.72,
+   1.714
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 1.714,
+    "label": "7/31 1.714%"
+   }
+  ],
+  "source": "cn-chinabond（中国债券信息网, 中债国债10Y日收益率）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "10Y 1.714% 处历史极低位，债市定价深度宽松预期"
+   ],
+   [
+    "趋势",
+    "一周内 1.735 → 1.714 持续下行，配置盘需求旺盛"
+   ],
+   [
+    "相对",
+    "中美 10Y 利差倒挂 ~2.9pp（4.65% vs 1.71%），人民币汇率承压"
+   ],
+   [
+    "政策含义",
+    "低利率支撑宽财政，但也压缩了货币政策进一步宽松的边际空间"
+   ]
+  ],
+  "takeaways": [
+   [
+    "中国资金价格",
+    "10Y 1.714% 历史低位，中美利差倒挂 2.9pp"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "中国资金价格",
+   "text": "10Y 1.714% 历史低位 + 中美利差倒挂 2.9pp，汇率承压"
+  }
+ },
+ "cn|growth": {
+  "type": "gauge",
+  "value": 4.3,
+  "unit": "%",
+  "min": 0,
+  "max": 8,
+  "name": "Q2 GDP同比",
+  "sections": [
+   [
+    0.25,
+    "#0e7a45"
+   ],
+   [
+    0.5,
+    "#a9761a"
+   ],
+   [
+    0.75,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 5.0,
+    "label": "Q1 5.0%"
+   }
+  ],
+  "source": "cn-nbs（国家统计局, 二季度GDP同比4.3%/上半年4.7%）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-15",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "Q2 GDP 4.3% 低于 Q1 5.0%，处全年目标（~5%）下方"
+   ],
+   [
+    "趋势",
+    "上半年 4.7%，环比 Q2 +0.9%——增速放缓但未失速"
+   ],
+   [
+    "结构",
+    "第三产业 5.1% 好于第二产业 3.0%，服务业贡献 69.4%；地产 -0.2% 拖累"
+   ],
+   [
+    "领先",
+    "7月制造业 PMI 49.2 跌破荣枯线（6月 50.3）——增长动能转弱信号"
+   ]
+  ],
+  "takeaways": [
+   [
+    "中国增长",
+    "Q2 GDP 4.3% 放缓 + 7月 PMI 49.2 跌破荣枯线，稳增长压力上升"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "中国增长",
+   "text": "Q2 GDP 4.3% 放缓 + 7月 PMI 49.2 跌破荣枯线，稳增长压力上升"
+  }
+ },
+ "cn|inflation": {
+  "type": "line",
+  "dates": [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06"
+  ],
+  "values": [
+   0.2,
+   1.3,
+   1.0,
+   1.2,
+   1.2,
+   1.0
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 2.0,
+    "label": "目标 ~2%"
+   }
+  ],
+  "source": "cn-nbs（国家统计局, CPI同比：6月1.0%/核心1.0%；PPI 6月4.1%）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-09",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "CPI 1.0% 处温和区间，远低于 2% 目标——内需偏弱的价格映射"
+   ],
+   [
+    "结构",
+    "PPI 4.1% vs CPI 1.0% = PPI-CPI 剪刀差 3pp，上游涨价未传导到消费端"
+   ],
+   [
+    "趋势",
+    "CPI 上半年 1.0% 温和回升后走平，核心 CPI 1.0% 显示需求复苏力度有限"
+   ],
+   [
+    "政策含义",
+    "低通胀给宽松政策留出空间，但 PPI 高位挤压中下游利润"
+   ]
+  ],
+  "takeaways": [
+   [
+    "中国通胀",
+    "CPI 1.0% 低通胀、PPI 4.1% 剪刀差 3pp，上游挤压下游"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "中国通胀",
+   "text": "CPI 1.0% 温和、PPI 4.1% 剪刀差 3pp，上游挤压下游利润"
+  }
+ },
+ "cn|institutional-positioning": {
+  "type": "gauge",
+  "value": 25763,
+  "unit": "亿元",
+  "min": 0,
+  "max": 40000,
+  "name": "两市融资余额",
+  "sections": [
+   [
+    0.5,
+    "#0e7a45"
+   ],
+   [
+    0.75,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 26065,
+    "label": "7/30 26065亿（隔日）"
+   }
+  ],
+  "source": "cn-sse-szse（沪深交易所, 融资余额25763亿, 7/30环比-366.6亿）",
+  "observedAt": "2026-07-30",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "两融 25763 亿处历史高位区（历史第 130 位），杠杆资金活跃"
+   ],
+   [
+    "趋势",
+    "单日 -366.6 亿显著去化，与 7/31 指数大涨形成「减杠杆 + 上涨」的背离"
+   ],
+   [
+    "结构",
+    "ETF 净申购 137.66 亿，沪深300 ETF 连续 5 日净申购——被动资金替代融资盘"
+   ],
+   [
+    "逆向",
+    "融资余额下跌 + 指数上涨 = 反弹由被动/长线资金驱动而非杠杆，持续性或更好"
+   ]
+  ],
+  "takeaways": [
+   [
+    "A股机构持仓",
+    "两融 25763 亿高位单日 -367 亿去化，ETF 净申购接棒，杠杆资金谨慎"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "A股机构持仓",
+   "text": "两融高位单日 -367 亿去化 + ETF 接棒：杠杆撤、被动资金进，反弹质量待验证"
+  }
+ },
+ "cn|liquidity": {
+  "type": "line",
+  "dates": [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06"
+  ],
+  "values": [
+   9.0,
+   9.0,
+   8.5,
+   8.6,
+   8.6,
+   8.0
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 8.0,
+    "label": "6月 8.0%"
+   }
+  ],
+  "source": "cn-pbc（中国人民银行, M2同比8.0%/M1 118.5万亿；社融-M2剪刀差-0.6%）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-15",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "M2 同比 8.0% 处宽松区间，但社融-M2 剪刀差 -0.6% 仍为负"
+   ],
+   [
+    "趋势",
+    "从 9.0% 缓降至 8.0%，货币供应温和收敛"
+   ],
+   [
+    "结构",
+    "M1 增速慢于 M2 = 资金活化不足，企业短期活钱仍少——「宽货币、弱活化」"
+   ],
+   [
+    "政策含义",
+    "剪刀差为负指向需求侧偏弱，政策或需继续加力宽信用"
+   ]
+  ],
+  "takeaways": [
+   [
+    "中国流动性",
+    "M2 8.0% 宽松但 M1 活化不足、社融-M2 剪刀差 -0.6%，宽货币未传导到实体"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "中国流动性",
+   "text": "M2 8.0% 宽松但 M1 活化不足、社融-M2 剪刀差 -0.6%，宽货币未传导实体"
+  }
+ },
+ "cn|market-breadth": {
+  "type": "bar",
+  "categories": [
+   "上涨",
+   "下跌",
+   "平盘",
+   "停牌"
+  ],
+  "values": [
+   4691,
+   728,
+   115,
+   6
+  ],
+  "colors": [
+   "#d2231b",
+   "#0e7a45",
+   "#7d838a",
+   "#c9c6c0"
+  ],
+  "unit": "家",
+  "source": "cn-akshare-index-sector（AkShare, 7/31收盘；上涨占比84%，情绪高）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "结构",
+    "涨 4691 : 跌 728 = 6.4:1 极端偏多，普涨行情"
+   ],
+   [
+    "板块",
+    "小盘跑赢大盘、成长跑赢价值；传媒/机器人/AI 领涨，油气/白酒垫底"
+   ],
+   [
+    "趋势",
+    "7 月科技主线去化后进入底部区间，超跌反弹主导宽度修复"
+   ]
+  ],
+  "takeaways": [
+   [
+    "A股宽度",
+    "涨跌比 6.4:1 极端普涨，小盘成长领跑"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "A股宽度",
+   "text": "涨跌比 6.4:1 极端普涨，小盘成长领跑，结构健康但拥挤"
+  }
+ },
+ "cn|risk-credit": {
+  "type": "gauge",
+  "value": 84,
+  "unit": "%",
+  "min": 0,
+  "max": 100,
+  "name": "A股上涨家数占比",
+  "sections": [
+   [
+    0.3,
+    "#d2231b"
+   ],
+   [
+    0.55,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#0e7a45"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 50,
+    "label": "涨跌平衡"
+   }
+  ],
+  "source": "cn-akshare-breadth（AkShare, 7/31上涨4691家/涨停103/跌停0；成交2.54万亿）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "上涨占比 84%，为过去一年 16% 时间才出现的高热度区间"
+   ],
+   [
+    "结构",
+    "涨停 103 家 vs 跌停 0 家，赚钱效应极强；成交 2.54 万亿放量 1991 亿"
+   ],
+   [
+    "趋势",
+    "半导体/算力超跌反弹主导，与日韩芯片股共振"
+   ],
+   [
+    "逆向",
+    "情绪指标触及高位，短期波动易放大"
+   ]
+  ],
+  "takeaways": [
+   [
+    "A股风险偏好",
+    "上涨占比 84% + 涨停 103/跌停 0 + 成交 2.54 万亿，情绪高热"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "A股情绪",
+   "text": "上涨占比 84% 触及历史高热度区间，情绪指标过热易放大波动"
+  }
+ },
+ "global|funding-price": {
+  "type": "bar",
+  "categories": [
+   "美联储",
+   "欧央行",
+   "日央行",
+   "中国央行"
+  ],
+  "values": [
+   3.625,
+   2.25,
+   1.0,
+   1.4
+  ],
+  "colors": [
+   "#d2231b",
+   "#d2231b",
+   "#d2231b",
+   "#d2231b"
+  ],
+  "unit": "%",
+  "source": "各央行官网：Fed 3.50-3.75%区间中值(7/30维持)、ECB存款利率2.25%(7/23维持)、BOJ 1.0%(7/31维持)、PBoC 7天逆回购1.40%",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.1",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "四大央行利率 1.0%-3.625%，美联储最高、日央行最低"
+   ],
+   [
+    "趋势",
+    "ECB 6月已加息、BOJ 6月加息至 31 年高位、BOK 7/16 三年半首次加息——全球重回紧缩周期"
+   ],
+   [
+    "相对",
+    "Fed 7/30 按兵不动（3 票反对加息）成紧缩阵营中的「孤岛」，政策分化加剧"
+   ],
+   [
+    "政策路径",
+    "BOJ 暗示 9/10 月或再加息；Fed 加息 vs 降息方向未明，市场定价摇摆"
+   ]
+  ],
+  "takeaways": [
+   [
+    "全球紧缩",
+    "欧日韩已先行加息，美联储按兵不动——全球紧缩周期重启但美国滞后"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "全球紧缩",
+   "text": "欧日韩已加息、Fed 3 票反对维持——政策分歧扩大，利率路径不确定"
+  }
+ },
+ "global|growth": {
+  "type": "gauge",
+  "value": 3.0,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "2026 GDP增速预测",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 3.1,
+    "label": "4月预测 3.1%"
+   }
+  ],
+  "source": "imf-weo（IMF World Economic Outlook 2026/7/8 更新, 2026全球增速预测3.0%/2027 3.4%）",
+  "observedAt": "2026-07-08",
+  "publishedAt": "2026-07-08",
+  "processingVersion": "v1.1",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "3.0% 处近十年中枢下沿，略低于潜在增速，属「低增长」区间"
+   ],
+   [
+    "趋势",
+    "7 月版较 4 月微降 0.1pp，主因中东战争拖累能源进口国；但 AI 链国家上修"
+   ],
+   [
+    "结构",
+    "分化是关键词：发达经济体 ~1.5% vs 新兴市场 ~4%，AI 受益国 vs 能源进口国剪刀差扩大"
+   ],
+   [
+    "政策含义",
+    "增长放缓 + 通胀回升的组合压缩央行宽松空间，财政空间普遍偏薄"
+   ]
+  ],
+  "takeaways": [
+   [
+    "全球增长",
+    "3.0% 低增长 + 4.4% 高通胀 = 类滞胀组合，政策空间双向受限"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "全球增长",
+   "text": "类滞胀钳制：3.0% 低增长 + 4.4% 高通胀，政策宽松空间被通胀封死"
+  }
+ },
+ "global|inflation": {
+  "type": "gauge",
+  "value": 4.4,
+  "unit": "%",
+  "min": 0,
+  "max": 8,
+  "name": "全球通胀预测",
+  "sections": [
+   [
+    0.25,
+    "#0e7a45"
+   ],
+   [
+    0.5,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.0,
+    "label": "央合目标 ~2%"
+   }
+  ],
+  "source": "imf-weo（IMF WEO 2026/4, 全球通胀预测4.4%；7月版称下行趋势已停止）",
+  "observedAt": "2026-04-14",
+  "publishedAt": "2026-04-14",
+  "processingVersion": "v1.1",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "4.4% 为目标 2% 的两倍多，仍处高位"
+   ],
+   [
+    "趋势",
+    "关键信号：IMF 7 月版明确「下行趋势已停止」，通胀二次抬升风险上升"
+   ],
+   [
+    "结构",
+    "中东油价主导输入型通胀，叠加能源进口国压力；AI 需求推升部分商品"
+   ],
+   [
+    "预期差",
+    "若战争升级，IMF 不利情景下通胀可达 5.4%——这是最大尾部风险"
+   ]
+  ],
+  "takeaways": [
+   [
+    "全球通胀",
+    "下行停止 + 油价风险 = 通胀二次抬升是下半年核心宏观变量"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "全球通胀",
+   "text": "下行趋势停止，中东油价若再涨，不利情景通胀 5.4%——二次抬升风险"
+  }
+ },
+ "global|institutional-positioning": {
+  "type": "gauge",
+  "value": -16.8,
+  "unit": "K contracts",
+  "min": -200,
+  "max": 50,
+  "name": "S&P 500 CFTC净投机持仓",
+  "sections": [
+   [
+    0.4,
+    "#d2231b"
+   ],
+   [
+    0.6,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#0e7a45"
+   ]
+  ],
+  "markers": [
+   {
+    "value": -42.6,
+    "label": "7/8 -42.6K"
+   }
+  ],
+  "source": "global-positioning-proxies（CFTC COT S&P 500 净投机持仓 -16.8K contracts, 从 -38.9K 改善, CFTC 7/25周五发布, 覆盖截至7/22；作全球权益拥挤度代理；MSCI ACWI/13F合计因口径分散暂未聚合）",
+  "observedAt": "2026-07-22",
+  "publishedAt": "2026-07-25",
+  "processingVersion": "v1.2",
+  "availability": "partial",
+  "analysis": [
+   [
+    "水平",
+    "净投机 -16.8K 仍偏空，但已从 -42.6K 大幅收窄"
+   ],
+   [
+    "趋势",
+    "连续两周空头回补（-38.9K → -16.8K），机构态度从防御转向中性"
+   ],
+   [
+    "结构",
+    "7/31 微软财报后 AI 情绪反转，空头加速平仓与指数 +1.7% 形成正反馈"
+   ],
+   [
+    "逆向",
+    "净持仓仍为负 = 机构尚未全面转多，反弹的机构参与度存疑"
+   ]
+  ],
+  "takeaways": [
+   [
+    "机构持仓",
+    "CFTC 净空头大幅回补（-42.6K→-16.8K），机构由防御转中性但仍未转多"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "全球机构",
+   "text": "CFTC 净空头回补（-42.6K→-16.8K），机构由防御转中性"
+  }
+ },
+ "global|liquidity": {
+  "type": "bar",
+  "categories": [
+   "美联储",
+   "欧央行",
+   "日央行",
+   "中国央行"
+  ],
+  "values": [
+   6.74,
+   3.96,
+   5.8,
+   44.2
+  ],
+  "colors": [
+   "#a9761a",
+   "#a9761a",
+   "#a9761a",
+   "#a9761a"
+  ],
+  "unit": "$T/万亿",
+  "source": "各央行官网：Fed总资产$6.74T(7/29, FRED WALCL)、ECB基准货币€3.96T(7/24周报)、BOJ资产约¥580万亿、PBoC约¥44.2万亿",
+  "observedAt": "2026-07-29",
+  "publishedAt": "2026-07-30",
+  "processingVersion": "v1.1",
+  "availability": "partial",
+  "analysis": [
+   [
+    "水平",
+    "Fed 6.74T 处 10 年 51 分位，QT 后回到中性水平；ECB 继续收缩"
+   ],
+   [
+    "趋势",
+    "Fed 总资产同比 +0.4% 基本走平，RRP 已降至 $1B 枯竭——流动性边际由紧转稳"
+   ],
+   [
+    "结构",
+    "美元流动性（Fed）走稳 vs 欧元流动性（ECB）收缩，全球资金再平衡"
+   ],
+   [
+    "政策含义",
+    "RRP 枯竭意味着银行准备金成为边际约束，QT 接近尾部"
+   ]
+  ],
+  "takeaways": [
+   [
+    "全球流动性",
+    "Fed 资产负债表走平、RRP 枯竭，QT 近尾声，流动性从紧缩转向稳定"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "全球流动性",
+   "text": "Fed 资产负债表走平、RRP 枯竭，QT 近尾声，流动性从紧转稳"
+  }
+ },
+ "global|market-breadth": {
+  "type": "gauge",
+  "value": 75,
+  "unit": "%",
+  "min": 0,
+  "max": 100,
+  "name": "S&P 500 above 200D MA",
+  "sections": [
+   [
+    0.3,
+    "#d2231b"
+   ],
+   [
+    0.55,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#0e7a45"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 56,
+    "label": "6月初 56%"
+   }
+  ],
+  "source": "global-breadth-proxies（Baird Five-for-Friday 7/31报告 S&P 500 ~75% above 200-day MA，作全球权益宽度主要代理；Investing.com S5TH 7/30收68.58%；STOXX 600/日经/MSCI ACWI 宽度公开覆盖不全）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.2",
+  "availability": "partial",
+  "analysis": [
+   [
+    "水平",
+    "75% above 200D 处健康区间，较 6 月初 56% 显著改善"
+   ],
+   [
+    "趋势",
+    "从「少数股拉动指数」转向普涨——7 月 AI 回调后小盘/价值补涨"
+   ],
+   [
+    "结构",
+    "等权跑赢市值加权= 宽度改善；半导体回调但市场未崩 = 韧性信号"
+   ],
+   [
+    "相对",
+    "这是代理口径：仅覆盖美股，欧亚市场宽度未纳入，跨市场结论需谨慎"
+   ]
+  ],
+  "takeaways": [
+   [
+    "市场宽度",
+    "75% 站上 200 日均线，普涨替代龙头独涨，宽度健康"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "全球宽度",
+   "text": "75% 站上 200 日均线，宽度健康，普涨替代龙头独涨"
+  }
+ },
+ "global|risk-credit": {
+  "type": "gauge",
+  "value": 2.87,
+  "unit": "%",
+  "min": 0,
+  "max": 8,
+  "name": "全球HY OAS代理",
+  "sections": [
+   [
+    0.35,
+    "#0e7a45"
+   ],
+   [
+    0.65,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 4.61,
+    "label": "3年高 4.61%"
+   }
+  ],
+  "source": "ice-bofa（ICE BofA US HY OAS 2.87%, 7/29 FRED；作全球信用代理；3年低2.59%/2025-01）",
+  "observedAt": "2026-07-29",
+  "publishedAt": "2026-07-30",
+  "processingVersion": "v1.1",
+  "availability": "partial",
+  "analysis": [
+   [
+    "水平",
+    "2.87% 处近 3 年 6% 分位，信用定价极度宽松"
+   ],
+   [
+    "趋势",
+    "从 4.61% 高位回落至 2.67%-2.87%，risk-on 情绪明显修复"
+   ],
+   [
+    "背离",
+    "信用利差极窄 vs 权益波动率仍高（SKEW 139.9）——股债市场对风险定价分歧"
+   ],
+   [
+    "逆向",
+    "利差逼近 3 年低位意味着补偿极薄，小冲击易放大波动"
+   ]
+  ],
+  "takeaways": [
+   [
+    "信用宽松",
+    "HY OAS 2.87% 处极低分位，风险偏好高但缓冲薄"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "全球信用",
+   "text": "HY OAS 2.87% 处 6% 分位，信用缓冲极薄，冲击放大效应强"
+  }
+ },
+ "kr|funding-price": {
+  "type": "gauge",
+  "value": 2.75,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "BOK基准利率",
+  "sections": [
+   [
+    0.5,
+    "#0e7a45"
+   ],
+   [
+    0.75,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.5,
+    "label": "加息前 2.50%"
+   }
+  ],
+  "source": "kr-ecos（BOK, 7/16加息25bp至2.75%, 2023年1月来首次；韩3Y国债3.848%）",
+  "observedAt": "2026-07-16",
+  "publishedAt": "2026-07-16",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "基准利率 2.75%，7/16 加息 25bp（2023/1 来首次加息）"
+   ],
+   [
+    "趋势",
+    "结束 8 次按兵不动，进入渐进紧缩周期，市场预期 8 或 10 月再加 25bp"
+   ],
+   [
+    "相对",
+    "韩元年内贬值超 4%，美韩利差驱动资本外流压力——加息含稳汇率意图"
+   ],
+   [
+    "政策含义",
+    "控通胀 + 稳汇率 + 抑楼市三重目标下被迫紧缩"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国资金价格",
+    "BOK 3 年半首次加息至 2.75%，开启紧缩周期"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "韩国资金价格",
+   "text": "BOK 3 年半首次加息至 2.75%，市场预期 8/10 月再加息，紧缩周期开启"
+  }
+ },
+ "kr|growth": {
+  "type": "gauge",
+  "value": 3.0,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "2026 GDP增速预测",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.0,
+    "label": "原预测 2.0%"
+   }
+  ],
+  "source": "kr-moef（韩国企划财政部, 2026 GDP预测上调至3.0%, 7/14）",
+  "observedAt": "2026-07-14",
+  "publishedAt": "2026-07-14",
+  "processingVersion": "v1.0",
+  "availability": "partial",
+  "analysis": [
+   [
+    "水平",
+    "2026 GDP 预测 3.0%，政府从 2.0% 大幅上调 1pp"
+   ],
+   [
+    "趋势",
+    "半导体出口强劲 + Q1 增速创近 6 年最快，经济过热迹象显现"
+   ],
+   [
+    "结构",
+    "增长主要由出口/投资驱动，内需消费相对偏弱"
+   ],
+   [
+    "政策含义",
+    "高增长是 BOK 敢于加息的底气——「经济过热 + 通胀超标」组合"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国增长",
+    "GDP 预测上调至 3.0%，半导体周期驱动、经济过热"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "韩国增长",
+   "text": "GDP 预测上调至 3.0% 但过热：增长与通胀目标冲突，政策被迫紧缩"
+  }
+ },
+ "kr|inflation": {
+  "type": "gauge",
+  "value": 3.2,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "6月CPI同比",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.0,
+    "label": "2%目标"
+   }
+  ],
+  "source": "kr-ecos（Bank of Korea ECOS, 6月CPI同比3.2%创30个月新高；核心2.5%）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-02",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "CPI 3.2% 创 30 个月新高，连续 4 个月超 2% 目标"
+   ],
+   [
+    "结构",
+    "核心 2.5% 温和，主因能源（汽油+23%/柴油+34%）与韩元贬值输入型通胀"
+   ],
+   [
+    "趋势",
+    "5 月起突破 3% 持续高位，下半年或维持 ~3%"
+   ],
+   [
+    "政策含义",
+    "通胀超标是 BOK 7/16 加息 25bp 的直接导火索"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国通胀",
+    "CPI 3.2% 连续 4 个月超目标，能源+汇率输入型通胀"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "韩国通胀",
+   "text": "CPI 3.2% 连续 4 个月超 2% 目标，能源+韩元贬值输入型通胀未缓解"
+  }
+ },
+ "kr|institutional-positioning": {
+  "type": "bar",
+  "categories": [
+   "外资",
+   "机构",
+   "散户"
+  ],
+  "values": [
+   5959,
+   16480,
+   -21647
+  ],
+  "colors": [
+   "#d2231b",
+   "#d2231b",
+   "#0e7a45"
+  ],
+  "unit": "亿韩元",
+  "source": "kr-krx（7/21外资净流入5,959亿韩元、机构净流入1.65万亿、散户净流出2.16万亿；7/15外资曾净流入2.32万亿）",
+  "observedAt": "2026-07-21",
+  "publishedAt": "2026-07-21",
+  "processingVersion": "v1.1",
+  "availability": "partial",
+  "analysis": [
+   [
+    "结构",
+    "7/21 外资净流入 5,959 亿 + 机构净流入 1.65 万亿 vs 散户净流出 2.16 万亿"
+   ],
+   [
+    "趋势",
+    "外资连续两日净流入（7/15 曾单日 2.32 万亿），从 7 月大跌抛售转向回流"
+   ],
+   [
+    "相对",
+    "韩元 7/21 走强至 1474（最强 5/11 以来），外资流入 + 汇率升值互相印证"
+   ],
+   [
+    "局限",
+    "仅覆盖单日流向，月度持仓总量（FSS）滞后约 2 周未纳入"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国外资",
+    "外资/机构连续净流入、散户净流出，外资回流与韩元走强共振"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "韩国外资",
+   "text": "外资/机构连续净流入、散户净流出，外资回流与韩元走强共振"
+  }
+ },
+ "kr|liquidity": {
+  "type": "line",
+  "dates": [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05"
+  ],
+  "values": [
+   5.9,
+   6.3,
+   6.8,
+   7.1,
+   11.7
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 11.7,
+    "label": "5月 old M2 同比"
+   }
+  ],
+  "source": "kr-ecos（BOK, 5月M2 4,184.4万亿韩元环比+0.8%；old M2(含ETF)同比+11.7% 2022/2来新高, 7/15发布）",
+  "observedAt": "2026-05-31",
+  "publishedAt": "2026-07-15",
+  "processingVersion": "v1.1",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "M2 4,184.4 万亿韩元，环比 +0.8% 创 9 个月最大增幅"
+   ],
+   [
+    "趋势",
+    "old M2（含 ETF）同比 +11.7%，2022/2 以来新高——资金大幅流向股市"
+   ],
+   [
+    "结构",
+    "企业（半导体）资金流入 MMF/存款 +30.1 万亿，居民减持存款转投股票 -19 万亿"
+   ],
+   [
+    "政策含义",
+    "流动性宽松 + 股市过热，强化 BOK 紧缩必要性"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国流动性",
+    "M2 环比 +0.8% 创 9 个月最大，old M2 同比 11.7% 新高，资金涌向股市"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "韩国流动性",
+   "text": "M2 环比 +0.8% 创 9 个月最大、old M2 同比 11.7% 新高，资金涌向股市助涨波动"
+  }
+ },
+ "kr|market-breadth": {
+  "type": "bar",
+  "categories": [
+   "KOSPI",
+   "日经225"
+  ],
+  "values": [
+   17.91,
+   4.03
+  ],
+  "colors": [
+   "#d2231b",
+   "#d2231b"
+  ],
+  "unit": "%",
+  "source": "kr-krx（7/31日韩指数涨幅；KOSDAQ 791.84(7/16), 部分覆盖）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "partial",
+  "analysis": [
+   [
+    "结构",
+    "7/31 日韩共振反弹：KOSPI +17.91%、日经 +4.03%，亚太芯片链同步修复"
+   ],
+   [
+    "趋势",
+    "KOSDAQ 7/16 收 791.84 后随主板巨震，小盘弹性更大"
+   ],
+   [
+    "局限",
+    "仅覆盖指数级涨幅，个股涨跌家数分布未纳入（KRX 无免费明细）"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国宽度",
+    "KOSPI/日经共振反弹，亚太芯片链同步修复"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "韩日宽度",
+   "text": "KOSPI +17.91% / 日经 +4.03% 共振暴涨，情绪极端修复后回摆风险大"
+  }
+ },
+ "kr|risk-credit": {
+  "type": "gauge",
+  "value": 17.91,
+  "unit": "%",
+  "min": -25,
+  "max": 25,
+  "name": "KOSPI单日涨跌",
+  "sections": [
+   [
+    0.5,
+    "#0e7a45"
+   ],
+   [
+    0.5,
+    "#a9761a"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 0,
+    "label": "0%"
+   }
+  ],
+  "source": "kr-krx（Korea Exchange, KOSPI 7/31收6595.45, 单日+17.91%历史最大涨幅）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "KOSPI 7/31 单日 +17.91% 至 6595.45，创历史最大单日涨幅"
+   ],
+   [
+    "趋势",
+    "前 3 日跌超 17% 后暴力反转，微软财报缓解 AI 支出担忧触发芯片股回补"
+   ],
+   [
+    "结构",
+    "SK 海力士 +17.5%、三星 +19%，存储链主导；外资净流入 2.32 万亿韩元推升"
+   ],
+   [
+    "波动",
+    "单日 ±17% 级别的极端波动，显示市场在 AI 叙事与恐慌间剧烈摇摆"
+   ]
+  ],
+  "takeaways": [
+   [
+    "韩国风险偏好",
+    "KOSPI 单日 +17.91% 历史最大涨幅，AI 恐慌与修复剧烈切换"
+   ]
+  ],
+  "risk": {
+   "level": "high",
+   "label": "韩股波动",
+   "text": "KOSPI 单日 ±17.91% 历史级极端波动，市场失去理性定价能力"
+  }
+ },
+ "us|funding-price": {
+  "type": "line",
+  "dates": [
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ],
+  "values": [
+   4.16,
+   4.29,
+   4.36,
+   4.53,
+   4.52,
+   4.65
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 3.625,
+    "label": "FFR中值 3.625%"
+   }
+  ],
+  "source": "us-treasury（U.S. Treasury 10Y；FFR 3.50-3.75% 7/30 FOMC维持）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "10Y 4.65% 处 19 年高位附近（FOMC 后冲高 5.19%/30Y）"
+   ],
+   [
+    "趋势",
+    "4.16% → 4.65% 半年上行近 50bp，长端利率持续承压成长估值"
+   ],
+   [
+    "实际利率",
+    "10Y 4.65% − breakeven ~2.2% = 实际利率 ~2.4%，处历史偏高水平"
+   ],
+   [
+    "政策含义",
+    "市场曾定价 9 月加息 70%，GDP/PCE 弱于预期后回落——利率路径高度不确定"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国资金价格",
+    "10Y 4.65% 半年 +50bp，长端利率高位压制估值"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "美国资金价格",
+   "text": "10Y 4.65% 半年 +50bp 处 19 年高位，实际利率 ~2.4% 压制估值"
+  }
+ },
+ "us|growth": {
+  "type": "gauge",
+  "value": 1.5,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "Q2 实际GDP年化",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.1,
+    "label": "Q1 2.1%"
+   }
+  ],
+  "source": "us-bea（U.S. BEA, 二季度实际GDP年化季率初值）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-30",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "1.5% 低于 Q1 2.1% 与市场预期（~2.3%），增长动能明显放缓"
+   ],
+   [
+    "结构",
+    "消费仍有韧性但投资降温；6月非农仅 +57K（预期 110K）验证放缓"
+   ],
+   [
+    "预期差",
+    "GDP 与 PCE 同时弱于预期，市场开始削减加息押注"
+   ],
+   [
+    "政策含义",
+    "增长走弱 + 通胀仍高 = 美联储「滞胀式」两难，加息选项仍在桌上"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国增长",
+    "Q2 GDP 1.5% + 非农 57K 双弱于预期，增长放缓验证"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "美国增长",
+   "text": "Q2 GDP 1.5% + 非农 57K 双弱于预期，若 8 月数据续弱则衰退预期升温"
+  }
+ },
+ "us|inflation": {
+  "type": "gauge",
+  "value": 3.5,
+  "unit": "%",
+  "min": 0,
+  "max": 6,
+  "name": "6月CPI同比",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 2.0,
+    "label": "2%目标"
+   }
+  ],
+  "source": "us-bls（U.S. BLS, 6月CPI同比3.5%/核心2.6%；PCE 3.7%/核心3.3%）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-14",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "CPI 3.5% 仍高于 2% 目标，但核心 CPI 2.6% 明显温和"
+   ],
+   [
+    "趋势",
+    "PCE 从 5月 4.1% → 6月 3.7%（核心 3.4→3.3%），通胀下行通道延续"
+   ],
+   [
+    "结构",
+    "6月 CPI 环比 -0.4% 转负，能源/商品贡献回落，服务粘性仍在"
+   ],
+   [
+    "预期差",
+    "6月 CPI 3.5% 低于市场预测 3.8%——利好风险资产的软数据"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国通胀",
+    "CPI/PCE 双双回落且低于预期，通胀下行通道延续但离 2% 仍远"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "美国通胀",
+   "text": "PCE 回落但离 2% 仍远，油价反弹可能打断下行通道"
+  }
+ },
+ "us|institutional-positioning": {
+  "type": "gauge",
+  "value": 19.69,
+  "unit": "x",
+  "min": 10,
+  "max": 30,
+  "name": "标普500远期PE",
+  "sections": [
+   [
+    0.33,
+    "#0e7a45"
+   ],
+   [
+    0.67,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 19.85,
+    "label": "10年均值 19.85"
+   }
+  ],
+  "source": "us-factset（FactSet via TrendOnify, 远期PE 19.69, 10年47.5分位）",
+  "observedAt": "2026-07-30",
+  "publishedAt": "2026-07-30",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "远期 PE 19.69 处 10 年 47.5 分位，估值中性不贵不便宜"
+   ],
+   [
+    "趋势",
+    "从 22.6x（2025-08）回落至 19.69，估值消化 + 盈利上修共同作用"
+   ],
+   [
+    "结构",
+    "科技/半导体 PE 偏高（28x vs 均值 20x），集中度风险（前 5 权重 ~22%）仍在"
+   ],
+   [
+    "拥挤度",
+    "估值中性 + 持仓集中 = 系统性不贵，但结构性拥挤（AI 权重）"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国机构持仓",
+    "远期 PE 19.69 中性，但 AI 权重集中度仍在高位"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "美国机构持仓",
+   "text": "远期 PE 19.69 中性，但 AI 权重集中（前 5 权重 ~22%）结构性拥挤"
+  }
+ },
+ "us|liquidity": {
+  "type": "line",
+  "dates": [
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06"
+  ],
+  "values": [
+   4.2,
+   4.5,
+   4.8,
+   5.58,
+   5.53
+  ],
+  "unit": "%",
+  "markLines": [
+   {
+    "value": 4.14,
+    "label": "一年前 4.14%"
+   }
+  ],
+  "source": "us-fred（St. Louis Fed, M2同比, H.6）",
+  "observedAt": "2026-06-30",
+  "publishedAt": "2026-07-28",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "M2 同比 5.53% 显著高于一年前 4.14%，货币环境转松"
+   ],
+   [
+    "趋势",
+    "从 2月 4.2% 一路回升至 5.5%+，5月见顶后 6月微降，量能仍在扩张区间"
+   ],
+   [
+    "政策含义",
+    "M2 回升与 Fed 资产负债表走平一致，流动性对资产价格由拖累转支撑"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国流动性",
+    "M2 同比 5.53% 较一年前 +1.4pp，流动性由紧转松"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "美国流动性",
+   "text": "M2 同比 5.53% 回升，货币环境由紧转松，支撑资产价格"
+  }
+ },
+ "us|market-breadth": {
+  "type": "bar",
+  "categories": [
+   "道指",
+   "标普500",
+   "纳指"
+  ],
+  "values": [
+   1.2,
+   1.7,
+   2.8
+  ],
+  "colors": [
+   "#d2231b",
+   "#d2231b",
+   "#d2231b"
+  ],
+  "unit": "%",
+  "source": "us-barchart（主要指数7/31涨跌幅；标普500仍低于50日均线0.42%，部分覆盖）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "partial",
+  "analysis": [
+   [
+    "结构",
+    "7/31 三大指数齐涨（道1.2/标1.7/纳2.8），普涨而非独涨"
+   ],
+   [
+    "趋势",
+    "纳指 6 连跌后终结、费半单日 +8.2%——AI 主线的超跌反弹"
+   ],
+   [
+    "相对",
+    "标普 500 仍低于 50 日均线 0.42%，指数在均线附近拉锯"
+   ],
+   [
+    "局限",
+    "仅覆盖指数涨跌，个股级宽度（%above MA）需 Barchart 付费口径"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国宽度",
+    "三大指数齐涨普涨，纳指终结 6 连跌，AI 超跌反弹"
+   ]
+  ],
+  "risk": {
+   "level": "low",
+   "label": "美国宽度",
+   "text": "三大指数齐涨、纳指终结 6 连跌，普涨结构健康"
+  }
+ },
+ "us|risk-credit": {
+  "type": "gauge",
+  "value": 17.09,
+  "unit": "",
+  "min": 0,
+  "max": 40,
+  "name": "VIX（7/31 -17.28%）",
+  "sections": [
+   [
+    0.5,
+    "#0e7a45"
+   ],
+   [
+    0.75,
+    "#a9761a"
+   ],
+   [
+    1,
+    "#d2231b"
+   ]
+  ],
+  "markers": [
+   {
+    "value": 20,
+    "label": "警戒 20"
+   },
+   {
+    "value": 35.3,
+    "label": "年内高 35.3"
+   }
+  ],
+  "source": "us-cboe（CBOE VIX；SKEW 139.9；equity put/call 0.887；HY OAS 268bps 6%分位）",
+  "observedAt": "2026-07-31",
+  "publishedAt": "2026-07-31",
+  "processingVersion": "v1.0",
+  "availability": "available",
+  "analysis": [
+   [
+    "水平",
+    "VIX 17.09 处中低位，情绪平稳"
+   ],
+   [
+    "趋势",
+    "单日 -17.28%（35.3 → 17），AI 恐慌一周内基本出清"
+   ],
+   [
+    "尾部",
+    "SKEW 139.9 仍远高于中性区（100-120），尾部对冲需求高企——表面平静下有防备"
+   ],
+   [
+    "信用",
+    "HY OAS 268bps 6% 分位极宽松，与 SKEW 高企构成「信用松、尾部防」的分歧"
+   ]
+  ],
+  "takeaways": [
+   [
+    "美国风险偏好",
+    "VIX 17 情绪修复，但 SKEW 139.9 高企——表面平静、尾部防备"
+   ]
+  ],
+  "risk": {
+   "level": "medium",
+   "label": "美国风险偏好",
+   "text": "SKEW 139.9 高企：VIX 17 表面平静但尾部对冲需求仍在（买保险信号）"
+  }
+ }
+};
+
+// 图表用色与 design-tokens.css 对齐：ok=state-ok / bad=state-bad / accent=钴蓝 / 网格=线色。
+// 注意 ok/bad 是「可得性」语义（绿=可得、红=缺失），与 A 股红涨绿跌不是同一根轴。
+const okColor = '#0e7a45', badColor = '#d2231b', inkColor = '#111417',
+      secColor = '#4b5158', terColor = '#7d838a', accentColor = '#1b39d8', gridColor = '#c9c6c0';
+
+function evid(cfg){
+  const ev = document.getElementById(cfg.evId);
+  if (!ev) return;
+  if (!cfg.source) {
+    ev.textContent = cfg.reason ? '状态：' + cfg.reason : '';
+    return;
+  }
+  let s = '来源：' + cfg.source;
+  if (cfg.observedAt) s += ' · 观测：' + cfg.observedAt;
+  if (cfg.publishedAt) s += ' · 发布：' + cfg.publishedAt;
+  if (cfg.processingVersion) s += ' · ' + cfg.processingVersion;
+  ev.textContent = s;
+}
+
+function renderUnknown(el, cfg){
+  if (!el) return;
+  el.innerHTML = '<div class="unknown-msg">' + (cfg.reason || '无可得数值（非零值）') + '</div>';
+}
+
+function renderGauge(el, cfg){
+  if (!el) return;
+  const chart = echarts.init(el);
+  const value = Number(cfg.value);
+  chart.setOption({
+    series: [{
+      type: 'gauge',
+      startAngle: 210, endAngle: -30, min: cfg.min || 0, max: cfg.max || 10,
+      radius: '92%', center: ['50%','58%'],
+      axisLine: {
+        lineStyle: {
+          width: 12,
+          color: (cfg.sections || [[0.3, okColor], [0.7, secColor], [1, badColor]]).map(function(s){ return [s[0], s[1]]; })
+        }
+      },
+      pointer: { itemStyle: { color: inkColor }, length: '62%', width: 4 },
+      axisTick: { distance: -12, length: 3, lineStyle: { color: '#fff', width: 1 } },
+      splitLine: { distance: -14, length: 10, lineStyle: { color: '#fff', width: 2 } },
+      axisLabel: { distance: 18, color: terColor, fontSize: 8 },
+      title: { offsetCenter: [0, '68%'], fontSize: 9, color: terColor },
+      detail: {
+        valueAnimation: true,
+        formatter: function(v){ return v + (cfg.unit ? ' ' + cfg.unit : ''); },
+        color: inkColor, fontSize: 15, fontWeight: 600, offsetCenter: [0, '40%']
+      },
+      data: [{ value: value, name: cfg.name || '' }]
+    }]
+  });
+  window.addEventListener('resize', function(){ chart.resize(); });
+}
+
+function renderLine(el, cfg){
+  if (!el) return;
+  const chart = echarts.init(el);
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 40, right: 14, top: 18, bottom: 22 },
+    xAxis: { type: 'category', data: cfg.dates || [],
+      axisLine: { lineStyle: { color: secColor } }, axisLabel: { color: terColor, fontSize: 8 }, axisTick: { show: false } },
+    yAxis: { type: 'value', scale: true, axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: gridColor } } },
+    series: [{
+      type: 'line', data: cfg.values || [], smooth: true, symbol: 'circle', symbolSize: 5,
+      lineStyle: { color: accentColor, width: 2 }, itemStyle: { color: accentColor },
+      areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1,
+        colorStops: [{offset:0,color:'rgba(27,57,216,0.18)'},{offset:1,color:'rgba(27,57,216,0)'}] } },
+      markLine: (cfg.markLines || []).map(function(m){
+        return { name: m.label, yAxis: m.value, lineStyle: { color: badColor, type: 'dashed', width: 1 },
+                 label: { formatter: m.label, color: badColor, fontSize: 8, position: 'insideEndTop' } };
+      })
+    }]
+  });
+  window.addEventListener('resize', function(){ chart.resize(); });
+}
+
+function renderBar(el, cfg){
+  if (!el) return;
+  const chart = echarts.init(el);
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 44, right: 14, top: 16, bottom: 24 },
+    xAxis: { type: 'category', data: cfg.categories || [],
+      axisLabel: { color: terColor, fontSize: 9 }, axisTick: { show: false },
+      axisLine: { lineStyle: { color: secColor } } },
+    yAxis: { type: 'value', axisLabel: { color: terColor, fontSize: 8 }, splitLine: { lineStyle: { color: gridColor } } },
+    series: [{
+      type: 'bar', data: (cfg.values || []).map(function(v, i){
+        return { value: v, itemStyle: { color: (cfg.colors || [])[i] || secColor, borderRadius: 0 } };
+      }), barWidth: '46%',
+      label: { show: true, position: 'top', color: inkColor, fontSize: 9, fontWeight: 600,
+               formatter: function(p){ return p.value + (cfg.unit ? ' ' + cfg.unit : ''); } }
+    }]
+  });
+  window.addEventListener('resize', function(){ chart.resize(); });
+}
+
+function renderCell(key, cfg){
+  const id = key.replace('|', '-');
+  const el = document.getElementById('ch-' + id);
+  const ev = document.getElementById('ev-' + id);
+  if (!el) return;
+  if (cfg.type === 'unknown' || cfg.type === undefined) {
+    renderUnknown(el, cfg);
+  } else if (cfg.type === 'gauge') {
+    renderGauge(el, cfg);
+  } else if (cfg.type === 'line') {
+    renderLine(el, cfg);
+  } else if (cfg.type === 'bar') {
+    renderBar(el, cfg);
+  }
+  evid(Object.assign({ evId: 'ev-' + id }, cfg));
+}
+
+Object.keys(CELLS).forEach(function(key){ renderCell(key, CELLS[key]); });
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国宏观与市场七维全景面板 · 2026-08-01</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f4f6f9; color:#1a1d23; line-height:1.65; }
+  .wrap { max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
+  header.top { border-bottom:3px solid #1a1d23; padding-bottom:16px; margin-bottom:22px; }
+  header.top h1 { font-size:26px; letter-spacing:1px; }
+  header.top .meta { color:#6b7280; font-size:13px; margin-top:6px; }
+  .tldr { background:#fff; border:1px solid #e5e7eb; border-left:5px solid #c0392b; border-radius:8px; padding:18px 22px; margin-bottom:26px; }
+  .tldr h2 { font-size:16px; margin-bottom:10px; }
+  .tldr li { margin-left:20px; font-size:14px; margin-bottom:4px; }
+  section.panel { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:20px 22px; margin-bottom:22px; }
+  section.panel h2 { font-size:18px; display:flex; align-items:center; gap:10px; border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:14px; }
+  .tag { font-size:12px; padding:2px 10px; border-radius:10px; font-weight:600; }
+  .tag.ok { background:#fdeaea; color:#c0392b; }
+  .tag.part { background:#fff7e0; color:#b7791f; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:14px; }
+  .card { background:#f8f9fb; border:1px solid #eceef1; border-radius:6px; padding:12px 14px; }
+  .card .k { font-size:12px; color:#6b7280; }
+  .card .v { font-size:22px; font-weight:700; margin:2px 0; }
+  .card .s { font-size:12px; color:#6b7280; }
+  .up { color:#c0392b; } .down { color:#1e9e6a; } .flat { color:#6b7280; }
+  .note { font-size:12.5px; color:#6b7280; background:#f8f9fb; border-radius:6px; padding:10px 14px; margin-top:12px; }
+  .src { font-size:12px; color:#9aa1ab; margin-top:10px; }
+  table.tb { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
+  table.tb th, table.tb td { border:1px solid #e5e7eb; padding:8px 10px; text-align:left; }
+  table.tb th { background:#f1f3f6; }
+  .chart { width:100%; height:340px; }
+  .gap { color:#b7791f; font-weight:600; }
+  footer { margin-top:26px; font-size:12px; color:#9aa1ab; border-top:1px solid #e5e7eb; padding-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>中国宏观与市场七维全景面板</h1>
+  <div class="meta">行情数据截至 2026-07-31（最近交易日，周六休市）｜宏观数据截至各指标最新发布期｜报告生成：2026-08-01 12:45（北京时间）｜主数据源：neodata 金融搜索（聚源/国家统计局/中国人民银行/中债）</div>
+</header>
+
+<div class="tldr">
+  <h2>结论速览（TL;DR）</h2>
+  <ul>
+    <li><b>增长动能边际放缓</b>：Q2 GDP 当季 +4.3%（上半年 +4.7%），7 月制造业 PMI 49.2 重回收缩区间（6 月 50.3）；年中政治局会议（7-31）释放"及时谋划出台增量政策"信号（媒体，需核实）。</li>
+    <li><b>再通胀确认</b>：CPI 同比由 2025 年负值回升至 +1.2%（5 月），PPI 由 -3.6% 一路转正至 +3.9%（5 月），物价周期反转是上半年最鲜明的宏观主线。</li>
+    <li><b>流动性总量稳、结构弱化</b>：M2 +8.0%、社融存量 +7.4%，但 M1 回落至 +4.0%，M2-M1 剪刀差走阔至 4.0pp，资金活化度下降；6 月信贷、社融均同比少增。</li>
+    <li><b>资金价格全面低位</b>：LPR 持稳 3.0%/3.5%，10Y 国债 1.7141%（7 月下行约 3bp），SHIBOR 1M 仅 1.42%——宽货币环境未变。</li>
+    <li><b>市场情绪高热、广度健康</b>：7-31 上涨 4691 家（占 84%，过去一年仅 16% 交易日达到该热度）、涨停 103 家 / 跌停 0 家、成交 2.54 万亿（+1991 亿），AI 应用/科技硬件领涨，呈全面扩散型上涨。</li>
+    <li><b>机构资金逆势大幅流入</b>：两融余额首破 3 万亿（占流通市值 2.85%，远低于 2015 年峰值 4.27%）；7 月宽基 ETF 净流入超 2238 亿、年内首次月度净申购，"国家队"+险资增持——杠杆抬升但非脆弱拥挤（媒体引用，需核实）。</li>
+  </ul>
+</div>
+
+<section class="panel">
+  <h2>① 增长 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">GDP 当季同比（2026Q2）</div><div class="v up">+4.3%</div><div class="s">上半年累计 +4.7%</div></div>
+    <div class="card"><div class="k">制造业 PMI（7 月）</div><div class="v down">49.2</div><div class="s">6 月 50.3，重回收缩区间</div></div>
+    <div class="card"><div class="k">非制造业商务活动（7 月）</div><div class="v down">49.0</div><div class="s">6 月 50.2</div></div>
+    <div class="card"><div class="k">规上工业增加值（上半年累计）</div><div class="v up">+5.4%</div><div class="s">5 月单月 +4.5%</div></div>
+    <div class="card"><div class="k">社零（5 月单月）</div><div class="v down">-0.6%</div><div class="s">1-5 月累计 +1.4%；6 月环比 +3.9%（聚源计算）</div></div>
+  </div>
+  <div id="chartPMI" class="chart"></div>
+  <div class="note">结构亮点：高技术制造业 PMI 53.3、装备制造业 51.4（7 月，人民银行口径），与传统制造业景气分化明显。7 月 PMI 回落 1.1pp 为年内最大单月降幅，叠加 7-31 年中政治局会议"及时谋划出台增量政策"表述（媒体报道，需核实原文），下半年稳增长政策加码概率上升。</div>
+  <div class="src">来源：国家统计局（2026-07-15 / 2026-07-31 发布）via neodata；社零/工增 6 月单月值数据源未收录，以 5 月单月 + 上半年累计口径替代</div>
+</section>
+
+<section class="panel">
+  <h2>② 通胀 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">CPI 同比（5 月）</div><div class="v up">+1.2%</div><div class="s">连续 3 个月位于 1% 上方；6 月环比 -0.3%</div></div>
+    <div class="card"><div class="k">PPI 同比（5 月）</div><div class="v up">+3.9%</div><div class="s">2025 年 6 月为 -3.6%，一年反转 7.5pp</div></div>
+    <div class="card"><div class="k">PPI 生产资料环比（6 月）</div><div class="v down">-0.3%</div><div class="s">上游价格环比转弱</div></div>
+  </div>
+  <div id="chartInflation" class="chart"></div>
+  <div class="note">PPI 由深度通缩转为明显正增长，是本轮"再通胀"交易的核心依据；但 6 月生产资料环比已转负，需跟踪 PPI 同比是否在 3-4 季度见顶。</div>
+  <div class="src">来源：国家统计局（发布至 2026-06-10 / 2026-07-09）via neodata；6 月 CPI/PPI 同比值数据源未收录，图中最新点为 5 月</div>
+</section>
+
+<section class="panel">
+  <h2>③ 流动性 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">M2 同比（6 月末）</div><div class="v">+8.0%</div><div class="s">较上期 -0.6pp</div></div>
+    <div class="card"><div class="k">M1 同比（6 月末）</div><div class="v">+4.0%</div><div class="s">较上期 -1.5pp，活化度下降</div></div>
+    <div class="card"><div class="k">社融存量同比（6 月末）</div><div class="v">+7.4%</div><div class="s">存量 462.06 万亿元</div></div>
+    <div class="card"><div class="k">6 月新增社融</div><div class="v">3.36 万亿</div><div class="s">同比少增 20.4%</div></div>
+    <div class="card"><div class="k">6 月新增人民币贷款</div><div class="v">1.61 万亿</div><div class="s">同比少增 28.1%</div></div>
+    <div class="card"><div class="k">社融-M2 剪刀差</div><div class="v">-0.6pp</div><div class="s">负差收窄 0.3pp（聚源计算）</div></div>
+  </div>
+  <div class="note">总量增速平稳但结构走弱：政府债发行前置 + 实体信贷需求偏弱拖累 6 月社融/信贷双少增；M1 大幅回落、M2-M1 剪刀差扩至 4.0pp，企业资金活化意愿不足。亮点是企业直接融资放量、新发放企业贷款加权平均利率约 3.0%（同比低约 20bp）。</div>
+  <div class="src">来源：中国人民银行（社融存量人民币贷款同比 +5.3%，截至 2026-06-30）via neodata；M1/M2/社融增量明细引自北京大学国民经济研究中心研报（引用 Wind/央行，2026-07，需核实原文）</div>
+</section>
+
+<section class="panel">
+  <h2>④ 资金价格 <span class="tag part">可得 · 2 项缺口</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">10Y 国债收益率（7-31）</div><div class="v">1.7141%</div><div class="s">7 月下行约 3bp</div></div>
+    <div class="card"><div class="k">LPR（7-20）</div><div class="v">3.0% / 3.5%</div><div class="s">1Y / 5Y+，连续持稳</div></div>
+    <div class="card"><div class="k">SHIBOR 1M（7-31）</div><div class="v">1.42%</div><div class="s">月内持平，处历史低位</div></div>
+    <div class="card"><div class="k">DR007 / SHIBOR 隔夜</div><div class="v gap">缺口</div><div class="s">neodata 未覆盖，需 WebSearch（货币网）兜底</div></div>
+  </div>
+  <div id="chartBond" class="chart"></div>
+  <div class="note">利率曲线整体低位平稳：短端 1.4% 附近、长端 1.71% 附近，LPR 连续多期未动——宽货币、稳信用组合延续。低利率环境是权益估值（尤其高股息与长久期成长）的核心支撑。</div>
+  <div class="src">来源：中债国债到期收益率（2026-07-31）、全国银行间同业拆借中心 LPR（2026-07-20）、SHIBOR（2026-07-31）via neodata</div>
+</section>
+
+<section class="panel">
+  <h2>⑤ 风险偏好与信用 <span class="tag part">可得 · 2 项缺口</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">涨停 / 跌停（7-31）</div><div class="v up">103 / 0</div><div class="s">跌停 0 家，极端强势</div></div>
+    <div class="card"><div class="k">上涨家数占比（7-31）</div><div class="v up">84%</div><div class="s">过去一年仅 16% 交易日达到该热度</div></div>
+    <div class="card"><div class="k">两市成交额（7-31）</div><div class="v">2.54 万亿</div><div class="s">较前一日 +1991 亿</div></div>
+    <div class="card"><div class="k">股债性价比（ERP 估算）</div><div class="v">≈5.2pp</div><div class="s">沪深300 PE≈14.5 → 盈利收益率 6.9% vs 10Y 1.71%</div></div>
+    <div class="card"><div class="k">沪深300 股息率</div><div class="v">2.62%</div><div class="s">2005 年来 68.6% 分位，高于 10Y 约 0.9pp</div></div>
+    <div class="card"><div class="k">信用利差 / 炸板率</div><div class="v gap">缺口</div><div class="s">信用利差需 WebSearch（中债）兜底；炸板率可跑涨跌停复盘流水线</div></div>
+  </div>
+  <div class="note">权益风险溢价仍处高位：ERP≈5.2pp、股息率反超 10Y 近 1pp，股票相对债券的配置价值依旧明显；短线情绪指标（涨停 103、跌停 0、84% 上涨占比）已进入高热区间，追高需留意情绪均值回归。</div>
+  <div class="src">来源：市场宽度统计（2026-07-31，北京时间 12:40 查询）via neodata；沪深300 估值与股息率引自财经媒体（引用 Wind，2026-07，需核实原文）</div>
+</section>
+
+<section class="panel">
+  <h2>⑥ 市场宽度 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">上涨 / 下跌 / 平盘</div><div class="v"><span class="up">4691</span> / <span class="down">728</span> / 115</div><div class="s">停牌 6 家（7-31）</div></div>
+    <div class="card"><div class="k">涨幅 &gt;5% 家数</div><div class="v up">880</div><div class="s">含涨停 103 家</div></div>
+    <div class="card"><div class="k">跌幅 &gt;5% 家数</div><div class="v down">13</div><div class="s">亏钱效应极窄</div></div>
+  </div>
+  <div id="chartBreadth" class="chart"></div>
+  <div id="chartIndustry" class="chart"></div>
+  <div class="note">广度判读（market-state 框架）：84% 个股上涨 + 跌幅&gt;5% 仅 13 家 + 成交放量，属典型"全面扩散"型上涨，行情质感健康；领涨行业集中于 AI 应用（广告营销 +9.0%、数字媒体 +6.2%、软件开发 +6.0%、IT 服务 +6.3%）与科技硬件（元件 +5.6%、自动化设备 +6.1%），主线清晰。风险点不在广度而在热度本身——84% 的上涨占比过去一年仅 16% 交易日出现，短期情绪偏热。</div>
+  <div class="src">来源：A 股大盘市场宽度统计与行业涨幅榜（2026-07-31）via neodata</div>
+</section>
+
+<section class="panel">
+  <h2>⑦ 机构持仓与拥挤度 <span class="tag part">可得 · 口径替代</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">两融余额（7-2）</div><div class="v">3.02 万亿</div><div class="s">6-23 历史首破 3 万亿</div></div>
+    <div class="card"><div class="k">两融占流通市值（6-30）</div><div class="v">2.85%</div><div class="s">2015 年峰值为 4.27%</div></div>
+    <div class="card"><div class="k">平均维持担保比例（6-30）</div><div class="v">296.4%</div><div class="s">远高于 140% 平仓线</div></div>
+    <div class="card"><div class="k">7 月宽基 ETF 净流入</div><div class="v up">&gt;2238 亿</div><div class="s">年内首次月度净申购（截至 7-24）</div></div>
+    <div class="card"><div class="k">"国家队"增持（7-19）</div><div class="v up">≈600 亿</div><div class="s">国新+诚通同步增持；头部险资表态加仓</div></div>
+    <div class="card"><div class="k">中证1000 拥挤度</div><div class="v down">近 3 月 PE 分位 0%</div><div class="s">7 月最大回撤 20%，去拥挤已近极端</div></div>
+  </div>
+  <div class="note">拥挤度判读（institutional-holding 框架）：杠杆资金（两融）绝对规模创新高，但占流通市值比、担保比例均显示风险可控；本轮 ETF 流入呈"越跌越买"特征（7-17 单日净流入 646.9 亿创年内纪录），且由国新、诚通、险资等长线资金主导——属"优质共识"型拥挤而非脆弱抱团。小微盘（中证1000/2000）经历 7 月急跌后拥挤度已大幅释放，一致预期净利润 2 年复合增速（中证1000 37.6%、中证2000 53.9%）显著高于沪深300（约 13%）。北向资金日度流向自 2024 年 8 月起已停止实时披露，本面板以 ETF 资金流 + 两融作为机构行为替代口径。</div>
+  <div class="src">来源：中证数据/Wind（两融，截至 2026-07-02；ETF 流向截至 2026-07-24）经财经媒体引用 via neodata，均需核实原文</div>
+</section>
+
+<section class="panel">
+  <h2>⑧ 数据覆盖结论：对照原图"可得 / 未知"</h2>
+  <table class="tb">
+    <tr><th>维度</th><th>可得性</th><th>主数据源（本次实测）</th><th>缺口与兜底路径</th></tr>
+    <tr><td>增长</td><td>✅ 可得</td><td>neodata 宏观库（国家统计局/人民银行）</td><td>社零、工增 6 月单月值库内未收录，用累计口径替代</td></tr>
+    <tr><td>通胀</td><td>✅ 可得</td><td>neodata 宏观库（国家统计局）</td><td>6 月 CPI/PPI 同比未收录，最新到 5 月</td></tr>
+    <tr><td>流动性</td><td>✅ 可得</td><td>neodata（央行）+ 券商/高校研报补充结构</td><td>—</td></tr>
+    <tr><td>资金价格</td><td>✅ 基本可得</td><td>neodata 利率库（中债/LPR/SHIBOR）</td><td><span class="gap">DR007、SHIBOR 隔夜</span>未召回 → WebSearch（中国货币网）兜底</td></tr>
+    <tr><td>风险偏好与信用</td><td>✅ 基本可得</td><td>neodata 市场宽度 + 估值（ERP 自算）</td><td><span class="gap">信用利差</span> → WebSearch（中债/中短期票据）兜底；<span class="gap">炸板率/连板高度</span> → 运行 a-share-limitboard-report 流水线</td></tr>
+    <tr><td>市场宽度</td><td>✅ 可得</td><td>neodata 大盘宽度统计（涨跌家数/分布/行业榜）</td><td>创新高/新低家数、站上均线比例可用 a-stock-data 全市场行情自算</td></tr>
+    <tr><td>机构持仓与拥挤度</td><td>✅ 基本可得</td><td>neodata 资讯召回（两融/ETF/增持）+ westock-tool 榜单</td><td>北向资金日度数据 2024-08 起官方停披露（非数据源问题）；基金重仓明细走 westock-data etf-holdings</td></tr>
+  </table>
+  <div class="note">结论：原图中 5 项"未知"全部可以补齐——流动性、资金价格、风险偏好、市场宽度、机构持仓均有稳定数据通路；真正需要兜底的只有 3 个细分字段（DR007、信用利差、炸板率）和 1 个官方停披露项（北向日度流向）。</div>
+</section>
+
+<footer>
+  <p><b>免责声明</b>：以上内容基于公开数据和量化分析，仅供参考，不构成投资建议。市场有风险，投资需谨慎。任何投资决策应结合个人风险承受能力、资金状况和投资目标独立判断，必要时咨询持牌专业机构。过往表现不预示未来收益。</p>
+  <p style="margin-top:6px">数据时效：行情类截至 2026-07-31 收盘（今日为周六非交易日）；宏观类截至各指标最新发布期。标注"需核实原文"的数据为媒体/研报二次引用，非一手来源。</p>
+</footer>
+
+</div>
+
+<script>
+var UP = '#c0392b', DOWN = '#1e9e6a';
+
+echarts.init(document.getElementById('chartPMI')).setOption({
+  title: { text: '官方制造业 PMI 走势（2025-12 ~ 2026-07）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07'] },
+  yAxis: { type: 'value', min: 48, max: 52, name: 'PMI' },
+  series: [{
+    name: '制造业PMI', type: 'line', smooth: true,
+    data: [50.1, 49.3, 49.0, 50.4, 50.3, 50.0, 50.3, 49.2],
+    markLine: { data: [{ yAxis: 50, name: '荣枯线' }], lineStyle: { color: '#999', type: 'dashed' }, label: { formatter: '荣枯线 50' } },
+    itemStyle: { color: '#2f6fd0' }
+  }]
+});
+
+echarts.init(document.getElementById('chartInflation')).setOption({
+  title: { text: 'CPI / PPI 同比走势（2025-06 ~ 2026-05，%）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['CPI 同比', 'PPI 同比'], bottom: 0 },
+  xAxis: { type: 'category', data: ['2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05'] },
+  yAxis: { type: 'value', name: '%' },
+  series: [
+    { name: 'CPI 同比', type: 'line', smooth: true, data: [0.1, 0.0, -0.4, -0.3, 0.2, 0.7, 0.8, 0.2, 1.3, 1.0, 1.2, 1.2], itemStyle: { color: '#2f6fd0' } },
+    { name: 'PPI 同比', type: 'line', smooth: true, data: [-3.6, -3.6, -2.9, -2.3, -2.1, -2.2, -1.9, -1.4, -0.9, 0.5, 2.8, 3.9], itemStyle: { color: UP } }
+  ]
+});
+
+echarts.init(document.getElementById('chartBond')).setOption({
+  title: { text: '中债 10 年期国债到期收益率（2026 年 7 月，%）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['07-01', '07-06', '07-09', '07-13', '07-16', '07-20', '07-23', '07-27', '07-30', '07-31'] },
+  yAxis: { type: 'value', min: 1.70, max: 1.76, name: '%' },
+  series: [{
+    name: '10Y 国债', type: 'line', smooth: true, areaStyle: { opacity: 0.12 },
+    data: [1.7448, 1.7379, 1.7376, 1.7442, 1.7437, 1.7453, 1.7325, 1.7337, 1.7196, 1.7141],
+    itemStyle: { color: '#6b5ce7' }
+  }]
+});
+
+echarts.init(document.getElementById('chartBreadth')).setOption({
+  title: { text: '个股涨跌幅分布（2026-07-31，家数）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['涨停', '>7%', '5~7%', '2~5%', '0~2%', '平盘', '-2~0%', '-5~-2%', '-7~-5%', '<-7%', '跌停'], axisLabel: { interval: 0, rotate: 30 } },
+  yAxis: { type: 'value', name: '家数' },
+  series: [{
+    name: '家数', type: 'bar',
+    data: [
+      { value: 103, itemStyle: { color: UP } },
+      { value: 338, itemStyle: { color: UP } },
+      { value: 439, itemStyle: { color: UP } },
+      { value: 1914, itemStyle: { color: UP } },
+      { value: 1897, itemStyle: { color: UP } },
+      { value: 115, itemStyle: { color: '#9aa1ab' } },
+      { value: 575, itemStyle: { color: DOWN } },
+      { value: 140, itemStyle: { color: DOWN } },
+      { value: 12, itemStyle: { color: DOWN } },
+      { value: 1, itemStyle: { color: DOWN } },
+      { value: 0, itemStyle: { color: DOWN } }
+    ]
+  }]
+});
+
+echarts.init(document.getElementById('chartIndustry')).setOption({
+  title: { text: '领涨行业（2026-07-31，%）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['广告营销', 'IT服务', '数字媒体', '自动化设备', '软件开发', '元件'] },
+  yAxis: { type: 'value', name: '%' },
+  series: [{
+    name: '涨跌幅', type: 'bar', barWidth: '45%',
+    data: [9.02, 6.31, 6.15, 6.05, 6.01, 5.63],
+    itemStyle: { color: UP }
+  }]
+});
+</script>
+</body>
+</html>

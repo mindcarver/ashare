@@ -102,8 +102,23 @@
    - DR007、SHIBOR 隔夜、SOFR、信用利差召回失败率高 → 直接 WebSearch
    - westock-data `quote usVIX` 返回"数据为空" → WebSearch
 4. **WebSearch 鉴别内容农场**：AI 生成农场站（如 fazen.markets）数据自相矛盾，与 neodata 交叉验证矛盾即弃用。
+5. **时效口径**：先确定今天是否交易日、指标发布频率，禁止把上月值说成当月。
+6. **asOf 回放语义**：asOf 必须严格大于等于所有 published_at；越界数据剔除，缺数据 = `未知`。
+7. **跨市场不串味**：任何一格只能填该市场的数据，缺数据 = `未知` + statusReason。
 
-## 五·六、westock MCP 实战路由（2026-08-24 实测沉淀）
+## 六、实测避坑清单（每次跑必读）
+
+| 坑 | 处理 |
+|---|---|
+| neodata 宽基估值路由错（沪深300 PE 返回创业板指） | 改 WebSearch 媒体引用 |
+| neodata DR007/SHIBOR 隔夜/SOFR/信用利差召回失败率高 | 直接 WebSearch，别反复重试 |
+| fazen.markets 是内容农场（同一站 S&P 既 5825 又 7557） | 弃用，与一手行情交叉验证 |
+| 资金流向写成"净买入/净卖出"触发禁词误报 | 统一用"净流入/净流出" |
+| 中国 6 月 CPI 年率事件日历缺 7/9 那期 | WebSearch 国家统计局解读（6 月 CPI +1.0%/PPI +4.1%） |
+| 韩国 M2 库内无发布时间戳 | 最新一期官方新闻稿（Yonhap/Xinhua 引 BOK）可直接采信 |
+| 美债 10Y neodata 只有月值 | 日值用 WebSearch（Saxo / Dow Jones Market Update） |
+
+## 七、westock MCP 实战路由（2026-08-24 实测沉淀）
 
 > westock-mcp 已连接时优先用工具而非 neodata 脚本，一次调用可顶多轮 WebSearch。
 
@@ -122,17 +137,14 @@
 
 **事件时间锚（本轮）**：美 Q2 GDP 二读 8/26、BOK 议息 8/27、Jackson Hole 8/27-29、9/4 非农——复盘报告中应标注「即将到来的验证点」。
 
-## 五·七、westock MCP 补充实测（2026-08-29 沉淀）
+## 八、westock MCP 补充实测（2026-08-29 沉淀）
 
 - **`data_macro` 两类 listCode 必须区分**：指标库类（`macro_gdp`/`macro_cpi_ppi`/`macro_financing`/`macro_fundquantity`，带 `*_INFO_DATE` 发布日期字段）数据新鲜可用；**事件日历类（`macro_lpr`/`macro_us_*`/`macro_caixin_pmi`）数据陈旧错乱**（会返回 2025/12、2026/2 等过期期次），最新值一律 WebSearch 交叉，勿信接口。
 - **`data_market_overview type=margin`**：row 偶发为空（仅返回 schema），连续多日（8/26-8/28 实测）无数据 → 两融改走证券时报数据宝（stcn.com）WebSearch。
 - **韩国收盘与外资流向一条龙**：`data_finsearch` 关键词「韩国 KOSPI 外资」可命中 ajudaily（亚洲日报中文版）单条新闻全覆盖（KOSPI/KOSDAQ 收盘、外资/机构/个人净流向、汇率），比 KRX 官网易取。
-- **禁词扫描（生成 HTML 交付前）**：grep 连「融资买入额」「净卖出」等资金术语都会命中「买入/卖出」禁词——统一改写为「融资额」「净流出」措辞；生成器 `--check` 通过后仍要对最终 HTML 再跑一遍 `grep -oE` 确认。
-5. **时效口径**：先确定今天是否交易日、指标发布频率，禁止把上月值说成当月。
-6. **asOf 回放语义**：asOf 必须严格大于等于所有 published_at；越界数据剔除，缺数据 = `未知`。
-7. **跨市场不串味**：任何一格只能填该市场的数据，缺数据 = `未知` + statusReason。
+- **禁词扫描（生成 HTML 交付前）**：grep 连「融资买入额」「净卖出」等资金术语都会命中「买入/卖出」禁词——统一改写为「融资额」「净流出」措辞；生成器 `--check` 通过后仍要对最终 HTML 再跑一遍 `grep -oE` 确认。**注意**：本技能禁词已上移共享层（tier=`strict`，见 `skills/_shared/forbidden-terms.json`），不要在脚本里重新内联禁词表，`make audit` 会报错。
 
-## 五·五、板块倾向建议层数据路由（sectorAdvice，2026-08-03 新增）
+## 九、板块倾向建议层数据路由（sectorAdvice，2026-08-03 新增）
 
 > 用户要求"投资建议/板块建议"时使用。**只到板块/主题粒度，禁止个股**；每条必须有证据来源 + 证伪条件；倾向只用 关注/中性/回避。
 
@@ -149,7 +161,7 @@
 - 倾向是"证据指向的方向性观察"，与 risk 互补：risk 说风险，sectorAdvice 说"证据指向哪里"。
 - 关联 28 格证据：如「中国两融连续 5 周回落」→ 高杠杆科技板块给"回避/中性"；「美国 10Y 高位 + 估值高分位」→ 美成长板块给"中性/回避"。
 
-## 六、按维度速查"我应该跑哪些工具"
+## 十、按维度速查"我应该跑哪些工具"
 
 | 维度 | 主要工具 | 备选 |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 name: ashare-capital-environment-dashboard
-description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿用 AGUHOT 4市场×7维度证据网格，视觉与 ashare-daily-market-review 的“市场脉搏”HTML 保持一致。当用户要"做一份资本环境仪表盘""中美韩宏观对照""资本环境多维证据""资本环境报告""类似 AGUHOT 的资本环境页面"时使用。也可用于回放某一日（asOf=YYYY-MM-DD）的资本环境状态。明确区分已观测事实和未知；默认不输出指令性投资建议/目标价/牛熊判断/买卖结论，但用户明确要求时，可输出证据驱动的"板块倾向建议层"（关注/中性/回避，仅为研究建议，不构成投资建议）。
+description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿用 AGUHOT 4市场×7维度证据网格，视觉沿用报告族共享的「ASHARE EDITORIAL」品牌设计系统（浅色瑞士 / 柔和粗野主义，见 skills/_shared/README.md）。当用户要"做一份资本环境仪表盘""中美韩宏观对照""资本环境多维证据""资本环境报告""类似 AGUHOT 的资本环境页面"时使用。也可用于回放某一日（asOf=YYYY-MM-DD）的资本环境状态。明确区分已观测事实和未知；默认不输出指令性投资建议/目标价/牛熊判断/买卖结论，但用户明确要求时，可输出证据驱动的"板块倾向建议层"（关注/中性/回避，仅为研究建议，不构成投资建议）。
 ---
 
 # 资本环境仪表盘
@@ -89,24 +89,46 @@ description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿�
 5. **绝不把代理说成原指标**：全球宽度代理就是代理，不能写成"MSCI ACWI 上涨家数占比"。
 6. **仍有硬缺口才 `未知`**：MSCI ACWI 宽度、13F 合计等确实无免费可审计源的，才保持 `未知` + reason。
 
-### 实测避坑清单（每次跑必读）
+### 实测避坑清单
 
-| 坑 | 处理 |
+**已移到 `references/data-routing.md` 第六节**（每次跑必读）。最常见三条：宽基估值路由错改 WebSearch、DR007/SHIBOR/SOFR/信用利差召回失败率高直接走 WebSearch、fazen.markets 等内容农场站与一手行情交叉验证后弃用。
+
+### 禁词与视觉系统已上移共享层
+
+本技能的禁词表、设计令牌与品牌层不再定义在生成脚本内：
+
+- 禁词 tier：`strict`（比其它技能更严——连裸「买入/卖出」和「总分」都不允许，因为本技能完全不产生聚合评分）
+- 真源：`skills/_shared/forbidden-terms.json`
+- 设计令牌：`skills/_shared/design-tokens.css`
+- 品牌层（外壳 + 组件）：`skills/_shared/shell.css` + `skills/_shared/components.css`；渲染末尾由 `ashare_shared.inject_shared_css()` 注入
+
+注入顺序要点：品牌层插在 `</head>` 之前，即**排在本技能模板的 `<style>` 之后**，对同名选择器有最终解释权。因此模板里只保留资本环境独有的内部结构（`.tw-*` / `.sa-*` / `.an-*` / `.cell-head` / `.cell-evidence`）与更高的特异性覆盖（如 `.market-grid .cell{padding:14px}`）。
+
+**不要在脚本里重新内联禁词表、`:root` 色值、页面骨架或组件规则**——`make audit` 与 `make test` 会直接报错。改禁词请改共享文件，改配色请改 `design-tokens.css`。
+
+### 脚本结构（已按审计 P2-5 拆分）
+
+`scripts/` 不再是单个巨型文件，校验 / 派生 / 渲染 / 模板 / CLI 各归其位：
+
+| 文件 | 职责 |
 |---|---|
-| neodata 宽基估值路由错（沪深300 PE 返回创业板指） | 改 WebSearch 媒体引用 |
-| neodata DR007/SHIBOR 隔夜/SOFR/信用利差召回失败率高 | 直接 WebSearch，别反复重试 |
-| fazen.markets 是内容农场（同一站 S&P 既 5825 又 7557） | 弃用，与一手行情交叉验证 |
-| 资金流向写成"净买入/净卖出"触发禁词误报 | 统一用"净流入/净流出" |
-| 中国 6 月 CPI 年率事件日历缺 7/9 那期 | WebSearch 国家统计局解读（6 月 CPI +1.0%/PPI +4.1%） |
-| 韩国 M2 库内无发布时间戳 | 最新一期官方新闻稿（Yonhap/Xinhua 引 BOK）可直接采信 |
-| 美债 10Y neodata 只有月值 | 日值用 WebSearch（Saxo / Dow Jones Market Update） |
+| `gen_dashboard.py` | CLI 入口：参数解析、编排、写盘、禁词兜底扫描（**唯一入口，调用方式不变**） |
+| `schema.py` | 契约常量：市场/维度/标签/可用性枚举、日期解析、默认输入路径 |
+| `validate.py` | 输入读取、契约校验、点时筛选（返回 `(records, sectorAdvice)`，无全局副作用） |
+| `derive.py` | 可用性映射、市场聚合、overview 文案、跨格研判清单 |
+| `render.py` | HTML 片段与整页组装，末尾调 `inject_shared_css` |
+| `page_template.py` | 整页 HTML 模板（只有一个字符串常量，与渲染逻辑分离） |
+| `_paths.py` | 把 `skills/_shared` 挂到 `sys.path` 的唯一入口 |
+
+**演示样例数据与生产逻辑物理隔离**：28 格样例在 `examples/sample-cells.json`（非生产数据），
+不传 `--cells` 时默认读它。生产请始终显式传 `--cells cells.json`。
 
 ## 四、报告骨架（图表化）
 
 无论回放哪一天，HTML 结构固定为 6 段。**全部 28 格用 ECharts 图表渲染 + AI 透镜分析**：
 
 1. **顶部导航**：标题 + 回放日期 + 静态快照说明；其他日期必须重新运行生成器，或由已验证的服务端按同一规则处理 `asOf`。
-2. **顶部摘要卡**：米白纸张卡 + 金色左边线 + 硬投影，第一行是 overview，第二行是 disclaimer。overview 句式：
+2. **顶部摘要卡**：纸灰底 + 钴蓝 6px 左边线 + 零圆角（`.summary-box`，骨架来自共享组件层），第一行是 overview，第二行是 disclaimer。overview 句式：
    ```
    截至 {YYYY-MM-DD} 的资本环境：{覆盖等级}。以下为各市场维度的可观测状态，区分已观测事实与未知。
    ```
@@ -193,8 +215,8 @@ description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿�
 ## 五、产出规范
 
 - **输出格式**：自包含 HTML（外链仅 ECharts CDN），ECharts 套骨架别从零写嵌套。文件命名：`ashare-capital-environment-dashboard-{YYYY-MM-DD}.html`，放项目根或用户指定位置。
-- **生成脚本（推荐）**：`scripts/gen_dashboard.py` 已内置完整模板 + 渲染引擎 + 覆盖矩阵生成逻辑。样例数据可直接生成；生产输入使用 `--cells cells.json --as-of YYYY-MM-DD --out file.html`。每个 `market|dimension` 可是一条记录或按版本保存的记录数组；脚本只选 `publishedAt ≤ asOf` 的最新记录，无合格记录自动标 `未知`。
-- **视觉风格（必须）**：与 `ashare-daily-market-review` HTML 同一套“市场脉搏”视觉系统：深墨绿 24px 网格背景、宋体研报正文、金色英文眉题、米白纸张卡、细棕边、5px 硬投影、等宽数字与证据元数据；A股涨跌保持红涨绿跌。资本仪表盘只保留自身 4×7 信息架构，不再使用 AGUHOT 浅色后台壳层。
+- **生成脚本（推荐）**：`scripts/gen_dashboard.py`（已拆分为 schema/validate/derive/render/page_template，见第三节）内置完整模板 + 渲染引擎 + 覆盖矩阵生成逻辑。不传 `--cells` 时读取 `examples/sample-cells.json` 的演示样例（**非生产数据**）；生产输入使用 `--cells cells.json --as-of YYYY-MM-DD --out file.html`。每个 `market|dimension` 可是一条记录或按版本保存的记录数组；脚本只选 `publishedAt ≤ asOf` 的最新记录，无合格记录自动标 `未知`。
+- **视觉风格（必须）**：报告族共享的「ASHARE EDITORIAL」品牌设计系统——白纸黑字最高对比、可见 32px 网格、纯黑 2px 结构线、零圆角、7px 硬投影、grotesk 标题 + 宋体正文 + 等宽数据。令牌、外壳与组件全部来自 `skills/_shared/`（`design-tokens.css` / `shell.css` / `components.css`），**本技能模板不再自带任何骨架或组件样式**；A 股涨跌保持红涨绿跌，覆盖度用状态色（`--state-*`）。资本仪表盘只保留自身 4×7 信息架构与 `tw-*` / `sa-*` / `an-*` 内部结构，不再使用 AGUHOT 浅色后台壳层。
 - **数据注入**：所有 28 格数据通过模板唯一的 `{{CELLS_JSON}}` 占位符注入（见 `references/html-template.md` 第三节配置格式），禁止硬编码在 HTML 标签里。
 - **HTML 模板**：见 `references/html-template.md`（脚本内已内嵌此模板）。
 - **交付前必做**（三条全过才交付）：
@@ -206,13 +228,15 @@ description: 生成资本环境仪表盘 HTML 报告：字段与覆盖语义沿�
   # 3) 禁词扫描
   grep -oE "买入|卖出|建议买|建议卖|目标价|目标仓位|牛熊分数|总分|确定牛|确定熊|必然涨|必然跌" file.html
   ```
-- **覆盖徽章配色**：
+- **覆盖徽章配色**（状态语义，**不使用行情词 up/down**——旧版 `--market-up` 取绿色表示「可得」，与红涨绿跌相反，是明确事故源，v2 已删除）：
   | 状态 | 颜色类 | 含义 |
   |---|---|---|
-  | 可得 | `bg-market-up-soft text-market-up` | 数据+溯源完整 |
-  | 部分 | `bg-surface-muted text-ink-secondary` | 数据有但不全（常为代理口径） |
-  | 未知 / 失败 / 无法还原 | `bg-market-down-soft text-market-down` | 数据缺失或采集失败 |
-  | 待复核 | `bg-surface-muted text-ink-tertiary` | 来源已识别但 vintage 未核验 |
+  | 可得 | `badge-available` | 数据+溯源完整（状态绿） |
+  | 部分 | `badge-partial` | 数据有但不全（常为代理口径，状态琥珀） |
+  | 未知 / 失败 / 无法还原 | `badge-unknown` | 数据缺失或采集失败（状态红） |
+  | 待复核 | `badge-muted` | 来源已识别但 vintage 未核验（中性灰） |
+
+  矩阵格同步用 `.matrix-cell.a` / `.p` / `.u`（在 `components.css` 里定义为 state-ok / state-warn / state-bad）。
 
 ## 六、工作流程
 

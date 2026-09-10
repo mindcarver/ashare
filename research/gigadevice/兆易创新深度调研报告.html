@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>兆易创新（603986.SH）深度调研报告</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222c; --border: #2a2f3a;
+    --text: #e8eaed; --muted: #9aa3b2; --red: #ff4d4f; --green: #00c48c;
+    --orange: #ffb020; --blue: #4d8dff; --purple: #a78bfa;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.7; padding:32px 20px; }
+  .wrap { max-width:1000px; margin:0 auto; }
+  .header { border:1px solid var(--border); border-radius:16px; padding:28px 32px; background:linear-gradient(135deg,#1a2030 0%,#171a21 100%); margin-bottom:24px; }
+  .header h1 { font-size:26px; margin-bottom:6px; }
+  .header .code { color:var(--muted); font-size:14px; }
+  .tags { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .tag { font-size:12px; padding:3px 10px; border-radius:20px; border:1px solid var(--border); color:var(--muted); }
+  .tag.hot { border-color:var(--red); color:var(--red); }
+  .tag.up { border-color:var(--green); color:var(--green); }
+  .section { border:1px solid var(--border); border-radius:16px; padding:24px 28px; margin-bottom:20px; background:var(--panel); }
+  .section h2 { font-size:19px; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .section h2 .num { background:var(--blue); color:#fff; width:26px; height:26px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .section h3 { font-size:15px; margin:18px 0 8px; color:var(--blue); }
+  p { margin-bottom:10px; color:var(--text); font-size:14px; }
+  .muted { color:var(--muted); font-size:12px; }
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:14px 0; }
+  .kpi { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:14px; }
+  .kpi .label { font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .kpi .value { font-size:20px; font-weight:600; }
+  .kpi .sub { font-size:11px; color:var(--muted); margin-top:2px; }
+  .red { color:var(--red); } .green { color:var(--green); } .orange { color:var(--orange); } .blue { color:var(--blue); }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th,td { padding:9px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:var(--muted); font-weight:500; white-space:nowrap; }
+  .callout { border-left:3px solid var(--orange); background:rgba(255,176,32,.07); padding:12px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.red { border-left-color:var(--red); background:rgba(255,77,79,.07); }
+  .callout.green { border-left-color:var(--green); background:rgba(0,196,140,.07); }
+  .callout.blue { border-left-color:var(--blue); background:rgba(77,141,255,.07); }
+  ul,ol { margin:8px 0 8px 22px; font-size:14px; }
+  li { margin-bottom:6px; }
+  .verdict { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0; }
+  .verdict-box { border-radius:12px; padding:16px; border:1px solid var(--border); }
+  .verdict-box.bull { background:rgba(255,77,79,.08); border-color:rgba(255,77,79,.35); }
+  .verdict-box.bear { background:rgba(0,196,140,.06); border-color:rgba(0,196,140,.3); }
+  .verdict-box .t { font-size:13px; color:var(--muted); margin-bottom:6px; }
+  .src { font-size:11px; color:var(--muted); margin-top:4px; }
+  .footer { text-align:center; color:var(--muted); font-size:12px; margin-top:30px; padding:20px; border-top:1px solid var(--border); }
+  .divider { height:1px; background:var(--border); margin:18px 0; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:12px; margin-right:6px; }
+  .pill.g { background:rgba(0,196,140,.12); color:var(--green); }
+  .pill.r { background:rgba(255,77,79,.12); color:var(--red); }
+  .pill.o { background:rgba(255,176,32,.12); color:var(--orange); }
+  @media (max-width:640px){ .verdict{grid-template-columns:1fr;} .section{padding:18px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <h1>兆易创新（603986.SH）深度调研报告</h1>
+  <div class="code">存储芯片（NOR Flash 全球第二 / 利基DRAM / SLC NAND）· 32位MCU 国内第一 · 定制化存储</div>
+  <div class="tags">
+    <span class="tag hot">存储超级周期</span>
+    <span class="tag up">量价齐升</span>
+    <span class="tag">高位回撤 -55%</span>
+    <span class="tag">8/19 中报披露</span>
+  </div>
+  <div class="src" style="margin-top:10px;">数据截至：2026-07-31 收盘（股价378.6元）· 报告生成：2026-08-02 · 来源：公司公告/年报/一季报/业绩预告、交易所龙虎榜、TrendForce、券商研报（交银国际/华鑫/中航等）、公开报道</div>
+</div>
+
+<!-- ============ 核心结论 ============ -->
+<div class="section">
+  <h2><span class="num">★</span> 核心结论速览</h2>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">现价/总市值</div><div class="value">378.6元</div><div class="sub">总市值约 2657亿</div></div>
+    <div class="kpi"><div class="label">距高点回撤</div><div class="value red">-55.3%</div><div class="sub">高点846.66（7/1）</div></div>
+    <div class="kpi"><div class="label">PE-TTM</div><div class="value">92.4倍</div><div class="sub">PB 10.7倍</div></div>
+    <div class="kpi"><div class="label">2026H1归母</div><div class="value red">约69亿</div><div class="sub">同比 +1099%</div></div>
+    <div class="kpi"><div class="label">2026H1扣非</div><div class="value">约48.5亿</div><div class="sub">同比 +791%</div></div>
+    <div class="kpi"><div class="label">2026E EPS(交银)</div><div class="value blue">21.03元</div><div class="sub">对应PE 18倍</div></div>
+    <div class="kpi"><div class="label">Q2毛利率</div><div class="value red">57.1%</div><div class="sub">环比+12.2pct</div></div>
+    <div class="kpi"><div class="label">融资余额</div><div class="value">182.7亿</div><div class="sub">高位去杠杆中</div></div>
+  </div>
+
+  <div class="callout green"><b>一句话逻辑：</b>全球存储超级周期（AI驱动、海外大厂产能转向HBM）下，兆易创新卡位利基存储（NOR+DRAM+SLC NAND）量价齐升，2026H1归母净利暴增1099%，Q2单季扣非创历史新高。业绩仍在环比上行通道，但股价自7月高点已腰斩，市场正在"业绩兑现"与"2026Q4价格见顶、2027周期回落"之间剧烈博弈。</div>
+
+  <div class="callout red"><b>当前最大分歧：</b>多头（交银国际7/17上修2026E EPS至21元）认为业绩持续上修+估值仅18倍，超跌；空头（摩根士丹利7月底）认为内存合约价2026Q4见顶、盈利上调动能减弱，当前处于周期顶部"低PE陷阱"。这个分歧决定未来1-6个月的方向，核心观察窗口是8/19中报与Q3合约价走势。</div>
+</div>
+
+<!-- ============ 一、公司逻辑 ============ -->
+<div class="section">
+  <h2><span class="num">1</span> 公司逻辑：市场在交易什么</h2>
+  <p><b>利润引擎拆解：</b>收入 = 存储（NOR Flash + 利基DRAM + SLC NAND）约7成 + MCU约2成 + 传感器/模拟/定制化存储。利润弹性主要来自<b>存储产品涨价</b>——成本（晶圆代工）上涨滞后于售价上涨，毛利率随涨价持续抬升。</p>
+  <table>
+    <tr><th>业务线</th><th>地位</th><th>2026年逻辑</th></tr>
+    <tr><td>NOR Flash</td><td>全球第二</td><td>AI服务器/汽车/端侧AI拉动，价格温和持续上涨超1年，产能温和扩张，目标2-3年全球第一</td></tr>
+    <tr><td>利基DRAM</td><td>国内龙头（长鑫代工）</td><td>海外大厂退出，供给严重紧缩，合约价上行约1年；Q1收入占比升至约1/3、环比翻倍以上；2026年长鑫采购额约57亿（vs 2025年11.8亿）</td></tr>
+    <tr><td>SLC NAND</td><td>国内领先</td><td>海外大厂2D NAND产能转向3D，结构性缺货，价格陡峭上行；Q1收入接近去年全年，8Gb已向海外TV客户送样</td></tr>
+    <tr><td>MCU (GD32)</td><td>国内32位第一</td><td>晶圆/封测成本上行传导，Q2开始行业性涨价；光模块/机器人/服务器电源放量，2026年营收预期+20%</td></tr>
+    <tr><td>定制化存储</td><td>先发</td><td>芯成科技围绕端侧AI（车舱/AI PC/机器人），2026年量产贡献数亿元营收</td></tr>
+  </table>
+  <div class="callout"><b>利润弹性放大机制：</b>2026Q1收入环比+76.6%，归母净利环比+158.7%——收入涨1倍、利润涨1.6倍，因为毛利率从45%跳升到57%。存储是典型的高经营杠杆业务：固定成本为主，涨价部分几乎全部转化为毛利。</div>
+  <p><b>关键问题：收入+10%，利润为何可能+20%以上？</b>因为价格弹性 > 销量弹性。涨价直接提升毛利率（边际成本仅晶圆代工），而费用相对刚性。反之亦然——一旦价格回落，利润下滑也会放大。这是周期股的本质。</p>
+</div>
+
+<!-- ============ 二、行业阶段 ============ -->
+<div class="section">
+  <h2><span class="num">2</span> 行业阶段：超级周期，但拐点争论开始</h2>
+  <p><b>行业状态：</b>供给紧张 → 价格陡峭上行，处于AI驱动的结构性超级景气周期，区别于过往消费电子驱动的短周期反弹。</p>
+  <ul>
+    <li><b>需求端：</b>AI服务器/HBM挤占产能 + 端侧AI/机器人/光模块需求爆发。手机内存单价同比飙升逾3倍，存储占手机BOM成本预计2026Q3升至43%（来源：新浪财经转述，2026-08-01）。</li>
+    <li><b>供给端：</b>三星/SK海力士/美光将8成以上先进产能转向HBM，消费电子与利基存储供应被挤压；业内判断供需紧张至少持续至2028年上半年。</li>
+    <li><b>价格数据：</b>TrendForce预计2026Q3 DRAM合约价环比+13-18%、NAND合约价环比+10-15%；2026Q1 NAND现货价已涨33-38%、一般型DRAM涨55-60%。</li>
+    <li><b>⚠️ 拐点信号：</b>摩根士丹利7月底报告称AI存储狂欢接近拐点，<b>内存合约价预计2026Q4见顶</b>；市场对存储商盈利上调动能减弱，净盈利上调率从92%峰值回落至77%。公司自身亦提示"2027年后利基DRAM价格可能进入高位震荡"。</li>
+  </ul>
+  <div class="callout red"><b>最影响股价的3个行业变量：</b><br>① <b>存储合约价</b>（Q3继续涨13-18%已定，Q4能否续涨是焦点）<br>② <b>海外大厂退出利基市场的持续性</b>（SLC NAND至少2027全年紧张 vs DRAM 2027年产能边际增加）<br>③ <b>AI资本开支节奏</b>（下游服务器/云厂商是否持续加单）</div>
+  <p><b>周期位置判断：</b>当前处于周期上行中后段——价格仍在上行（Q3确定），但市场开始定价"见顶预期"。中短线最好的阶段（"刚出现边际改善，市场还没充分反应"）已经过去，现在进入"业绩兑现与见顶预期赛跑"的阶段，波动会显著放大。</p>
+</div>
+
+<!-- ============ 三、产业链位置 ============ -->
+<div class="section">
+  <h2><span class="num">3</span> 产业链位置与竞争力：真受益龙头</h2>
+  <p><b>产业链位置：</b>芯片设计（Fabless），上游晶圆代工（DRAM由长鑫科技代工、Flash由中芯国际/华虹/武汉新芯等），下游覆盖消费电子/汽车/工业/服务器/光模块。</p>
+  <ul>
+    <li><b>NOR Flash：</b>全球第二（仅次于华邦），国内第一，45nm已规模化量产，汽车/光模块/端侧AI/国产服务器份额快速提升。</li>
+    <li><b>利基DRAM：</b>国内唯一具备规模出货能力的厂商，与长鑫科技深度绑定（2026年57亿采购），LPDDR4与D4 48Gb新制程已流片、下半年量产，从DDR3向高附加值品类切换。</li>
+    <li><b>SLC NAND：</b>深耕十余年，全容量料号齐备，海外大厂退出后受益最大。</li>
+    <li><b>MCU：</b>GD32国内市占率第一，69个产品系列700+款产品，覆盖ARM Cortex-M23~M7及RISC-V，车规级/工业级占比提升。</li>
+    <li><b>定制化存储（芯成科技）：</b>AI手机/AI PC/机器人端侧项目突破中，先发优势明显。</li>
+  </ul>
+  <div class="callout green"><b>竞争力结论：</b>这不是"蹭概念"，而是利基存储各细分赛道的真龙头。全球仅有少数玩家能同时覆盖NOR+利基DRAM+SLC NAND三大品类，兆易是其中成本结构与客户结构最优的之一。市场已将其从"普通芯片设计公司"重新定价为"存储超级周期的核心受益者"（2年半涨近14倍已证明）。</div>
+</div>
+
+<!-- ============ 四、财务质量 ============ -->
+<div class="section">
+  <h2><span class="num">4</span> 财务质量：爆发式增长，注意非经常性收益</h2>
+  <table>
+    <tr><th>指标</th><th>2025全年</th><th>2026Q1</th><th>2026H1(预告)</th></tr>
+    <tr><td>营业收入</td><td>92.03亿 (+25.1%)</td><td>41.88亿 (+119.4%)</td><td>约115亿 (+177%)</td></tr>
+    <tr><td>归母净利润</td><td>16.48亿 (+49.5%)</td><td>14.61亿 (+522.8%)</td><td>约69亿 (+1099%)</td></tr>
+    <tr><td>扣非净利润</td><td>—</td><td>14.10亿 (+529.9%)</td><td>约48.5亿 (+791%)</td></tr>
+    <tr><td>毛利率</td><td>—</td><td>57.08% (环比+12.2pct)</td><td>—</td></tr>
+    <tr><td>经营现金流净额</td><td>21.29亿</td><td>17.83亿 (+430.9%)</td><td>—</td></tr>
+  </table>
+  <div class="callout red"><b>⚠️ 关键质量细节：</b>Q2单季归母约54.4亿，但扣非约34.4亿——<b>两者差20亿为非经常性损益</b>（主要来自公司持有的证券投资公允价值上升确认的收益，公司公告已披露）。即：<br>· <b>真实经营利润</b>：Q2扣非34.4亿，环比Q1的14.1亿仍+144%，创历史新高，质量扎实；<br>· <b>归母含水分</b>：20亿公允价值变动是一次性/波动性收益，Q3-Q4证券市值回落时会消失，<b>归母环比增速将显著低于Q2</b>（+272%），市场需用扣非口径跟踪经营趋势。</div>
+  <ul>
+    <li><b>现金流质量优：</b>Q1经营现金流17.83亿 &gt; 净利14.6亿，净现比122%，收入现金比111%——利润是真金白银。</li>
+    <li><b>资产负债表健康：</b>货币资金146.9亿（Q1末）、存货34.0亿（较年初+10.9%，涨价周期中囤货增值）、应收账款仅2.87亿（占比极低）、股东权益255亿。</li>
+    <li><b>费用率下降：</b>期间费用率18.2%（同比-5.8pct），研发费用Q1 3.58亿（+22.9%），收入增速远超费用增速，规模效应显现。</li>
+    <li><b>筹资现金+46亿：</b>Q1筹资活动净流入46.16亿（推测含定增/借款），货币资金较年初+60%。</li>
+  </ul>
+</div>
+
+<!-- ============ 五、订单产能 ============ -->
+<div class="section">
+  <h2><span class="num">5</span> 订单、产能与业绩验证</h2>
+  <ul>
+    <li><b>产能保障：</b>2026年向长鑫科技采购DRAM代工约<b>57亿元</b>（vs 2025年实际11.8亿，+383%）——这是未来1-2年DRAM放量的核心产能基石，也侧面验证行业供不应求下代工成本上升。</li>
+    <li><b>NOR扩产：</b>与战略供应商稳步推进产能扩张，2026年产能明显上涨，目标2-3年全球NOR第一。</li>
+    <li><b>SLC NAND扩产：</b>积极扩产并投入MLC NAND更高容量研发，供给方比NOR更少、扩产更难，景气周期更长。</li>
+    <li><b>新品量产：</b>自研DDR4小容量产品2026年上半年量产；LPDDR4及D4 48Gb已流片、下半年量产；8Gb SLC NAND已送样海外TV客户。</li>
+    <li><b>定制化存储：</b>芯成科技2026年量产贡献数亿元营收，2027年多个端侧AI项目放量。</li>
+  </ul>
+  <div class="callout green"><b>业绩验证组合：</b>订单/产能扩张（长鑫57亿采购+扩产）+ 行业景气（Q3合约价续涨）+ 业绩兑现（H1扣非48.5亿、Q2扣非34.4亿环比+144%）三要素齐备。<b>未来1-4季度业绩继续环比向上的确定性较高</b>，除非存储价格提前见顶回落。</div>
+</div>
+
+<!-- ============ 六、催化剂时间表 ============ -->
+<div class="section">
+  <h2><span class="num">6</span> 催化剂时间表：市场什么时候看到变化</h2>
+  <table>
+    <tr><th>时间窗口</th><th>事件</th><th>类型/预期反应</th></tr>
+    <tr><td>1周内 (8/2-8/9)</td><td>Q3存储合约价谈判期、市场对8/19中报的预期发酵</td><td>存储板块情绪修复/继续寻底</td></tr>
+    <tr><td>8/19</td><td><b>2026年中报正式披露</b>（已预告H1归母69亿/+1099%）</td><td>核验Q2量价与毛利率，超预期则修复，低于预告则证伪</td></tr>
+    <tr><td>1个月内 (8月中下旬)</td><td>Q3 DRAM/NAND合约价落地（TrendForce预计DRAM +13-18%）</td><td>价格继续上行将支撑业绩预期</td></tr>
+    <tr><td>3个月内 (Q4)</td><td><b>摩根士丹利警告：内存合约价Q4见顶</b>；10月下旬三季报</td><td>⚠️ 最大风险窗口：若Q4价格环比转平/转跌，盈利预期见顶</td></tr>
+    <tr><td>6个月内 (2027H1)</td><td>实控人增持（12/13起，≥10亿）、回购10-20亿注销落地、长鑫科技科创板上市（产业链映射）、2027年产能投放情况</td><td>股东行为提供下方支撑；长鑫上市或催化板块</td></tr>
+  </table>
+  <div class="callout"><b>催化剂与预期差组合：</b>8/19中报 + Q3合约价续涨，是未来1-3个月最确定的业绩催化；而Q4价格见顶担忧，是最主要的向下风险。两者时间上错位，决定股价节奏：8-9月可能因中报+涨价反弹修复，10月后需警惕见顶定价。</div>
+</div>
+
+<!-- ============ 七、预期差 ============ -->
+<div class="section">
+  <h2><span class="num">7</span> 预期差：市场错在哪里</h2>
+  <div class="verdict">
+    <div class="verdict-box bear">
+      <div class="t">市场共识（定价于股价）</div>
+      <p style="font-size:13px;">① 存储周期2026Q4见顶，2027年盈利下行；<br>② 腰斩后仍有下跌风险（"低PE陷阱"）；<br>③ 高位筹码结构（户数+40%、融资180亿）抛压大。</p>
+    </div>
+    <div class="verdict-box bull">
+      <div class="t">事实与潜在预期差</div>
+      <p style="font-size:13px;">① Q2扣非34.4亿创新高，Q3价格仍涨13-18%，<b>2026年内业绩仍在环比上行通道</b>（交银已上修2026E EPS至21元）；<br>② SLC NAND至少2027全年紧张、NOR 2-3年扩产逻辑未变——"2027全面回落"可能过度线性外推；<br>③ 18倍（2026E）已计入较多悲观预期。</p>
+    </div>
+  </div>
+  <p><b>预期差核心：</b>市场把"2027年周期回落"提前在股价中大幅定价（腰斩55%），而<b>2026年H2业绩大概率继续超预期</b>（Q3涨价+中报验证）。若8/19中报与Q3价格兑现，存在业绩驱动下的估值修复窗口（18倍→合理区间）。<br><br><b>反向风险同样成立：</b>如果Q4合约价如大摩所料见顶、且2027年盈利下修速度快于预期，则当前18倍并非低估——这正是周期股的难点。<b>本报告的差异化判断：2026年内偏多头修复，2027年偏谨慎，二者切换点看Q3末-Q4价格数据。</b></p>
+  <p class="muted">* 预期差评分（1-5）：业绩预期差 4分（机构上修未完），行业拐点预期差 3分（见顶时间分歧大），估值预期差 3分（18倍vs周期顶），综合存在但需价格数据验证。</p>
+</div>
+
+<!-- ============ 八、估值 ============ -->
+<div class="section">
+  <h2><span class="num">8</span> 估值与重估空间</h2>
+  <table>
+    <tr><th>口径</th><th>2026E EPS</th><th>对应PE(现价378.6)</th><th>来源</th></tr>
+    <tr><td>交银国际（7/17最新）</td><td>21.03元</td><td class="green">18.0倍</td><td>中报预增后上修</td></tr>
+    <tr><td>中邮/中航（5月）</td><td>8.55-8.67元</td><td>43.7-44.3倍</td><td>预增前，明显滞后</td></tr>
+    <tr><td>H1归母69亿年化</td><td>约19.7元</td><td class="green">19.2倍</td><td>简单年化（含公允价值变动）</td></tr>
+    <tr><td>H1扣非48.5亿年化</td><td>约13.8元</td><td>27.4倍</td><td>经营口径（更稳健）</td></tr>
+    <tr><td>PE-TTM</td><td>—</td><td>92.4倍</td><td>基于过去12月（含低基数）</td></tr>
+  </table>
+  <p><b>估值判断：</b>用扣非年化口径约27倍、用归母一致预期上修口径约18-19倍。横向看，存储设计公司景气期普遍给30-60倍PE；纵向看，公司历史估值中枢随周期大幅波动。当前估值处于"周期盈利高点上的中性偏低"位置——<b>前提是2026-2027年盈利如交银所料维持高位</b>。</p>
+  <div class="callout red"><b>周期股估值陷阱提醒：</b>存储是强周期行业，峰值盈利时的低PE往往意味着周期即将见顶（低PE陷阱）。当前18-27倍看似便宜，本质是市场对"2027年盈利回落"的提前定价。真正的安全边际取决于：① 2027年盈利回落幅度（公司称"高位震荡"）；② 周期见顶后回落速度。</div>
+  <h3>情景区间推演（未来6个月）</h3>
+  <ul>
+    <li><b>乐观（Q3价格续涨+Q4未现拐点+中报超预期）：</b>股价修复至 450-500 区间（对应2026E 21-24倍），上行空间 +20%~+32%。</li>
+    <li><b>中性（业绩兑现但见顶预期压制）：</b>股价在 340-420 区间宽幅震荡（对应扣非口径 25-30倍），与当前持平。</li>
+    <li><b>悲观（Q4合约价见顶+2027下修+筹码继续出清）：</b>下探 297（MA250）/280 一线（对应2027年盈利回落后的合理中枢），下行空间 -20%~-26%。</li>
+  </ul>
+  <p><b>盈亏比：</b>上行至450-500（+20%~32%）vs 下行至280-297（-20%~-26%），赔率约1:1，<b>不构成单边重仓依据</b>，适合区间交易或等待方向确认。</p>
+</div>
+
+<!-- ============ 九、股东与资本事件 ============ -->
+<div class="section">
+  <h2><span class="num">9</span> 股东与资本事件：减持完毕，护盘动作开始</h2>
+  <table>
+    <tr><th>事件</th><th>时间</th><th>详情</th></tr>
+    <tr><td>实控人朱一明减持</td><td>5/6-6/12</td><td>减持1111万股（1.58%），套现约<b>44亿元</b>（339.44-538.90元/股），已实施完毕</td></tr>
+    <tr><td>中国人寿减持</td><td>7/8</td><td>8只资管计划卖出110.9万股，套现约<b>6.82亿元</b>（611-624元/股）</td></tr>
+    <tr><td>朱一明承诺</td><td>7/29起</td><td><b>12个月内不减持</b>；拟12/13起增持<b>不低于10亿元</b></td></tr>
+    <tr><td>回购提议</td><td>7/29</td><td>朱一明提议公司回购<b>10-20亿元</b>，注销式（减少注册资本）</td></tr>
+    <tr><td>前十大股东</td><td>2026Q1</td><td>朱一明6.53%、香港中央结算(北向)5.90%、葛卫东2.32%、InfoGrid 1.86%等</td></tr>
+    <tr><td>解禁</td><td>未来180天</td><td class="green">无待解禁</td></tr>
+    <tr><td>股权激励</td><td>—</td><td>以91.21元/股回购注销4565股限制性股票（完成实施）</td></tr>
+  </table>
+  <div class="callout"><b>解读：</b>实控人在5-6月高位（339-539元）减持44亿，是导致股价从843元高位回落的重要筹码因素之一；但减持完毕后立即承诺12个月不减持+增持10亿+提议回购10-20亿注销——<b>这是典型的"减持完毕+护盘"组合</b>，为股价提供了明确的股东层面底部支撑信号。大宗交易7/21-7/30密集出现（华泰上海/福建接盘，合计约9亿），承接盘存在。</div>
+</div>
+
+<!-- ============ 十、筹码资金 ============ -->
+<div class="section">
+  <h2><span class="num">10</span> 筹码资金与市场风格</h2>
+  <ul>
+    <li><b>股价位置：</b>378.6元，距历史高点846.66（7/1）回撤-55.3%，距1年前（约100元）仍涨近3倍；现价位于846.66→97.78的61.8%黄金分割位（约383元）附近——超跌区域。</li>
+    <li><b>筹码结构：</b>股东户数24.37万户（Q1末，环比+39.7%）——<b>散户大幅涌入、筹码显著分散</b>，高位派发特征；融资余额182.7亿（7/31）较7月中旬228亿回落，杠杆资金在去化。</li>
+    <li><b>资金类型：</b>北向（香港中央结算持5.9%）活跃交易（7月沪股通单日成交30-50亿）；游资/散户高换手（7/31换手12.8%、成交340亿）；机构（交银、天风等看多但大摩看空）分歧极大。</li>
+    <li><b>龙虎榜信号：</b>7/10净卖出41.4亿（高位巨量出货）、7/20净买入10.9亿、7/29净卖出0.5亿——<b>资金在高位大量出逃后，低位开始有承接</b>。</li>
+    <li><b>板块风格：</b>7月全球科技股去杠杆（海外AI股回调、台湾存储股大跌）拖累A股存储板块；当前存储板块仍是市场主线之一（存储器概念多股涨停），但短期情绪受全球风险偏好压制。</li>
+  </ul>
+  <div class="callout red"><b>筹码面结论：</b>方向偏多但节奏偏空——散户接盘+融资去化+机构分歧意味着<b>反弹会遇到层层套牢盘压力</b>（400/450/500三道关口），单边反转概率低，更可能以"宽幅震荡消化筹码"方式运行。</div>
+</div>
+
+<!-- ============ 十一、风险证伪 ============ -->
+<div class="section">
+  <h2><span class="num">11</span> 风险与证伪：最可能亏钱的三个原因</h2>
+  <ol>
+    <li><b>存储价格2026Q4见顶（最大风险）：</b>摩根士丹利明确警告内存合约价Q4见顶。若Q3末-Q4合约价环比涨幅收窄或转跌，市场将对2027年盈利大幅下修，18倍PE将变成"周期顶部假便宜"。<b>证伪条件：Q4 DRAM/NAND合约价环比转跌，或三季报毛利率环比下滑。</b></li>
+    <li><b>高位筹码出清不充分：</b>股东户数+40%（24万户散户）、融资余额180亿+、实控人刚减持44亿——若反弹到400-450套牢区遭遇集中抛售，二次探底至300以下风险仍存。<b>证伪条件：股价放量收复MA120（405元）并站稳，说明筹码完成换手。</b></li>
+    <li><b>归母含公允价值变动水分：</b>Q2归母54亿中约20亿来自证券投资公允价值上升（非经营）。若下半年证券市值回落，归母增速将大幅放缓，市场可能"业绩证伪"情绪化杀跌。<b>证伪条件：三季报归母环比增速远低于扣非，或公允价值变动收益转负。</b></li>
+  </ol>
+  <p><b>其他关注：</b>地缘/出口管制（存储是中美博弈焦点，若被列入实体清单将重挫）、消费需求受涨价抑制（"量跌价升"）、汇率波动、MCU涨价传导不及预期。</p>
+</div>
+
+<!-- ============ 十二、技术面 ============ -->
+<div class="section">
+  <h2><span class="num">12</span> 技术面分析（子代理独立输出）</h2>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">现价</div><div class="value">378.6</div><div class="sub">2026-07-31收盘</div></div>
+    <div class="kpi"><div class="label">MA5/10/20</div><div class="value orange">388/423/503</div><div class="sub">空头排列</div></div>
+    <div class="kpi"><div class="label">MA60/120/250</div><div class="value">523/405/297</div><div class="sub">仅MA250下方</div></div>
+    <div class="kpi"><div class="label">MACD</div><div class="value orange">零下死叉</div><div class="sub">绿柱缩短，无底背离</div></div>
+  </div>
+  <h3>趋势跟踪结论</h3>
+  <p><b>方向：明确下降趋势。</b>均线完全空头排列（MA5 387.7 &lt; MA10 422.5 &lt; MA20 503.1 &lt; MA60 522.9），高低点系统持续下移（846.7→707.9→608→501→408→342）。7/16、7/17、7/28、7/29连续4个向下跳空缺口确认趋势加速。MACD零轴下深度死叉（DIF -58），周线MACD转负，调整级别为周线级。<br><b>积极信号：</b>绿柱连续缩短（-64.9→-36.2），7/29-30在342-351出现放量企稳（双底形态），现价恰处61.8%黄金分割位（383）附近，超跌反弹动能存在；但未见底背离，反弹性质待确认。</p>
+  <h3>缠论结论</h3>
+  <p><b>结构：</b>448底→846.7顶为日线上涨笔结束，846.7起进入下跌笔（内含4段次级反弹）；周线级别846.7起为下跌线段，已击穿前期所有中枢。<b>最近日线中枢 [451, 538]，现价378.6位于中枢下沿之下，属中枢破位。</b>顶底均无标准趋势背驰（DIF与价格同创新低），无日线级别买点；仅存在30-60分钟次级别动能衰竭，支撑超跌反弹。<b>买卖点：</b>日线无买点，当前仅处次级别一买观察区（342-351）；若反弹至中枢ZD=451不破再回落，方可能演化日线二买。</p>
+  <h3>两体系一致性</h3>
+  <div class="callout red"><b>两体系一致看空：</b>趋势跟踪=下降趋势确认+无反转信号；缠论=下跌线段+中枢下方+无日线买点。二者无矛盾，判定当前为<b>趋势中继</b>，7/31反弹仅为超跌反弹，不构成反转。技术面与基本面"业绩上行"形成<b>方向性背离</b>——基本面提供底部支撑，技术面压制反弹高度，结论：等待技术面企稳信号（放量收复405/451）再确认右侧。</div>
+  <h3>关键价位</h3>
+  <ul>
+    <li><b>支撑：</b>342-351（7/29-30双底）→ 297-300（MA250）→ 280（整数关口）</li>
+    <li><b>压力：</b>404-411（MA120+缺口）→ 422-451（MA10+中枢ZD）→ 503-522（MA20/MA60）</li>
+    <li><b>技术面买入观察：</b>405-411放量收复（激进）；422（MA10）回踩确认（稳健）；跌破342止损离场</li>
+  </ul>
+  <p class="muted">* 技术面不改变基本面方向，只影响节奏与入场时机。数据：腾讯K线（2026-07-31截止，前复权），部分指标为合理估算。</p>
+</div>
+
+<!-- ============ 十三、深度补充核验 ============ -->
+<div class="section">
+  <h2><span class="num">13</span> 待核验项深度补充（阶段B）</h2>
+  <table>
+    <tr><th>待核验项</th><th>核验结果</th><th>来源/日期</th></tr>
+    <tr><td>中报披露日期</td><td class="green">✅ 已确认：2026-08-19</td><td>东财F10大事/交易所</td></tr>
+    <tr><td>一致预期方向</td><td class="green">✅ 已确认：交银国际7/17上修2026E EPS至21.03元（+150% vs 5月券商）；大摩看Q4见顶——机构分歧是当前核心矛盾</td><td>东财研报API/公开报道</td></tr>
+    <tr><td>实控人减持进展</td><td class="green">✅ 已确认：5/6-6/12减持44亿完毕，承诺12个月不减持+增持10亿+提议回购10-20亿</td><td>公司公告 2026-07-29</td></tr>
+    <tr><td>股东户数</td><td class="green">✅ 已确认：24.37万户（Q1末，环比+39.7%），筹码分散</td><td>东财/腾讯 2026-07-09更新</td></tr>
+    <tr><td>存储价格展望</td><td class="orange">⚠️ 部分确认：Q3 DRAM+13-18%/NAND+10-15%（TrendForce）；Q4见顶（大摩警告）；SLC NAND至少2027全年紧张（公司）</td><td>TrendForce/大摩/交流会 2026-07-30</td></tr>
+    <tr><td>Q2归母与扣非差异</td><td class="green">✅ 已确认：差20亿为证券投资公允价值变动（非经营），Q2扣非34.4亿环比+144%</td><td>公司业绩预告 2026-07-09</td></tr>
+    <tr><td>未来解禁</td><td class="green">✅ 已确认：未来180天无解禁</td><td>东财数据中心</td></tr>
+    <tr><td>长鑫采购</td><td class="green">✅ 已确认：2026年长鑫采购57亿（vs 2025年11.8亿）；长鑫科技H1净利500-570亿、拟科创板募资295亿</td><td>公司公告/公开报道</td></tr>
+    <tr><td>定制化存储进展</td><td class="green">✅ 已确认：芯成科技2026年量产贡献数亿元营收；AI手机/AI PC/机器人项目突破</td><td>交流会纪要 2026-07-30</td></tr>
+    <tr><td>MCU涨价</td><td class="green">✅ 已确认：Q2起行业性温和涨价，毛利率下半年回升，全年营收+20%</td><td>交流会纪要 2026-07-30</td></tr>
+  </table>
+  <p><b>更新结论：</b>补充后确认——① 中报8/19是近期最强催化剂；② 机构分歧（交银21元 vs 大摩Q4见顶）构成主要预期差来源；③ 实控人护盘动作明确（减持完毕+回购增持），筹码面底部支撑可信。原判断"2026年内业绩上行+2027年谨慎"维持不变，预期差评分维持4分。</p>
+</div>
+
+<!-- ============ 十四、观察计划 ============ -->
+<div class="section">
+  <h2><span class="num">14</span> 交易/观察计划（研究条件，非投资建议）</h2>
+  <div class="callout blue"><b>结论定位：</b>基本面（业绩）与股价（技术）背离的典型样本。业绩仍在环比上行，但股价处于周线级别下降趋势中段。核心矛盾是"2026年内业绩兑现"vs"Q4价格见顶预期"。<b>适合作为观察标的，等右侧信号，而非左侧抄底。</b></div>
+  <h3>观察触发条件</h3>
+  <ul>
+    <li><b>8/19中报核验：</b>扣非口径（Q2扣非34.4亿）是否确认、毛利率是否维持55%+、经营现金流质量——超预期则确认业绩趋势，证伪则降低评级。</li>
+    <li><b>Q3合约价（8-9月）：</b>TrendForce口径DRAM+13-18%是否落地；关注Q4合约价谈判（10月）——这是多空切换的胜负手。</li>
+    <li><b>技术面右侧信号：</b>放量收复405（MA120）→ 进一步站稳422-451（中枢ZD）才确认底部反转；在此之前反弹均为超跌性质。</li>
+    <li><b>筹码信号：</b>融资余额止跌回升、股东户数Q2/Q3环比下降（筹码重新集中）、大宗交易承接方持续买入。</li>
+  </ul>
+  <h3>价格参考（技术面+基本面融合）</h3>
+  <table>
+    <tr><th>类别</th><th>价位</th><th>逻辑</th></tr>
+    <tr><td>观察区（激进）</td><td>405-411</td><td>MA120+缺口回补，放量收复可视为企稳第一信号</td></tr>
+    <tr><td>观察区（稳健）</td><td>422-451</td><td>MA10+日线中枢ZD，回踩不破且放量则右侧确认</td></tr>
+    <tr><td>下方支撑</td><td>342-351 / 297-300</td><td>7月双底 / MA250，跌破342趋势进一步走弱</td></tr>
+    <tr><td>止损参考</td><td>跌破342</td><td>双底失守，周线下跌趋势延续</td></tr>
+    <tr><td>修复目标</td><td>450-500 / 中性区间340-420</td><td>对应2026E 21-24倍PE / 扣非口径25-30倍</td></tr>
+  </ul>
+  <h3>复盘清单</h3>
+  <ul>
+    <li>✅ 8/19 中报（扣非、毛利率、现金流）</li>
+    <li>✅ 8月底 Q3合约价落地</li>
+    <li>✅ 10月下旬 三季报 + Q4合约价谈判（见顶验证）</li>
+    <li>✅ 12/13 实控人增持启动（≥10亿）</li>
+    <li>✅ 回购10-20亿实施进度</li>
+  </ul>
+  <div class="callout red"><b>免责声明：</b>本报告为研究分析，不构成投资建议。存储为强周期行业，盈利与估值波动剧烈，任何情景推演均存在重大不确定性。请独立判断并控制风险。</div>
+</div>
+
+<div class="footer">
+  兆易创新（603986.SH）深度调研 · 数据截至2026-07-31 · 报告生成于2026-08-02<br>
+  数据来源：公司公告/定期报告/业绩预告、上交所、巨潮、东财数据中心/研报、腾讯行情、TrendForce、公开报道
+</div>
+
+</div>
+</body>
+</html>

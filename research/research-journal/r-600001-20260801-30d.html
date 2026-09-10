@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>甲公司 研究结论事后复盘 · r-600001-20260801-30d</title>
+<meta name="description" content="A股研究结论的事后复盘：冻结快照、到期表现与判断审计（本地研究工具）" />
+<meta name="robots" content="noindex, nofollow" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--ink:#13211f;--paper:#f6f1e7;--paper-2:#eee6d7;--line:#d8cdbb;--red:#bf332d;--green:#19724b;--gold:#ba8a35;--muted:#756f66;--canvas:#18221f;--surface-base:var(--paper);--surface-raised:var(--paper);--surface-muted:var(--paper-2);--ink-primary:var(--ink);--ink-secondary:#5f584e;--ink-tertiary:var(--muted);--border-hairline:var(--line);--brand:var(--gold);--brand-foreground:#18221f;--market-up:var(--green);--market-up-soft:#d8eedf;--market-down:var(--red);--market-down-soft:#edd8d2;}*{box-sizing:border-box}body{margin:0;background:#18221f;color:var(--ink);font-family:"Noto Serif SC","Songti SC",STSong,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:24px 24px}.masthead{color:#f8f2e6;border-bottom:1px solid rgba(248,242,230,.25);padding:0 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:end}.eyebrow{font:700 11px/1 "SFMono-Regular",Consolas,monospace;letter-spacing:.18em;color:#e3bc70;margin:0 0 12px}.badge{display:inline-flex;align-items:center;font:700 11px/1 "SFMono-Regular",Consolas,monospace;padding:6px 8px;border-radius:999px;letter-spacing:.04em}@media(max-width:760px){.masthead{display:block}}
+
+main{max-width:1180px;margin:auto;padding:32px 20px 56px}
+.masthead h1{font-size:clamp(30px,5vw,56px);line-height:.95;letter-spacing:-.05em;margin:0}
+.masthead .asof{font-size:14px;color:#cfc5b4;line-height:1.65;text-align:right;margin:0}
+.lede{color:#cfc5b4;font-size:12px;line-height:1.75;margin:16px 0 8px}
+.card{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--gold);padding:20px;margin-top:10px;box-shadow:5px 5px 0 rgba(12,18,16,.25)}
+.card.pass{border-left-color:var(--market-up)}
+.card.fail{border-left-color:var(--market-down)}
+.card.wait{border-left-color:var(--gold)}
+.card-title{font-size:0.9rem;font-weight:600;color:var(--ink-primary);margin:0 0 0.5rem;letter-spacing:0.01em}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:0.3rem 1rem;margin:0.375rem 0 0;font-size:0.75rem}
+.kv dt{color:var(--ink-tertiary);white-space:nowrap}
+.kv dd{margin:0;color:var(--ink-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.72rem;word-break:break-all}
+.list{margin:0.375rem 0 0;padding-left:1.15rem;font-size:0.79rem;line-height:1.7;color:var(--ink-secondary)}
+.list li{margin-bottom:0.2rem}
+.list.dim{color:var(--ink-tertiary)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.625rem;margin-top:0.5rem}
+.tile{background:var(--paper-2);border:1px solid var(--line);padding:0.625rem 0.75rem}
+.tile .t-label{font-size:0.68rem;color:var(--ink-tertiary);letter-spacing:0.02em}
+.tile .t-value{font-size:1.05rem;font-weight:600;color:var(--ink-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:0.2rem;line-height:1.2}
+.tile .t-sub{font-size:0.66rem;color:var(--ink-tertiary);margin-top:0.15rem}
+.tbl{width:100%;border-collapse:collapse;margin-top:0.5rem;font-size:0.78rem}
+.tbl th{text-align:left;font-weight:600;color:var(--ink-primary);padding:0.4rem 0.5rem;border-bottom:1px solid var(--line);font-size:0.72rem;letter-spacing:0.02em}
+.tbl td{padding:0.4rem 0.5rem;border-bottom:1px dashed var(--border-hairline);color:var(--ink-secondary);vertical-align:top;line-height:1.55}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .num{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
+.tbl .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.7rem}
+.tbl .src{font-size:0.7rem;color:var(--ink-tertiary);word-break:break-all}
+.pos{color:var(--red)}
+.neg{color:var(--green)}
+.badge.b-pass{background:var(--market-up-soft);color:var(--market-up)}
+.badge.b-fail{background:var(--market-down-soft);color:var(--market-down)}
+.badge.b-muted{background:var(--surface-muted);color:var(--ink-tertiary)}
+.chart{width:100%;height:280px;margin-top:0.5rem}
+.chart.tall{height:330px}
+.chart-grid{display:grid;gap:0.75rem;margin-top:0.5rem}
+@media (min-width:940px){.chart-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.note{margin-top:0.75rem;padding:0.55rem 0.7rem;background:var(--paper-2);border-left:3px solid var(--gold);font-size:0.7rem;line-height:1.65;color:var(--ink-tertiary)}
+.empty{margin-top:10px;padding:56px 20px;text-align:center;color:var(--muted);background:var(--paper);border:1px solid var(--line);box-shadow:5px 5px 0 rgba(12,18,16,.25);font-size:15px}
+.verdict{display:flex;align-items:center;gap:0.5rem;font-size:0.95rem;font-weight:600;color:var(--ink-primary);margin:0 0 0.375rem}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.dot.ok{background:var(--market-up)}
+.dot.no{background:var(--market-down)}
+.dot.wait{background:var(--gold)}
+.foot{margin-top:1.25rem;color:#cfc5b4;font-size:11px;line-height:1.75}
+code,.mono{font-family:"SFMono-Regular",Consolas,monospace}
+@media(max-width:760px){.container{padding:22px 14px 40px}.masthead .asof{text-align:left;margin-top:16px}.chart{height:240px}}
+
+
+.judge{font-size:0.84rem;line-height:1.75;color:var(--ink-primary);margin:0}
+.crit{display:inline-block;background:var(--paper-2);border:1px solid var(--line);padding:0.3rem 0.55rem;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.76rem;color:var(--ink-primary);margin-top:0.25rem}
+
+</style>
+</head>
+<body>
+<main>
+<div class="container">
+  <header class="masthead">
+    <div><p class="eyebrow">A-SHARE / RESEARCH JOURNAL REVIEW</p><h1>研究结论事后复盘</h1></div>
+    <p class="asof">甲公司（600001）<br />研究截止 2026-08-01 · 评价日 2026-08-31</p>
+  </header>
+
+  <p class="lede">甲公司 的研究结论已到期复核：成功标准达成且未触发证伪条件。</p>
+
+  <section class="card">
+    <h2 class="card-title">记录标识与不可变性</h2>
+    <dl class="kv">
+      <dt>Research ID</dt><dd>r-600001-20260801-30d</dd>
+      <dt>标的</dt><dd>甲公司（600001 · SSE）</dd>
+      <dt>研究截止日 as_of</dt><dd>2026-08-01</dd>
+      <dt>评价日 evaluation_date</dt><dd>2026-08-31</dd>
+      <dt>持有期标签</dt><dd>30 calendar days</dd>
+      <dt>原快照 SHA-256</dt><dd>90f4fa182619c97b9fa86d3e5f59ccf16684eb767f1d9dde78c801cb0fddc3a9</dd>
+      <dt>记录时间</dt><dd>2026-09-10T12:53:31.666585+00:00</dd>
+      <dt>结果输入 SHA-256</dt><dd>7d818c6825b9326827e371e544c8623135194ecc15181958e4e0e120eb517c85</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">当时判断（冻结原文，未改写）</h2>
+    <p class="judge"><b>研究假设</b></p>
+<p class="judge">订单兑现可能形成预期差</p>
+    <p class="judge"><b>当时概率</b></p>
+<p class="judge">70.00%</p>
+    <p class="judge" style="margin-top:0.5rem"><b>成功标准</b></p>
+    <div class="crit">相对基准超额 ≥ 5.0</div>
+    <p class="judge" style="margin-top:0.75rem"><b>催化剂</b></p>
+    <ul class="list">
+      <li>订单公告</li>
+      <li>季度业绩验证</li>
+    </ul>
+    <p class="judge" style="margin-top:0.75rem"><b>证伪条件</b></p>
+    <ul class="list">
+      <li>订单延期</li>
+      <li>毛利率显著低于假设</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">当时证据</h2>
+    <table class="tbl">
+      <thead><tr><th>论断</th><th class="num">取值</th><th>观察日</th><th>发布日</th><th>来源</th></tr></thead>
+    <tbody>
+      <tr><td>公司披露在手订单增长</td><td class="num">—</td><td class="mono">2026-06-30</td><td class="mono">2026-07-25</td><td class="src">测试公司公告<br />https://example.com/announcement/600001</td></tr>
+    </tbody>
+    </table>
+  </section>
+
+  <section class="card pass">
+    <h2 class="card-title">到期结果</h2>
+    <div class="tiles">
+<div class="tile"><div class="t-label">股票区间收益</div><div class="t-value pos">+10.00%</div></div><div class="tile"><div class="t-label">相对基准超额</div><div class="t-value pos">+7.50%</div></div><div class="tile"><div class="t-label">最大回撤</div><div class="t-value neg">-10.00%</div></div><div class="tile"><div class="t-label">MFE / MAE</div><div class="t-value">+20.0% / -10.0%</div></div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>指标</th><th class="num">结果</th><th>口径</th></tr></thead>
+    <tbody>
+      <tr><td>股票收益</td><td class="num pos">+10.00%</td><td>区间收益（路径首末）</td></tr>
+      <tr><td>基准收益</td><td class="num pos">+2.50%</td><td>区间收益（路径首末）</td></tr>
+      <tr><td>超额收益</td><td class="num pos">+7.50%</td><td>股票 − 基准</td></tr>
+      <tr><td>最大回撤</td><td class="num neg">-10.00%</td><td>输入路径覆盖</td></tr>
+      <tr><td>MFE</td><td class="num pos">+20.00%</td><td>相对基线最大有利偏离</td></tr>
+      <tr><td>MAE</td><td class="num neg">-10.00%</td><td>相对基线最大不利偏离</td></tr>
+    </tbody>
+    </table>
+    <div class="chart" id="ch-path"></div>
+    <script>
+const PATH = {"dates": ["2026-08-01", "2026-08-10", "2026-08-20", "2026-08-31"], "unit": "CNY", "stock": [10.0, 9.0, 12.0, 11.0], "benchmark": [4000.0, null, 4050.0, 4100.0], "benchmarkName": "基准"};
+const upColor = '#bf332d', downColor = '#19724b', inkColor = '#13211f',
+      secColor = '#756f66', terColor = '#9a9287', lineColor = '#ba8a35';
+(function(){
+  const el = document.getElementById('ch-path');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = echarts.init(el);
+  const series = [{ name: '个股', type: 'line', data: PATH.stock, smooth: true,
+      symbol: 'circle', symbolSize: 6, connectNulls: true,
+      lineStyle: { color: upColor, width: 2 }, itemStyle: { color: upColor } }];
+  if (PATH.benchmark) {
+    series.push({ name: PATH.benchmarkName, type: 'line', data: PATH.benchmark,
+      smooth: true, symbol: 'circle', symbolSize: 5, connectNulls: true,
+      lineStyle: { color: lineColor, width: 2, type: 'dashed' }, itemStyle: { color: lineColor } });
+  }
+  chart.setOption({
+    tooltip: { trigger: 'axis',
+      formatter: function(ps){ return ps[0].axisValue + '<br/>' + ps.map(function(p){
+        return p.marker + p.seriesName + '：' + (p.value === null || p.value === undefined ? '—' : p.value + ' ' + PATH.unit); }).join('<br/>'); } },
+    legend: { data: series.map(function(s){ return s.name; }), textStyle: { color: secColor, fontSize: 10 }, top: 0 },
+    grid: { left: 52, right: 16, top: 34, bottom: 26 },
+    xAxis: { type: 'category', data: PATH.dates, boundaryGap: false,
+      axisLine: { lineStyle: { color: secColor } }, axisTick: { show: false },
+      axisLabel: { color: terColor, fontSize: 9 } },
+    yAxis: { type: 'value', scale: true, axisLabel: { color: terColor, fontSize: 9 },
+      splitLine: { lineStyle: { color: '#e5dac7' } } },
+    series: series
+  });
+  window.addEventListener('resize', function(){ chart.resize(); });
+})();
+    </script>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">判断审计</h2>
+    <p class="verdict"><span class="dot ok"></span>成功标准通过且未触发证伪条件 → passed</p>
+    <div class="tiles">
+<div class="tile"><div class="t-label">成功标准达成</div><div class="t-value">是</div></div><div class="tile"><div class="t-label">触发证伪条件</div><div class="t-value">否</div></div><div class="tile"><div class="t-label">最终 passed</div><div class="t-value">是</div></div>
+    </div>
+    <div class="note">结果输入备注：合成结果，仅用于测试</div>
+    <div class="note">剩余定性归因（逻辑兑现 / 市场贝塔 / 风格 / 其他）与流程改进由复盘人在正文中给出——一次结果不构成普遍规律。</div>
+  </section>
+
+  <p class="foot">本报告为研究结论的事后复盘：快照与结果写入后不可覆盖；引用文字来自当时冻结的研究记录，未作改写。报告不构成投资建议，也不预测未来表现。</p>
+</div>
+</main>
+<script>
+
+</script>
+</body>
+</html>

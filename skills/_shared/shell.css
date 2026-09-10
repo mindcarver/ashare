@@ -1,0 +1,32 @@
+/* A 股报告族共用外壳 —— 页面骨架与报头（唯一真源）
+ *
+ * 5 个 HTML 报告生成器（每日复盘 / 公司研究 / 新闻标的 / 资本环境仪表盘 / 研究复盘）
+ * 共用同一套视觉身份：暖灰纸底 + 可见 32px 网格 + 纯黑粗规报头 + 方角徽章。
+ *
+ * 注入位置（v2 变更）：由 ashare_shared.inject_brand_css() 插在 </head> 之前，
+ * 即排在各技能自己的 <style> **之后**——品牌层要能覆盖技能里的旧组件样式，
+ * 就必须后写。v1 曾插在 :root 之后（各技能之前），那时外壳只能放技能绝不重定义
+ * 的东西；v2 反过来，因此技能模板里不要重复本文件或 components.css 的任何规则。
+ *
+ * 本文件的注释在注入时会被剥除，不会出现在报告里；因此可以放心在这里写维护者说明。
+ *
+ * 刻意不放进这里的东西（各报告布局语义不同，硬拧只会坏事）：
+ * - main / .container 的最大宽度与内边距
+ * - 各技能的栅格列数（28 格矩阵 / 4 列英雄指标 / 5 列信号 / 3 列候选卡）
+ *
+ * 网格底纹用 z-index:-1 压在内容之下：position:fixed 的伪元素默认会盖在正文上，
+ * v1 靠 opacity:.15 硬压，v2 改为真正置底。
+ */
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(to right,var(--grid-line) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 1px,transparent 1px);background-size:var(--grid) var(--grid)}
+.masthead{color:var(--ink);border-bottom:var(--rule-w) solid var(--rule);padding:0 0 20px;display:flex;justify-content:space-between;gap:24px;align-items:end}
+.masthead h1{font-family:var(--font-display);font-size:clamp(30px,4.8vw,54px);line-height:.96;letter-spacing:-.04em;font-weight:800;margin:0}
+.eyebrow{font-family:var(--font-mono);font-size:11px;line-height:1;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+.asof,.masthead .asof{font-family:var(--font-mono);font-size:12px;line-height:1.75;color:var(--ink-secondary);text-align:right;margin:0;letter-spacing:.01em}
+.lede{font-family:var(--font-display);font-size:13px;line-height:1.7;color:var(--ink-secondary);margin:18px 0 6px;max-width:78ch}
+.badge{display:inline-flex;align-items:center;gap:.35em;font-family:var(--font-mono);font-size:10px;line-height:1;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 7px;border-radius:0;border:var(--hair) solid var(--rule);background:var(--paper);color:var(--ink)}
+.foot,footer{margin-top:28px;padding-top:14px;border-top:var(--hair) solid var(--line);color:var(--ink-tertiary);font-family:var(--font-mono);font-size:11px;line-height:1.8}
+@media(max-width:760px){.masthead{display:block}.asof,.masthead .asof{text-align:left;margin-top:16px}}

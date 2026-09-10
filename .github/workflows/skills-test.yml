@@ -1,0 +1,33 @@
+name: skills-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 技能库测试与共享层审计
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 共享层自检
+        run: python3 skills/_shared/ashare_shared.py
+
+      - name: 共享层漂移检查
+        run: python3 tools/audit_shared_layer.py
+
+      - name: 运行全部测试套件
+        run: python3 tools/run_skill_tests.py

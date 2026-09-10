@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美国宏观与市场七维全景面板 · 2026-08-01</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f4f6f9; color:#1a1d23; line-height:1.65; }
+  .wrap { max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
+  header.top { border-bottom:3px solid #1a1d23; padding-bottom:16px; margin-bottom:22px; }
+  header.top h1 { font-size:26px; letter-spacing:1px; }
+  header.top .meta { color:#6b7280; font-size:13px; margin-top:6px; }
+  .tldr { background:#fff; border:1px solid #e5e7eb; border-left:5px solid #2f6fd0; border-radius:8px; padding:18px 22px; margin-bottom:26px; }
+  .tldr h2 { font-size:16px; margin-bottom:10px; }
+  .tldr li { margin-left:20px; font-size:14px; margin-bottom:4px; }
+  section.panel { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:20px 22px; margin-bottom:22px; }
+  section.panel h2 { font-size:18px; display:flex; align-items:center; gap:10px; border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:14px; }
+  .tag { font-size:12px; padding:2px 10px; border-radius:10px; font-weight:600; }
+  .tag.ok { background:#e3f0ff; color:#2f6fd0; }
+  .tag.part { background:#fff7e0; color:#b7791f; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:14px; }
+  .card { background:#f8f9fb; border:1px solid #eceef1; border-radius:6px; padding:12px 14px; }
+  .card .k { font-size:12px; color:#6b7280; }
+  .card .v { font-size:22px; font-weight:700; margin:2px 0; }
+  .card .s { font-size:12px; color:#6b7280; }
+  .up { color:#c0392b; } .down { color:#1e9e6a; } .flat { color:#6b7280; }
+  .note { font-size:12.5px; color:#6b7280; background:#f8f9fb; border-radius:6px; padding:10px 14px; margin-top:12px; }
+  .src { font-size:12px; color:#9aa1ab; margin-top:10px; }
+  table.tb { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
+  table.tb th, table.tb td { border:1px solid #e5e7eb; padding:8px 10px; text-align:left; }
+  table.tb th { background:#f1f3f6; }
+  .chart { width:100%; height:340px; }
+  .gap { color:#b7791f; font-weight:600; }
+  footer { margin-top:26px; font-size:12px; color:#9aa1ab; border-top:1px solid #e5e7eb; padding-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>美国宏观与市场七维全景面板</h1>
+  <div class="meta">行情数据截至 2026-07-31 美股收盘（美东 17:22，北京 08-01 05:22）｜宏观数据截至各指标最新发布期｜报告生成：2026-08-01 22:35（北京时间）｜主数据源：neodata 金融搜索 + WebSearch 公开数据（Saxo/CBOE/Barchart/ICE BofA/芝加哥联储等，均标注时点）</div>
+</header>
+
+<div class="tldr">
+  <h2>结论速览（TL;DR）</h2>
+  <ul>
+    <li><b>增长减速但未见衰退</b>：Q2 实际 GDP 同比 +2.1%；6 月非农骤降至 +5.7 万（前两月 12-15 万），失业率 4.2%；制造业 PMI 53.3 仍处扩张区。"就业弱、产出稳"的组合给 Fed 出了难题。</li>
+    <li><b>通胀"高位现拐点"</b>：headline CPI 同比 3.5%（能源供应冲击推高，WTI 月涨 16%），但 6 月环比转负（-0.3%）、核心 CPI 降至 2.57%、核心 PCE 3.29% 缓慢回落——名义热、核心冷。</li>
+    <li><b>Fed 按兵不动、鹰派分歧公开化</b>：7-29 FOMC 以 9:3 维持 3.50-3.75% 不变，三位地区联储主席投反对票主张<b>加息</b> 25bp（2016 年来首次三张同向反对票）；主席沃什称通胀"处于高位"，QT 继续执行。</li>
+    <li><b>资金价格：曲线正常化、长端承压</b>：10Y 4.68%（7 月上行约 20bp）、2Y 4.31%、10y-2y +35bp；breakeven 2.2% 锚定——长端上行是财政供给+通胀风险定价，而非增长预期上修。</li>
+    <li><b>风险偏好：指数平静、内部撕裂</b>：VIX 18.2 温和，但 SKEW 147 高位、VXN/VIX 达 1.5+（2017 年来极值区）——恐慌高度集中于科技/AI 板块；HY OAS 2.84% 显示信用市场毫无戒心。</li>
+    <li><b>宽度健康但主线剧震</b>：63-71% 成分股站上 200 日线、等权重 YTD 跑赢市值加权——牛市在扩散；但半导体 7 月 -18% 进入技术性熊市（Kimi K3 开源模型发布引爆 AI capex 质疑），拥挤的 AI 硬件交易正在去拥挤。</li>
+  </ul>
+</div>
+
+<section class="panel">
+  <h2>① 增长 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">实际 GDP 同比（2026Q2）</div><div class="v">+2.1%</div><div class="s">2026-07-30 发布</div></div>
+    <div class="card"><div class="k">制造业 PMI（6 月）</div><div class="v">53.3</div><div class="s">5 月 54.0，连续 3 月扩张（7 月值 8/3 发布）</div></div>
+    <div class="card"><div class="k">新增非农（6 月）</div><div class="v down">+5.7 万</div><div class="s">5 月 +12.9 万，显著降温</div></div>
+    <div class="card"><div class="k">失业率（6 月）</div><div class="v">4.2%</div><div class="s">较 5 月 4.3% 微降</div></div>
+    <div class="card"><div class="k">初请失业金（6-27 当周）</div><div class="v">21.7 万</div><div class="s">4 月以来 19-23 万区间震荡</div></div>
+  </div>
+  <div class="note">增长的"质变"在于结构：Q2 GDP 2.1% 仍稳，但就业引擎明显降档——非农从月均 13 万+ 掉到 5.7 万，消费信心（谘商会 6 月 91.2）仍低于 100 荣枯线。制造业 PMI 53+ 与就业降温并存，指向"无就业扩张"：生产率/资本开支驱动的增长。</div>
+  <div class="src">来源：BEA/BLS/ISM 口径经 neodata 全球宏观库（发布至 2026-07-30）；非农 5 月值指标库（12.9 万）与经济日历（17.2 万）存在分歧，此处采信指标库并保留分歧说明；PMI 为 neodata"美国制造业PMI"口径（疑为标普全球 PMI，非 ISM，需核实）</div>
+</section>
+
+<section class="panel">
+  <h2>② 通胀 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">CPI 同比（6 月）</div><div class="v up">+3.5%</div><div class="s">环比 -0.3%，5 月同比 4.2%</div></div>
+    <div class="card"><div class="k">核心 CPI 同比（6 月）</div><div class="v">+2.57%</div><div class="s">环比 0.0%，持续回落</div></div>
+    <div class="card"><div class="k">核心 PCE 同比（6 月）</div><div class="v">+3.29%</div><div class="s">7-30 发布，Fed 最看重口径</div></div>
+    <div class="card"><div class="k">10Y 盈亏平衡通胀（7-28）</div><div class="v">2.20%</div><div class="s">长期预期锚定</div></div>
+  </div>
+  <div id="chartUSCPI" class="chart"></div>
+  <div class="note">通胀的叙事分裂成两条线：<b>核心口径</b>（核心 CPI 2.6%、核心 PCE 3.3%）缓慢下行，支持"通胀受控"；<b>名义口径</b>受能源供应冲击（美伊冲突、WTI $84 月涨 16%）保持高位。FOMC 声明特别点名"供应冲击推高能源价格"——这决定了 Fed 不会因核心回落而转鸽，也不会因名义冲高而轻易加息，"年内不动"成为基准情形。</div>
+  <div class="src">来源：BLS/BEA 经 neodata（CPI 发布 2026-07-14、核心 PCE 发布 2026-07-30）；breakeven 引自公开宏观面板（2026-07-28，需核实）</div>
+</section>
+
+<section class="panel">
+  <h2>③ 流动性 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">M2 同比（6 月）</div><div class="v">+5.55%</div><div class="s">余额 23.16 万亿美元，加速上行</div></div>
+    <div class="card"><div class="k">Fed 资产负债表（7-22）</div><div class="v">$6.75 万亿</div><div class="s">3 个月 +$0.04T，QT 近尾声</div></div>
+    <div class="card"><div class="k">隔夜逆回购 RRP（7-29）</div><div class="v down">≈$30 亿</div><div class="s">缓冲垫基本耗尽（峰值 $2.55T）</div></div>
+    <div class="card"><div class="k">TGA 财政部账户（7-22）</div><div class="v">$8300 亿</div><div class="s">回升中，边际吸纳流动性</div></div>
+    <div class="card"><div class="k">净流动性（7-22）</div><div class="v">$5.92 万亿</div><div class="s">3 个月 +$0.22T，仍在扩张</div></div>
+    <div class="card"><div class="k">芝加哥联储 NFCI（7-24）</div><div class="v">-0.55</div><div class="s">负值=金融条件宽松</div></div>
+  </div>
+  <div class="note">流动性总量仍在扩张（M2 +5.5%、净流动性 $5.92T、NFCI 宽松），但<b>结构缓冲正在变薄</b>：RRP 这一"过剩流动性蓄水池"已从 2.55 万亿峰值降至约 30 亿，意味着 QT 再继续就会直接抽银行准备金（约 3.3 万亿）；TGA 重建也在边际吸水。FOMC 7 月声明将资产负债表措辞从"重申"改为"继续执行"——QT 终点临近但未到，准备金充裕度是下半年最该盯的流动性变量。</div>
+  <div class="src">来源：美联储 H.4.1/H.6 经 neodata（M2，2026-07-28）与公开宏观面板（Fed 资产负债表/RRP/TGA/NFCI，2026-07-22~29，需核实）；FOMC 声明（2026-07-29）</div>
+</section>
+
+<section class="panel">
+  <h2>④ 资金价格 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">联邦基金目标区间</div><div class="v">3.50-3.75%</div><div class="s">有效利率 3.63%（7-29 维持不变）</div></div>
+    <div class="card"><div class="k">10Y 美债（7-30）</div><div class="v">4.68%</div><div class="s">7 月上行约 20bp</div></div>
+    <div class="card"><div class="k">2Y 美债（7-27）</div><div class="v">4.31%</div><div class="s">10y-2y = +35bp，曲线正常化</div></div>
+    <div class="card"><div class="k">10Y TIPS 实际利率（7-30）</div><div class="v">2.41%</div><div class="s">breakeven ≈2.2-2.3%</div></div>
+    <div class="card"><div class="k">SOFR</div><div class="v gap">缺口</div><div class="s">未召回，可用纽约联储官网补</div></div>
+  </div>
+  <div id="chartRates" class="chart"></div>
+  <div id="chartUST10Y" class="chart"></div>
+  <div class="note">7 月长端收益率上行 20bp 是典型的"熊陡"：短端被 3.63% 的政策利率锚住，长端被财政供给（TGA 重建、短债发行）和通胀风险溢价推高。实际利率 2.41% 处于本轮周期高位，对高估值成长股构成持续的折现率压力——这也是 AI 硬件股去拥挤的宏观底色之一。</div>
+  <div class="src">来源：美国财政部/美联储经 neodata（10Y/1M/TIPS/有效联邦基金利率，2026-07-30）；2Y 引自公开宏观面板（2026-07-27，需核实）</div>
+</section>
+
+<section class="panel">
+  <h2>⑤ 风险偏好与信用 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">VIX（7-28）</div><div class="v">18.2</div><div class="s">低于长期均值 20，7-23 曾至 18.7</div></div>
+    <div class="card"><div class="k">CBOE SKEW（7-21）</div><div class="v up">146-147</div><div class="s">远超 100-120 中性区，尾部保护需求高</div></div>
+    <div class="card"><div class="k">VXN / VIX（7-21）</div><div class="v up">≈1.5-1.6</div><div class="s">2017 年来极值区，恐慌集中于科技股</div></div>
+    <div class="card"><div class="k">HY OAS 高收益利差（7-28）</div><div class="v">2.84%</div><div class="s">ICE BofA 口径，历史低位区</div></div>
+    <div class="card"><div class="k">Put/Call（7-21）</div><div class="v">0.82 / 1.07</div><div class="s">股票 / 指数口径</div></div>
+    <div class="card"><div class="k">MOVE 美债波动率（7-21）</div><div class="v">72.7</div><div class="s">债市抛售中小幅上行</div></div>
+  </div>
+  <div id="chartVIX" class="chart"></div>
+  <div class="note">"平静的指数 + 撕裂的内部"：VIX 18 看似温和，但 SKEW 146+、VXN/VIX 比值逼近二十年极值说明对冲需求全部压在科技板块；信用端 HY OAS 2.84% 处于历史窄区——债券市场完全不定价衰退，与就业降温形成潜在矛盾。一旦信用利差从极窄位置走阔，往往是风险偏好逆转的确认信号（先于股市）。</div>
+  <div class="src">来源：Saxo Options Brief（CBOE 数据，2026-07-21/27）；YCharts（VIX，2026-07-23）；公开宏观面板（HY OAS，ICE BofA，2026-07-28）——均为二手引用，需核实</div>
+</section>
+
+<section class="panel">
+  <h2>⑥ 市场宽度 <span class="tag ok">可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">标普500（7-31 收盘）</div><div class="v">7,489.72</div><div class="s">YTD +9.41%，距 52 周高点 7,620 仅 -1.7%</div></div>
+    <div class="card"><div class="k">200 日线上方占比</div><div class="v">63-71%</div><div class="s">7-17 达 71.1%（2024-12 来最高）</div></div>
+    <div class="card"><div class="k">等权重 vs 市值加权 YTD</div><div class="v">+11.8% / +10.7%</div><div class="s">等权重跑赢 1.1pp（7-17），牛市扩散</div></div>
+    <div class="card"><div class="k">半导体 SOX（7 月）</div><div class="v down">≈-18%</div><div class="s">进入技术性熊市（高点 -20%）</div></div>
+  </div>
+  <div id="chartBreadthUS" class="chart"></div>
+  <div class="note">广度判读（market-state 框架）：这是"指数平平、个股活跃"的健康轮动——63-71% 股票站上 200 日线、等权重持续跑赢、7-17 单日 42 只创 52 周新高（金融/能源/医疗/必需消费领涨新高名单）。撕裂点在科技内部：半导体权重曾达指数 19.7% 的历史峰值，7 月因 Kimi K3 开源模型发布引发 AI capex 可持续性质疑而暴跌 18%。宽基广度扩张 + 拥挤主线去拥挤并存，属于牛市中段的结构切换，而非顶部特征。</div>
+  <div class="src">来源：Barchart（%above MA，2026-07-21）；Pomegra（200 日线占比 71.14%、等权重对比，2026-07-17）；neodata 实时行情（标普500，2026-07-31 美东 17:22）——媒体引用部分需核实</div>
+</section>
+
+<section class="panel">
+  <h2>⑦ 机构持仓与拥挤度 <span class="tag part">部分可得</span></h2>
+  <div class="cards">
+    <div class="card"><div class="k">标普500 远期 PE（7-15）</div><div class="v">20.1x</div><div class="s">5 年均值 19.9x / 10 年均值 19.0x</div></div>
+    <div class="card"><div class="k">Q2 盈利预期（YoY）</div><div class="v up">+23.1%</div><div class="s">高增长支撑估值</div></div>
+    <div class="card"><div class="k">科技股权重</div><div class="v">&gt;30%</div><div class="s">半导体峰值曾达 19.7%（2020 年的 4 倍）</div></div>
+    <div class="card"><div class="k">CFTC 持仓 / 保证金债务 / AAII</div><div class="v gap">缺口</div><div class="s">需 CFTC COT / FINRA / AAII 官网补</div></div>
+  </div>
+  <div class="note">拥挤度判读（institutional-holding 框架）：估值不算极端（远期 PE 20.1x 仅略高于 5 年均值，且有 23% 盈利增长预期支撑），真正的拥挤在<b>结构</b>——科技 30%+ 权重、半导体 19.7% 峰值权重是十年最极端的行业集中度。7 月的半导体 -18% 就是拥挤交易松动的实景演绎：资金并未离场，而是向金融、工业、能源、等权重方向再平衡（Caterpillar 创新高、区域银行月涨 12%+）。这类"主线去拥挤 + 广度扩张"的组合，历史上更像牛市中继而非终点；风险情景是科技 30% 权重若深度下挫会拖拽全指数。</div>
+  <div class="src">来源：GFdaily 引 FactSet 口径（远期 PE/盈利预期，2026-07-15，需核实）；Pomegra（板块权重，2026-07-17，需核实）；fazen.markets 等来源因数据自相矛盾已弃用</div>
+</section>
+
+<section class="panel">
+  <h2>⑧ 数据覆盖结论：对照原图"可得 / 未知"</h2>
+  <table class="tb">
+    <tr><th>维度</th><th>可得性</th><th>主数据源（本次实测）</th><th>缺口与兜底路径</th></tr>
+    <tr><td>增长</td><td>✅ 可得</td><td>neodata 全球宏观库（BEA/BLS）</td><td>PMI 口径需核实（ISM vs 标普全球）；7 月非农 8/7 发布</td></tr>
+    <tr><td>通胀</td><td>✅ 可得</td><td>neodata（BLS/BEA）+ breakeven（公开面板）</td><td>—</td></tr>
+    <tr><td>流动性</td><td>✅ 可得</td><td>neodata（M2）+ WebSearch（Fed 资产负债表/RRP/TGA/NFCI）</td><td>准备金余额精确值可查美联储 H.4.1 周报</td></tr>
+    <tr><td>资金价格</td><td>✅ 可得</td><td>neodata（10Y/1M/TIPS/有效利率）+ WebSearch（2Y）</td><td><span class="gap">SOFR</span> → 纽约联储官网兜底</td></tr>
+    <tr><td>风险偏好与信用</td><td>✅ 可得</td><td>WebSearch（Saxo/CBOE：VIX/SKEW/VXN/put-call）+ HY OAS</td><td>均可公开免费获取，注意标注二手引用</td></tr>
+    <tr><td>市场宽度</td><td>✅ 可得</td><td>WebSearch（Barchart/Pomegra）+ neodata 行情</td><td>创新高/低逐日序列可用 Barchart/StockCharts 补齐</td></tr>
+    <tr><td>机构持仓与拥挤度</td><td>⚠️ 部分可得</td><td>WebSearch（远期 PE/盈利预期/板块权重）</td><td><span class="gap">CFTC COT 持仓、FINRA 保证金债务、AAII 情绪、13F</span> → 各自官网/免费源兜底</td></tr>
+  </table>
+  <div class="note">结论：美国版 4 项"未知"中，流动性、资金价格、市场宽度均可稳定补齐（neodata 宏观+利率库对中国以外市场覆盖同样可用，叠加 WebSearch 公开源）；机构持仓与拥挤度的结构化数据（COT/保证金/AAII）分散在各官方免费渠道，适合做成固定抓取清单。若有 LSEG 凭证，fomc-cycle-tracker / us-economic-surprise / global-risk-appetite / macro-rates-monitor 这一组技能可以一键覆盖美国流动性、资金价格与风险偏好的大半字段。</div>
+</section>
+
+<footer>
+  <p><b>免责声明</b>：以上内容基于公开数据和量化分析，仅供参考，不构成投资建议。市场有风险，投资需谨慎。任何投资决策应结合个人风险承受能力、资金状况和投资目标独立判断，必要时咨询持牌专业机构。过往表现不预示未来收益。</p>
+  <p style="margin-top:6px">数据时效：行情截至 2026-07-31 美股收盘（美东时间）；宏观与利率截至各指标最新发布日。标注"需核实"的为媒体/第三方面板二次引用；检索中发现的自相矛盾来源（fazen.markets 等）已弃用并在此声明。</p>
+</footer>
+
+</div>
+
+<script>
+var UP = '#c0392b', DOWN = '#1e9e6a', BLUE = '#2f6fd0';
+
+echarts.init(document.getElementById('chartUSCPI')).setOption({
+  title: { text: '美国通胀三口径同比（2026-02 ~ 2026-06，%）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['CPI 同比', '核心 CPI 同比', '核心 PCE 同比'], bottom: 0 },
+  xAxis: { type: 'category', data: ['2026-02', '2026-03', '2026-04', '2026-05', '2026-06'] },
+  yAxis: { type: 'value', min: 2, max: 4.5, name: '%' },
+  series: [
+    { name: 'CPI 同比', type: 'line', smooth: true, data: [2.4, 3.3, 3.8, 4.2, 3.5], itemStyle: { color: UP } },
+    { name: '核心 CPI 同比', type: 'line', smooth: true, data: [2.47, 2.60, 2.74, 2.82, 2.57], itemStyle: { color: BLUE } },
+    { name: '核心 PCE 同比', type: 'line', smooth: true, data: [3.05, 3.25, 3.32, 3.42, 3.29], itemStyle: { color: '#6b5ce7' } }
+  ]
+});
+
+echarts.init(document.getElementById('chartRates')).setOption({
+  title: { text: '美债关键利率对比（%，最新）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['联邦基金有效利率', '1M 美债', '2Y 美债', '10Y 美债', '10Y TIPS 实际利率'] },
+  yAxis: { type: 'value', name: '%' },
+  series: [{
+    name: '利率', type: 'bar', barWidth: '45%',
+    data: [3.63, 3.79, 4.31, 4.68, 2.41],
+    itemStyle: { color: BLUE }
+  }]
+});
+
+echarts.init(document.getElementById('chartUST10Y')).setOption({
+  title: { text: '10 年期美债收益率（2026 年 7 月，%）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['07-01', '07-06', '07-09', '07-13', '07-15', '07-17', '07-20', '07-22', '07-24', '07-27', '07-28', '07-30'] },
+  yAxis: { type: 'value', min: 4.4, max: 4.75, name: '%' },
+  series: [{
+    name: '10Y', type: 'line', smooth: true, areaStyle: { opacity: 0.12 },
+    data: [4.48, 4.48, 4.54, 4.62, 4.55, 4.55, 4.60, 4.67, 4.69, 4.65, 4.61, 4.68],
+    itemStyle: { color: '#6b5ce7' }
+  }]
+});
+
+echarts.init(document.getElementById('chartVIX')).setOption({
+  title: { text: 'VIX 走势（2026-06-01 ~ 07-23）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['06-01', '06-03', '06-05', '06-08', '06-10', '06-12', '06-15', '06-17', '06-19', '06-23', '06-25', '06-29', '07-01', '07-03', '07-07', '07-09', '07-13', '07-15', '07-17', '07-21', '07-23'], axisLabel: { interval: 1, rotate: 40 } },
+  yAxis: { type: 'value', min: 14, max: 23, name: 'VIX' },
+  series: [{
+    name: 'VIX', type: 'line', smooth: true,
+    data: [16.05, 16.06, 21.51, 18.92, 22.22, 17.68, 16.20, 18.44, 16.78, 19.49, 18.89, 17.65, 16.59, 15.81, 16.13, 15.84, 17.16, 15.67, 18.77, 17.05, 18.70],
+    markLine: { data: [{ yAxis: 20, name: '长期均值' }], lineStyle: { color: '#999', type: 'dashed' }, label: { formatter: '长期均值 20' } },
+    itemStyle: { color: UP }
+  }]
+});
+
+echarts.init(document.getElementById('chartBreadthUS')).setOption({
+  title: { text: '标普500 成分股站于均线上方的比例（%，2026-07-21）', textStyle: { fontSize: 14 } },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['5 日线', '20 日线', '50 日线', '100 日线', '150 日线', '200 日线'] },
+  yAxis: { type: 'value', max: 100, name: '%' },
+  series: [{
+    name: '占比', type: 'bar', barWidth: '45%',
+    data: [36.97, 48.90, 59.24, 62.82, 62.42, 63.41],
+    itemStyle: { color: BLUE }
+  }]
+});
+</script>
+</body>
+</html>

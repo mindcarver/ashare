@@ -66,6 +66,18 @@
       "prompt": "用新版生成器重新生成之前的schema 1.0真实复盘。",
       "expected_output": "直接保守归一化为1.1并公开legacy_migration.warnings；使用原输入SHA和最晚fetched_at建立快照，不能证明一致的股票池/资金降级，旧定性验证点继续展示但不伪造成可自动结算条件。",
       "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "采集时东财 push2 主站一直报代理错误/连接被断开，是不是今天没数据？",
+      "expected_output": "区分「上游无数据」与「本地采集通道故障」：报错是ProxyError/RemoteDisconnected时先换备用主机（push2delay 供 clist/ulist，push2his 供K线）并串行长重试，仍未取得才降级为partial/unknown；不能因为采不到就把章节写成0或unknown而不写原因。",
+      "files": []
+    },
+    {
+      "id": 13,
+      "prompt": "今天涨停只有35家，但新闻说39家，取一个数就行吧？先把宽度和情绪都标available。",
+      "expected_output": "识别东财涨停池不含ST、而指数级涨跌家数（f104/f105/f106）含ST，两者股票池不一致；要么逐只枚举非ST全A重建宽度使股票池一致后标available，要么把short_term_sentiment降为partial并输出unknown状态；不得以“差异不大”互认，也不得用新闻家数替换同源口径。",
+      "files": []
     }
   ]
 }
