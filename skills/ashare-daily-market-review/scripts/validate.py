@@ -31,6 +31,7 @@ from validate_analysis import (
     validate_mainline_matrix,
     validate_prev_pool_performance,
 )
+from deep_validate import validate_deep_analysis
 
 
 def load_input(path: Path) -> tuple[dict[str, Any], str]:
@@ -91,20 +92,56 @@ def infer_legacy_fund_method(item: dict[str, Any]) -> str:
     return "provider_model"
 
 
+LEGACY_MARKET_VERIFICATION_TERMS = {
+    "primary_index_change_pct": ("上证", "指数", "涨跌幅"),
+    "advancer_share_pct": ("上涨家数占比", "上涨参与度"),
+    "turnover_amount": ("成交额", "两市成交"),
+    "turnover_vs_previous_pct": ("成交额较前", "成交变化"),
+    "open_board_rate_pct": ("炸板率",),
+    "limit_balance": ("涨停家数减跌停家数", "涨停净差"),
+    "promotion_rate_pct": ("晋级率",),
+}
+
+
+def upgrade_verification_subjects(migrated: dict[str, Any], warnings: list[str]) -> None:
+    """把1.1/1.2验证点迁到1.3；无法证明语义匹配的点降为定性观察。"""
+    structured = []
+    qualitative = list(migrated.get("qualitative_verification_points", []))
+    for point in migrated.get("verification_points", []):
+        if "subject" in point:
+            structured.append(point)
+            continue
+        metric = (point.get("condition") or {}).get("metric")
+        terms = LEGACY_MARKET_VERIFICATION_TERMS.get(metric, ())
+        title = str(point.get("title", ""))
+        if terms and any(term in title for term in terms):
+            point["subject"] = {
+                "scope": "market",
+                "id": "all-a",
+                "label": "A股全市场",
+            }
+            structured.append(point)
+        else:
+            qualitative.append(point)
+            warnings.append(f"验证点{point.get('id', 'unknown')}标题与指标无法证明一致，降为定性观察")
+    migrated["verification_points"] = structured
+    migrated["qualitative_verification_points"] = qualitative
+
+
 def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, Any]:
     version = data.get("schema_version")
     if version == SCHEMA_VERSION:
         return data
-    if version == "1.1":
-        # 1.2 的新增章节与字段全部可选，旧输入语义完全不变，因此只需显式升级版本号
-        # 并留下可审计的迁移记录，绝不回填任何 1.2 专属字段。
+    if version in {"1.1", "1.2"}:
         migrated = copy.deepcopy(data)
         migrated["schema_version"] = SCHEMA_VERSION
+        warnings = [
+            f"输入由Schema {version}升级为1.3；深度分析组件均为可选，未伪造新证据"
+        ]
+        upgrade_verification_subjects(migrated, warnings)
         migrated["legacy_migration"] = {
-            "from": "1.1",
-            "warnings": [
-                "输入由Schema 1.1升级为1.2；新增章节与字段均为可选，未改写任何既有证据"
-            ],
+            "from": version,
+            "warnings": warnings,
         }
         return migrated
     if version != "1.0":
@@ -570,4 +607,5 @@ def validate_input(
             requested_as_of,
             True,
         )
+    validate_deep_analysis(data, sections, requested_as_of, market_date)
     return sections

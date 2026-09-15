@@ -22,6 +22,7 @@ from analysis import (
     mainline_signals,
     prev_pool_signal,
 )
+from deep_analysis import verification_observation_index
 from schema import ReviewError, VERIFICATION_UNITS, parse_date, require_text, value
 from validate import normalized_sections, upgrade_legacy_input, validate_input
 
@@ -412,12 +413,6 @@ def derive_history(
     }
 
 
-def verification_metric_value(
-    metric: str, sections: dict[str, dict[str, Any]], derived: dict[str, Any]
-) -> float | None:
-    return history_metric_values(sections, derived).get(metric)
-
-
 def resolve_verification_points(
     entries: list[dict[str, Any]],
     data: dict[str, Any],
@@ -444,11 +439,15 @@ def resolve_verification_points(
         "<=": lambda observed, target: observed <= target,
         "==": lambda observed, target: observed == target,
     }
+    observations = verification_observation_index(sections, derived)
     for point in points.values():
         if not (previous_market_date < point["event_date"] <= data["market_date"]):
             continue
         condition = point["condition"]
-        observed = verification_metric_value(condition["metric"], sections, derived)
+        subject = point["subject"]
+        observed = observations.get(subject["scope"], {}).get(subject["id"], {}).get(
+            condition["metric"]
+        )
         status = "unknown"
         if observed is not None:
             status = (
@@ -463,6 +462,7 @@ def resolve_verification_points(
                 "due_date": point["event_date"],
                 "status": status,
                 "condition": condition,
+                "subject": subject,
                 "observed_value": observed,
                 "observed_market_date": data["market_date"],
             }

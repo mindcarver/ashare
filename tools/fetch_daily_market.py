@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.2 输入 market.json。
+"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.3 输入 market.json。
 
 分工原则（机器能取的自动取，需要研究判断的显式声明）：
 
@@ -20,6 +20,8 @@
     streak_distribution / high_boards → short_term_sentiment
     concept_view → sectors.concept_view（第二套分类，须区别于行业层）
     sector_leaders → 以板块代码键控，落到 sectors.items[].leaders
+  深度分析（1.3，可选）：
+    deep_analysis → 顶层原样透传，再由生成器严格校验、派生与渲染
 
 组装后会调用技能的生成器做一次契约校验（--validate，默认开），通过才落盘。
 
@@ -574,7 +576,7 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
             target["leaders"] = leaders
 
     market = {
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "market_date": date_str,
         "as_of": as_of,
         "snapshot": {
@@ -589,6 +591,8 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
         "sections": sections,
         "verification_points": ctx.get("verification_points", []),
     }
+    if ctx.get("deep_analysis"):
+        market["deep_analysis"] = ctx["deep_analysis"]
     return market, {"quoted": quoted, "pools": pools, "boards": len(boards),
                     "selected_sectors": len(sector_items), "missing_boards": missing_boards,
                     "observed_session_dates": observed, "date_mismatch": bool(mismatch_note)}
@@ -618,7 +622,7 @@ def validate_output(path, as_of):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.2 输入")
+    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.3 输入")
     parser.add_argument("--date", required=True, help="交易日 YYYY-MM-DD")
     parser.add_argument("--out", type=Path, default=Path("market.json"))
     parser.add_argument("--as-of", help="默认同 --date")

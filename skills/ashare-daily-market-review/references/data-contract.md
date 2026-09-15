@@ -1,12 +1,12 @@
 # A股每日盘面数据契约
 
-采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.2`。
+采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.3`。
 
 ## 顶层与快照
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.3",
   "market_date": "2026-08-25",
   "as_of": "2026-08-25",
   "snapshot": {
@@ -17,7 +17,8 @@
     "raw_evidence_sha256": "64位小写SHA-256"
   },
   "sections": {},
-  "verification_points": []
+  "verification_points": [],
+  "deep_analysis": {}
 }
 ```
 
@@ -67,6 +68,10 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 顶层章节只允许在**版本升级**时新增；给 1.2 追加结构时必须挂到既有章节之下，否则会静默改变所有历史输入的覆盖计数。这是本契约最容易踩的向后兼容陷阱。
 
 历史快照（`--history-dir`）按写入时的版本落盘；读取时走同一条升级链再校验，因此旧版本历史不会被新契约拒收，跨版本比较也使用同一套字段语义。
+
+### 1.2 → 1.3 升级
+
+`1.3`新增顶层可选`deep_analysis`，详见[深度分析层契约](deep-analysis.md)。旧输入不回填深度证据。验证点新增`subject.scope/id/label`：旧1.2验证点只有在标题明确匹配其全市场metric时才补为`market/all-a`，其余降为`qualitative_verification_points`，不继续错误自动结算。
 
 ## 章节状态
 
@@ -394,6 +399,7 @@ health = promotion_rate_pct >= health_threshold_pct ? at_or_above_line : below_l
   "event_date": "2026-08-26",
   "published_at": "2026-08-25",
   "fetched_at": "2026-08-25T17:30:00+08:00",
+  "subject": {"scope": "market", "id": "all-a", "label": "A股全市场"},
   "condition": {
     "metric": "turnover_amount",
     "operator": ">=",

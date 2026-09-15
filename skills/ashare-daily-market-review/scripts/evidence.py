@@ -13,7 +13,7 @@ from datetime import date
 from typing import Any
 from urllib.parse import urlparse
 
-from schema import ReviewError, VERIFICATION_METRICS, VERIFICATION_OPERATORS, VERIFICATION_UNITS, parse_date, parse_datetime, require_text
+from schema import ReviewError, VERIFICATION_OPERATORS, VERIFICATION_UNITS_BY_SCOPE, parse_date, parse_datetime, require_text
 
 
 def validate_source(source: Any, field: str) -> None:
@@ -114,10 +114,19 @@ def validate_window(window: Any, field: str, market_date: date) -> None:
 def validate_verification_point(item: Any, field: str, as_of: date) -> None:
     validate_event(item, field, as_of, True)
     require_text(item, "id", field)
+    subject = item.get("subject")
+    if not isinstance(subject, dict):
+        raise ReviewError(f"{field}.subject 必须是object")
+    scope = subject.get("scope")
+    if scope not in VERIFICATION_UNITS_BY_SCOPE:
+        raise ReviewError(f"{field}.subject.scope 不受支持")
+    require_text(subject, "id", f"{field}.subject")
+    require_text(subject, "label", f"{field}.subject")
     condition = item.get("condition")
     if not isinstance(condition, dict):
         raise ReviewError(f"{field}.condition 必须是object")
-    if condition.get("metric") not in VERIFICATION_METRICS:
+    metric = condition.get("metric")
+    if metric not in VERIFICATION_UNITS_BY_SCOPE[scope]:
         raise ReviewError(f"{field}.condition.metric 不受支持")
     if condition.get("operator") not in VERIFICATION_OPERATORS:
         raise ReviewError(f"{field}.condition.operator 不受支持")
@@ -125,8 +134,8 @@ def validate_verification_point(item: Any, field: str, as_of: date) -> None:
     if isinstance(target, bool) or not isinstance(target, (int, float)) or not math.isfinite(target):
         raise ReviewError(f"{field}.condition.value 必须是有限数值")
     unit = require_text(condition, "unit", f"{field}.condition")
-    if unit != VERIFICATION_UNITS[condition["metric"]]:
-        raise ReviewError(f"{field}.condition.unit 与metric不匹配")
+    if unit != VERIFICATION_UNITS_BY_SCOPE[scope][metric]:
+        raise ReviewError(f"{field}.condition.unit 与scope/metric不匹配")
 
 def require_market_date(evidence: dict[str, Any], field: str, market_date: date) -> None:
     observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")

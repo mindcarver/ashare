@@ -41,6 +41,7 @@ a:hover{background:var(--accent-soft)}
 .panel,.card,.cell,.candidate-card,.signal,.empty-state,.no-data,.matrix-wrap,.source-box{
   background:var(--paper);border:var(--hair) solid var(--rule);border-radius:0;
   box-shadow:var(--shadow-off) var(--shadow-off) 0 var(--shadow)}
+.panel{min-width:0}
 .panel,.cell,.candidate-card,.signal,.matrix-wrap,.source-box{padding:18px}
 .source-box{overflow:auto}
 .card{padding:18px;margin-top:10px;border-left:6px solid var(--accent)}
@@ -263,6 +264,11 @@ dd{margin:0;font-family:var(--font-mono)}
   .verify-strip small,.history-strip small{white-space:normal}
   .sentiment-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .sentiment-kpis strong{font-size:16px}
+}
+@media(max-width:620px){
+  .hero-grid{grid-template-columns:1fr}
+  .metric-card strong{overflow-wrap:anywhere}
+  .verify-strip strong,.history-strip strong{white-space:normal;overflow-wrap:anywhere}
 }
 
 /* ============ 技能保留项（不在本文件，各技能模板自带） ============

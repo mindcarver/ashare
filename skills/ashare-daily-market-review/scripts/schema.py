@@ -13,13 +13,14 @@ import _paths  # noqa: F401  确保 skills/_shared 在 sys.path 上
 from ashare_shared import forbidden_terms
 
 
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 
 
 # 兼容可读的旧版本：升级链只前进不后退。
 #   1.0 → 1.1  结构性归一化（旧文本口径 → 结构化 universe/窗口/资金类别）
 #   1.1 → 1.2  纯版本升级（1.2 全部新增字段均为可选，旧输入语义不变）
-SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1"}
+#   1.2 → 1.3  验证点增加 subject 语义；深度分析层全部可选
+SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1", "1.2"}
 
 
 SECTION_NAMES = (
@@ -81,6 +82,52 @@ VERIFICATION_UNITS = {
 
 
 VERIFICATION_OPERATORS = {">", ">=", "<", "<=", "=="}
+
+
+VERIFICATION_UNITS_BY_SCOPE = {
+    "market": VERIFICATION_UNITS,
+    "stock": {
+        "streak": "count",
+        "change_pct": "percent",
+        "fund_flow_1d_cny": "CNY",
+        "sealed_order_amount_cny": "CNY",
+        "break_count": "count",
+    },
+    "sector": {
+        "change_pct": "percent",
+        "fund_flow_cny": "CNY",
+        "top1_positive_share_pct": "percent",
+        "first_board_count": "count",
+    },
+    "theme": {
+        "limit_up_count": "count",
+        "board_fund_flow_cny": "CNY",
+        "top1_positive_share_pct": "percent",
+    },
+    "benchmark": {
+        "change_pct": "percent",
+        "volume_ratio_5d": "ratio",
+        "ma20_distance_pct": "percent",
+        "ma60_distance_pct": "percent",
+        "return_percentile_120d": "percent",
+        "volume_percentile_120d": "percent",
+    },
+}
+
+
+DEEP_COMPONENTS = (
+    "security_details",
+    "liquidity_regime",
+    "sentiment_cycle",
+    "capital_co_movement",
+    "catalyst_chains",
+    "lhb_structure",
+)
+
+
+DEEP_SECURITY_ROLES = {"high_board", "sector_leader", "theme_leader"}
+FUND_FLOW_WINDOWS = {1, 3, 5, 10}
+SENTIMENT_STATES = {"ice", "euphoria", "divergence", "repair", "neutral", "unknown"}
 
 
 # 双确认主线矩阵：象限是「游资情绪面（涨停家数）× 机构资金面（板块主力净流入）」

@@ -83,7 +83,7 @@
     </tr>
     <tr>
       <td align="center"><b>每日盘面与短线情绪</b></td>
-      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html --history-dir ~/.ashare/daily-market-history</code><br />Schema 1.1 区分收盘/盘后/周末快照并保留同日修订；历史目录提供前日变化、20/60日分位和上一期验证点自动结算。旧1.0真实产物可直接保守归一化，不能证明的口径只降级、不补造。HTML 使用同一份已校验输入生成市场脉搏、宽度、短线情绪和下一交易日验证；股票池或资金方法不完整时输出<code>partial/unknown</code>而不补零。</td>
+      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html --history-dir ~/.ashare/daily-market-history</code><br />Schema 1.3 在版本化盘面、主线矩阵和延续性检验上，新增封板与1/3/5/10日资金、量比/MA20/MA60/120日分位、公开规则情绪周期、资金共现与伪板块、产业催化证据链、龙虎榜结构及带subject的自动验证。旧输入保守升级，不能证明的口径只降级、不补造。</td>
     </tr>
     <tr>
       <td align="center"><b>候选股筛选</b></td>

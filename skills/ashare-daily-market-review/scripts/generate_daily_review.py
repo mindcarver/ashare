@@ -21,6 +21,7 @@ import _paths  # noqa: F401  确保 skills/_shared 在 sys.path 上
 from ashare_shared import inject_shared_css
 
 from derive import coverage, derive, derive_history, load_history_entries, persist_snapshot, resolve_verification_points, source_summary
+from deep_analysis import deep_signals, derive_deep_analysis
 from render import build_html, build_markdown
 from schema import ReviewError, SCHEMA_VERSION, parse_date
 from validate import load_input, validate_input
@@ -35,6 +36,10 @@ def generate(
     history_entries = history_entries or []
     sections = validate_input(data, requested_as_of)
     derived, signals = derive(sections)
+    deep = derive_deep_analysis(data, sections, derived)
+    if deep is not None:
+        derived["deep_analysis"] = deep
+        signals.extend(deep_signals(deep))
     history = derive_history(history_entries, data, sections, derived)
     resolved_verifications = resolve_verification_points(
         history_entries, data, sections, derived
