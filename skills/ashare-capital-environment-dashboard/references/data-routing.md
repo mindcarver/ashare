@@ -117,6 +117,10 @@
 | 中国 6 月 CPI 年率事件日历缺 7/9 那期 | WebSearch 国家统计局解读（6 月 CPI +1.0%/PPI +4.1%） |
 | 韩国 M2 库内无发布时间戳 | 最新一期官方新闻稿（Yonhap/Xinhua 引 BOK）可直接采信 |
 | 美债 10Y neodata 只有月值 | 日值用 WebSearch（Saxo / Dow Jones Market Update） |
+| neodata VIX 返回「K线: 暂无数据」（2026-09-11 实测） | 直接 WebSearch（Saxo/Dow Jones 晨报），别反复重试 |
+| neodata 查 KOSPI 返回 KOSPI200 且为盘中值 | WebSearch「韩国 KOSPI 收盘 外资」（韩联社/Yonhap）取主板收盘 |
+| neodata 中国 PMI 只返回分项、无整体值（49.8） | WebSearch 国家统计局发布稿（8/31 制造业 49.8/非制造业 49.0/综合 49.5） |
+| neodata 中国 CPI 只到 7 月 | WebSearch 统计局 9/9 发布（8 月 CPI +0.8%/核心 +1.0%/PPI +3.8%） |
 
 ## 七、westock MCP 实战路由（2026-08-24 实测沉淀）
 
@@ -143,6 +147,17 @@
 - **`data_market_overview type=margin`**：row 偶发为空（仅返回 schema），连续多日（8/26-8/28 实测）无数据 → 两融改走证券时报数据宝（stcn.com）WebSearch。
 - **韩国收盘与外资流向一条龙**：`data_finsearch` 关键词「韩国 KOSPI 外资」可命中 ajudaily（亚洲日报中文版）单条新闻全覆盖（KOSPI/KOSDAQ 收盘、外资/机构/个人净流向、汇率），比 KRX 官网易取。
 - **禁词扫描（生成 HTML 交付前）**：grep 连「融资买入额」「净卖出」等资金术语都会命中「买入/卖出」禁词——统一改写为「融资额」「净流出」措辞；生成器 `--check` 通过后仍要对最终 HTML 再跑一遍 `grep -oE` 确认。**注意**：本技能禁词已上移共享层（tier=`strict`，见 `skills/_shared/forbidden-terms.json`），不要在脚本里重新内联禁词表，`make audit` 会报错。
+
+## 八·补、全球/美国/韩国实测补充（2026-09-11 沉淀）
+
+- **VIX/SKEW/MOVE 同源一次取全**：neodata「K线: 暂无数据」→ Saxo 9/10 晨报一次给 VIX 16.46 / SKEW 149.25 / MOVE 76.74，同源口径一致，优于拼多家。
+- **韩国收盘 + 外资一条龙**：WebSearch「韩国 KOSPI 收盘 外资」命中韩联社中文稿，一次覆盖 KOSPI 7,033.92（-0.25%）/ KOSDAQ +0.79% / 外资净流出 2.49 万亿韩元 / 机构 +4,615 亿 / 个人 +3,622 亿；DigitalToday 可交叉印证。
+- **全球央行资产负债表**：Fed 6.737T / ECB 5.912T / BOJ 644.66 万亿日元 / PBoC 50.21 万亿元——neodata 无直连，逐家官网新闻稿 + WebSearch 汇总。
+- **CFTC 持仓**：杠杆基金 E-mini S&P 净空 307,558 张（cftc.gov 周报；发布滞后约 T+3，注意以此对应 observedAt）。
+- **S&P 200 日均线上方占比**：chartrow.com/sp500/market-breadth 给 67.1%（与 8 月笔记同源，可复用）。
+- **韩国跟随指标**：BOK 8/27 第二次加息至 3.00%、8 月 CPI +3.1%/核心 +3.4%（统计厅 9/2）、6 月 M2 同比 +9.4%（BOK 8/14）——韩国「资金价格/通胀/流动性」三格可一并取。
+
+**生成器修复（2026-09-11）**：`scripts/derive.py` 的 `overview()` 曾以「有数据格子数 == 28」判「完全覆盖」，于是市场徽章显示「部分」时 overview 却写「完全覆盖」，文案自相矛盾。已改为：仅当 4 个市场全部 7 格均为 `available` 才输出「完全覆盖」，否则输出「部分覆盖」并给出 N/4 市场完全可得。回归测试：`tests/test_gen_dashboard.py::test_overview_grade_reflects_market_level_coverage`。
 
 ## 九、板块倾向建议层数据路由（sectorAdvice，2026-08-03 新增）
 

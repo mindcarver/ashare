@@ -56,11 +56,13 @@ def overview(cells, as_of):
     all_unknown = len(mkts_ok) == 0
     if all_unknown:
         return f"截至 {as_of} 的资本环境：无可得数据。", True
-    if covered_cells == len(EXPECTED_KEYS):
-        return (f"截至 {as_of} 的资本环境：完全覆盖。以下为各市场维度的可观测状态，"
-                f"区分已观测事实与未知。"), False
-    return (f"截至 {as_of} 的资本环境：部分覆盖，{len(mkts_ok)}/{len(MARKETS)} 市场、"
-            f"{covered_cells}/{len(EXPECTED_KEYS)} 格有可得数据。"
+    # 「完全覆盖」只应在每个市场全部 7 格都为 available 时出现；
+    # 否则即使 28 格都「有数据」（含 partial），也只算部分覆盖——
+    # 避免文案说"完全覆盖"而市场徽章却显示"部分"的自相矛盾。
+    fully = [m for m in MARKETS if summary[m] == "available"]
+    grade = "完全覆盖" if len(fully) == len(MARKETS) else "部分覆盖"
+    return (f"截至 {as_of} 的资本环境：{grade}（{len(fully)}/{len(MARKETS)} 市场全部格子可得，"
+            f"{len(mkts_ok)}/{len(MARKETS)} 市场有可得数据，{covered_cells}/{len(EXPECTED_KEYS)} 格有数据）。"
             f"以下为各市场维度的可观测状态，区分已观测事实与未知。"), False
 
 

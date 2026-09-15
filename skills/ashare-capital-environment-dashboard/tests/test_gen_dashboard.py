@@ -11,6 +11,8 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts" / "gen_dashboard.py"
+sys.path.insert(0, str(SKILL_DIR / "scripts"))
+from derive import overview  # noqa: E402  仅依赖 schema，不需要 ashare_shared
 # 样例数据已与生产逻辑物理隔离（审计 P2-5）：不再从脚本内联 CELLS 提取。
 SAMPLE_CELLS_PATH = SKILL_DIR / "examples" / "sample-cells.json"
 EXPECTED_KEYS = {
@@ -130,6 +132,26 @@ class DashboardGeneratorTests(unittest.TestCase):
         self.assertNotIn("border-radius:9999px", html)
         cells = html_cells(html)
         self.assertEqual(cells["cn|market-breadth"]["colors"][:2], ["#d2231b", "#0e7a45"])
+
+    def test_overview_grade_reflects_market_level_coverage(self):
+        """回归：overview 的覆盖等级必须与市场徽章聚合一致。
+
+        曾经的 bug：只要有数据（available/partial）的格子数 == 28 就判「完全覆盖」，
+        于是当某些市场只有 partial 格（市场徽章显示「部分」）时，overview 却说「完全覆盖」，
+        文案与徽章自相矛盾。等级只应在每个市场全部 7 格都为 available 时才是「完全覆盖」。
+        """
+        cells = sample_cells()
+        for cfg in cells.values():
+            cfg["availability"] = "available"
+        text, all_unknown = overview(cells, "2026-09-11")
+        self.assertFalse(all_unknown)
+        self.assertIn("完全覆盖", text)
+
+        # 任意一格降为 partial：其所在市场不再全 available → 整体应为「部分覆盖」
+        cells["kr|liquidity"]["availability"] = "partial"
+        text2, _ = overview(cells, "2026-09-11")
+        self.assertIn("部分覆盖", text2)
+        self.assertNotIn("完全覆盖", text2)
 
     def test_sample_data_is_isolated_from_production_scripts(self):
         """审计 P2-5：28 格样例数据只允许放在 examples/，不得内联回 scripts/。"""
