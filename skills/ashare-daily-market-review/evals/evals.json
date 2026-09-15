@@ -138,6 +138,48 @@
       "prompt": "PDF 里有一块'概念口径'资金流，里面有 MSCI中国、融资融券、科技风格这种。我的板块表是申万/东财行业体系，怎么放才不算混排？",
       "expected_output": "用 sectors.concept_view 声明第二套分类：{classification(必须区别于 sectors.classification，同体系会被拒), status_reason, items[]}，每项至少给 change_pct 或 fund_flow 之一、有资金流必须给方法类别。概念与风格项独立成表：净流入居前与净流出居前分别排序、不合并、不与行业榜混排。不能为此新增顶层章节——那会改变所有历史输入的覆盖计数、破坏向后兼容；追加结构只能挂在既有章节之下。",
       "files": []
+    },
+    {
+      "id": 24,
+      "prompt": "PDF里说华正新材5日资金14.49亿、10日24.73亿，我也想加到复盘。",
+      "expected_output": "先拒绝错误窗口标签：东财f62/f267/f164/f174分别是1/3/5/10日。用deep_analysis.security_details[].fund_flow_windows显式声明window.trading_days与CNY证据；华正新材14.49亿应标3日、24.73亿应标5日，真正10日必须取f174。窗口只允许1/3/5/10且不可重复，资金方法标provider_model。",
+      "files": []
+    },
+    {
+      "id": 25,
+      "prompt": "今天科创50涨了，算不算正式放量启动？",
+      "expected_output": "使用deep_analysis.liquidity_regime逐条检查指数/ETF的5日量比、连续放量天数、MA20/MA60距离、120日收益/成交分位以及全市场宽度、涨跌停、晋级率。阈值必须由输入声明；输出每项passed/failed/unknown与all_declared_conditions_met/conditions_not_met/unknown，不聚合总分，也不推出交易动作。",
+      "files": []
+    },
+    {
+      "id": 26,
+      "prompt": "光模块流出、半导体材料流入，能不能说同一笔钱从中游迁移到上游？",
+      "expected_output": "不能建立账户级因果。用capital_co_movement把流出组与流入组标成co_movement_candidate，计算板块/成分股重叠率、Top1正流入占比、绝对流量HHI与反向个股数，并为每条关系保留counter_evidence；只能说同日共现候选，不能说已追踪到同一笔钱。",
+      "files": []
+    },
+    {
+      "id": 27,
+      "prompt": "通信线缆板块净流入22亿，但几乎都是一只票贡献，这算板块启动吗？",
+      "expected_output": "只有contributions_complete=true且个股贡献之和等于组总额时才计算集中度；按输入声明的pseudo_sector_top1_share_pct检查Top1正流入占比，同时结合板块涨跌。板块不强、净流入为正且Top1占比越线时标pseudo_sector_status=flagged；贡献不完整时只能unknown，不据此输出启动或买卖结论。",
+      "files": []
+    },
+    {
+      "id": 28,
+      "prompt": "把产业涨价、政策和业绩都串成主线，直接证明股价上涨原因。",
+      "expected_output": "使用catalyst_chains分开fact、mechanism_hypothesis、causal_status、affected_theme_ids、counter_evidence和verification_point_ids；causal_status只能hypothesis/correlation_only，主题与验证点必须存在且时间不晚于cutoff。新闻与股价共现不能证明因果，至少保留一条反证和一条可结算验证。",
+      "files": []
+    },
+    {
+      "id": 29,
+      "prompt": "龙虎榜这几个游资席位是不是在高位派发，明天会不会砸盘？",
+      "expected_output": "只输出已披露的买入/卖出/净额、席位数、买一/卖一占比和供应商席位类型；当日尚未披露时标partial并注明观察日。禁止intent/prediction/action字段，不推断派发、接力、砸盘或明日方向。",
+      "files": []
+    },
+    {
+      "id": 30,
+      "prompt": "明天验证超声电子能不能4板，condition继续用全市场涨停净差行不行？",
+      "expected_output": "不行。Schema 1.3验证点必须声明subject；个股问题用scope=stock、subject.id=股票代码，并使用stock scope允许的streak等指标。stock标题配market.limit_balance会被拒绝；旧1.2中无法证明标题与全市场metric一致的验证点会降为定性观察，不再错误自动结算。",
+      "files": []
     }
   ]
 }

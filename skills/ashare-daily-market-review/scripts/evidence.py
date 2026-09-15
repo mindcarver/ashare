@@ -13,7 +13,46 @@ from datetime import date
 from typing import Any
 from urllib.parse import urlparse
 
-from schema import ReviewError, VERIFICATION_METRICS, VERIFICATION_OPERATORS, VERIFICATION_UNITS, parse_date, parse_datetime, require_text
+from schema import ReviewError, VERIFICATION_OPERATORS, VERIFICATION_UNITS_BY_SCOPE, parse_date, parse_datetime, require_text
+
+
+VERIFICATION_TITLE_TERMS = {
+    "market": {
+        "primary_index_change_pct": ("指数", "上证"),
+        "advancer_share_pct": ("上涨家数占比", "上涨参与度"),
+        "turnover_amount": ("成交额", "两市成交"),
+        "turnover_vs_previous_pct": ("成交额较前", "成交变化"),
+        "open_board_rate_pct": ("炸板率",),
+        "limit_balance": ("涨停家数减跌停家数", "涨停净差"),
+        "promotion_rate_pct": ("晋级率",),
+    },
+    "stock": {
+        "streak": ("连板", "板"),
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "fund_flow_1d_cny": ("资金", "净额", "主力"),
+        "sealed_order_amount_cny": ("封单",),
+        "break_count": ("炸板", "开板"),
+    },
+    "sector": {
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "fund_flow_cny": ("资金", "净流入", "净流出"),
+        "top1_positive_share_pct": ("Top1", "首位贡献", "最大贡献"),
+        "first_board_count": ("首板",),
+    },
+    "theme": {
+        "limit_up_count": ("涨停",),
+        "board_fund_flow_cny": ("资金", "净流入", "净流出"),
+        "top1_positive_share_pct": ("Top1", "首位贡献", "最大贡献"),
+    },
+    "benchmark": {
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "volume_ratio_5d": ("量比",),
+        "ma20_distance_pct": ("MA20", "20日线"),
+        "ma60_distance_pct": ("MA60", "60日线"),
+        "return_percentile_120d": ("收益120日分位", "涨跌120日分位"),
+        "volume_percentile_120d": ("成交120日分位", "量能120日分位"),
+    },
+}
 
 
 def validate_source(source: Any, field: str) -> None:
@@ -114,10 +153,19 @@ def validate_window(window: Any, field: str, market_date: date) -> None:
 def validate_verification_point(item: Any, field: str, as_of: date) -> None:
     validate_event(item, field, as_of, True)
     require_text(item, "id", field)
+    subject = item.get("subject")
+    if not isinstance(subject, dict):
+        raise ReviewError(f"{field}.subject 必须是object")
+    scope = subject.get("scope")
+    if scope not in VERIFICATION_UNITS_BY_SCOPE:
+        raise ReviewError(f"{field}.subject.scope 不受支持")
+    require_text(subject, "id", f"{field}.subject")
+    require_text(subject, "label", f"{field}.subject")
     condition = item.get("condition")
     if not isinstance(condition, dict):
         raise ReviewError(f"{field}.condition 必须是object")
-    if condition.get("metric") not in VERIFICATION_METRICS:
+    metric = condition.get("metric")
+    if metric not in VERIFICATION_UNITS_BY_SCOPE[scope]:
         raise ReviewError(f"{field}.condition.metric 不受支持")
     if condition.get("operator") not in VERIFICATION_OPERATORS:
         raise ReviewError(f"{field}.condition.operator 不受支持")
@@ -125,8 +173,16 @@ def validate_verification_point(item: Any, field: str, as_of: date) -> None:
     if isinstance(target, bool) or not isinstance(target, (int, float)) or not math.isfinite(target):
         raise ReviewError(f"{field}.condition.value 必须是有限数值")
     unit = require_text(condition, "unit", f"{field}.condition")
-    if unit != VERIFICATION_UNITS[condition["metric"]]:
-        raise ReviewError(f"{field}.condition.unit 与metric不匹配")
+    if unit != VERIFICATION_UNITS_BY_SCOPE[scope][metric]:
+        raise ReviewError(f"{field}.condition.unit 与scope/metric不匹配")
+    title = item["title"]
+    subject_id = subject["id"]
+    subject_label = subject["label"]
+    if scope != "market" and subject_label not in title and subject_id not in title:
+        raise ReviewError(f"{field}.title 必须包含subject名称或ID")
+    title_terms = VERIFICATION_TITLE_TERMS[scope][metric]
+    if not any(term in title for term in title_terms):
+        raise ReviewError(f"{field}.title 与condition.metric语义不一致")
 
 def require_market_date(evidence: dict[str, Any], field: str, market_date: date) -> None:
     observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")

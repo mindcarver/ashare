@@ -36,6 +36,7 @@ from render_analysis import (
     markdown_sector_leaders,
     markdown_streak_distribution,
 )
+from deep_render import html_deep_analysis, markdown_deep_analysis
 from schema import FORBIDDEN, ReviewError, SECTION_NAMES
 
 
@@ -197,13 +198,13 @@ def build_html(
     event_items = []
     status_labels = {"passed": "已验证", "failed": "未成立", "unknown": "待补证"}
     event_items.extend(
-        f'<li class="resolved {html_text(item["status"])}"><time>{html_text(item["observed_market_date"])}</time>{html_text(item["title"])}<small>上期验证 · {status_labels[item["status"]]} · 观察值 {html_text(fmt_history_value(item["observed_value"], item["condition"]["unit"]))}</small></li>'
+        f'<li class="resolved {html_text(item["status"])}"><time>{html_text(item["observed_market_date"])}</time>{html_text(item["title"])}<small>上期验证 · {html_text(item["subject"]["scope"])}:{html_text(item["subject"]["label"])} · {status_labels[item["status"]]} · 观察值 {html_text(fmt_history_value(item["observed_value"], item["condition"]["unit"]))}</small></li>'
         for item in resolved_verifications
     )
     if sections["events"]["availability"] != "unknown":
         event_items.extend(f'<li><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>{html_text(item["source"]["name"])}</small></li>' for item in sections["events"]["items"])
     event_items.extend(
-        f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["condition"]["metric"])} {html_text(item["condition"]["operator"])} {html_text(item["condition"]["value"])} {html_text(item["condition"]["unit"])} · {html_text(item["source"]["name"])}</small></li>'
+        f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["subject"]["scope"])}:{html_text(item["subject"]["label"])} · {html_text(item["condition"]["metric"])} {html_text(item["condition"]["operator"])} {html_text(item["condition"]["value"])} {html_text(item["condition"]["unit"])} · {html_text(item["source"]["name"])}</small></li>'
         for item in data.get("verification_points", [])
     )
     event_items.extend(
@@ -258,7 +259,7 @@ main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}
 .timeline .future time{{color:var(--state-warn)}}
 @media(max-width:760px){{main{{padding:22px 14px 40px}}}}
 
-</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{content}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
+</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
 
 
 def _history_row(history: dict[str, Any], metric: str, label: str) -> str:
@@ -501,6 +502,8 @@ def build_markdown(
         markdown_mainline(derived.get("mainline_matrix"), sections["mainline_matrix"])
     )
 
+    lines.extend(markdown_deep_analysis(derived.get("deep_analysis")))
+
     lines.extend(["## 十、事件与验证点", ""])
     events = sections["events"]
     if events["availability"] == "unknown":
@@ -518,7 +521,7 @@ def build_markdown(
                 item["observed_value"], item["condition"]["unit"]
             )
             lines.append(
-                f"- {status_labels[item['status']]}｜{item['title']}｜观察值 {observed}（{item['observed_market_date']}）"
+                f"- {status_labels[item['status']]}｜{item['title']}｜{item['subject']['scope']}:{item['subject']['label']}｜观察值 {observed}（{item['observed_market_date']}）"
             )
         lines.append("")
     if data.get("qualitative_verification_points"):
@@ -535,7 +538,7 @@ def build_markdown(
         for item in data["verification_points"]:
             condition = item["condition"]
             lines.append(
-                f"- {item['event_date']}｜{item['title']}｜`{condition['metric']} {condition['operator']} {condition['value']} {condition['unit']}`｜{item['source']['name']}"
+                f"- {item['event_date']}｜{item['title']}｜{item['subject']['scope']}:{item['subject']['label']}｜`{condition['metric']} {condition['operator']} {condition['value']} {condition['unit']}`｜{item['source']['name']}"
             )
         lines.append("")
 
