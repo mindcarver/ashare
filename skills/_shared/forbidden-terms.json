@@ -72,6 +72,7 @@
     "ashare-capital-environment-dashboard": "strict",
     "ashare-daily-market-review": "no_price",
     "ashare-company-research": "no_price",
-    "ashare-news-investment-targets": "score_ok"
+    "ashare-news-investment-targets": "score_ok",
+    "ashare-stock-personality": "score_ok"
   }
 }

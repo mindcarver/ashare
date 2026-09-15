@@ -14,6 +14,8 @@ help:
 	@echo "  make selftest                 共享层自检"
 	@echo "  make fetch-market DATE=<交易日> [OUT=market.json] [CTX=ctx.json]"
 	@echo "                                抓取东财一手盘面数据，组装每日复盘 1.2 输入并校验"
+	@echo "  make fetch-personality DATE=<截止日> [MAX=<只数>] [OUT=personality_input.json]"
+	@echo "                                抓取腾讯前复权K线 + 东财龙虎榜，组装股性画像输入"
 	@echo "  make install                  把 skills/ 挂载到各 AI 工具的 skills 目录"
 	@echo "  make clean                    清理 __pycache__ 与 .pyc"
 	@echo ""
@@ -35,6 +37,10 @@ audit:
 fetch-market:
 	@test -n "$(DATE)" || { echo "用法：make fetch-market DATE=2026-09-14 [OUT=market.json] [CTX=ctx.json]"; exit 2; }
 	@$(PYTHON) tools/fetch_daily_market.py --date "$(DATE)" --out "$(if $(OUT),$(OUT),market.json)" $(if $(CTX),--context "$(CTX)",)
+
+fetch-personality:
+	@test -n "$(DATE)" || { echo "用法：make fetch-personality DATE=2026-09-15 [MAX=600] [OUT=personality_input.json]"; exit 2; }
+	@$(PYTHON) tools/fetch_personality_archive.py --as-of "$(DATE)" --lhb-months 12 $(if $(MAX),--max-stocks $(MAX),) --out "$(if $(OUT),$(OUT),personality_input.json)"
 
 selftest:
 	@$(PYTHON) skills/_shared/ashare_shared.py

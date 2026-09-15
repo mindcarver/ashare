@@ -43,6 +43,7 @@ FORBIDDEN_GATED_SKILLS = (
     "ashare-daily-market-review",
     "ashare-company-research",
     "ashare-news-investment-targets",
+    "ashare-stock-personality",
 )
 
 # 逐字引用用户当时冻结的研究原文（假设/催化剂/证伪条件），审查性引用不可改写，
