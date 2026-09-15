@@ -15,7 +15,7 @@
 
   需 --context 显式声明（缺省即留空/unknown，不猜）：
     mainline_matrix / prev_pool_performance / events / verification_points
-    以及 short_term_sentiment.health_thresholds
+    以及 short_term_sentiment.health_thresholds / short_term_sentiment.previous_metrics
   个股颗粒度（1.2 追加，同样缺省即省略）：
     streak_distribution / high_boards → short_term_sentiment
     concept_view → sectors.concept_view（第二套分类，须区别于行业层）
@@ -535,6 +535,9 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
     # 需人工判断的章节：由 --context 显式声明，缺省即不注入（按 unknown 处理）。
     if ctx.get("health_thresholds"):
         sections["short_term_sentiment"]["health_thresholds"] = ctx["health_thresholds"]
+    # 前一可比交易日情绪指标：只有整组同口径时才会被生成器用于「修复」评估。
+    if ctx.get("previous_metrics"):
+        sections["short_term_sentiment"]["previous_metrics"] = ctx["previous_metrics"]
     if ctx.get("events"):
         sections["events"] = ctx["events"]
     mainline = ctx.get("mainline_matrix")
