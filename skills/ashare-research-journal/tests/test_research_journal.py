@@ -329,6 +329,178 @@ class ResearchJournalTests(unittest.TestCase):
         self.assertNotIn('id="ch-excess"', html)
         self.assertNotIn("{{", html)
 
+    # ---------- 市场级记录（无价格路径） ----------
+
+    def market_snapshot(self):
+        return {
+            "schema_version": "1.0",
+            "research_id": "r-market-20260911-turnover",
+            "subject": "沪深两市",
+            "market": "CN",
+            "as_of": "2026-09-11",
+            "evaluation_date": "2026-09-14",
+            "horizon_label": "下一交易日",
+            "thesis": "9/11 缩量后，9/14 成交额能否维持在 1.9 万亿元上方",
+            "probability": 0.35,
+            "criterion": {
+                "metric": "turnover_amount",
+                "operator": "gte",
+                "value": 1_900_000_000_000,
+            },
+            "catalysts": ["情绪修复带动增量资金"],
+            "falsifiers": ["成交额跌破 1.6 万亿元"],
+            "evidence": [
+                {
+                    "claim": "9/11 两市成交额 1.97 万亿元",
+                    "value": 1_971_898_487_729.85,
+                    "unit": "CNY",
+                    "observed_at": "2026-09-11",
+                    "published_at": "2026-09-11",
+                    "fetched_at": "2026-09-11T18:00:00+08:00",
+                    "source": {
+                        "id": "em-kline",
+                        "name": "东财指数日K线",
+                        "url": "https://example.com/kline",
+                    },
+                }
+            ],
+        }
+
+    def market_metric(self, metric, value, unit):
+        return {
+            "metric": metric,
+            "value": value,
+            "unit": unit,
+            "observed_at": "2026-09-14",
+            "published_at": "2026-09-14",
+            "fetched_at": "2026-09-14T18:00:00+08:00",
+            "source": {
+                "id": "em-kline",
+                "name": "东财指数日K线",
+                "url": "https://example.com/kline",
+            },
+        }
+
+    def market_outcome(self, value=1_629_175_552_004.94):
+        return {
+            "schema_version": "1.0",
+            "research_id": "r-market-20260911-turnover",
+            "evaluation_date": "2026-09-14",
+            "market_metrics": [self.market_metric("turnover_amount", value, "CNY")],
+            "falsifiers_triggered": [],
+        }
+
+    def test_market_record_settles_condition_without_price_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "journal.sqlite3"
+            snap = self.write_json(tmp, "market.json", self.market_snapshot())
+            out = self.write_json(tmp, "market_outcome.json", self.market_outcome())
+            recorded = json.loads(
+                self.run_cli(db, "record-market", "--input", snap).stdout
+            )
+            observed = json.loads(
+                self.run_cli(
+                    db, "observe-market", "--id", "r-market-20260911-turnover",
+                    "--input", out, "--as-of", "2026-09-14",
+                ).stdout
+            )
+            html_path = Path(tmp) / "market.html"
+            self.run_cli(db, "show", "--id", "r-market-20260911-turnover", "--out", html_path)
+            html = read_html(html_path)
+            exported = json.loads(self.run_cli(db, "export").stdout)
+
+        self.assertEqual(recorded["kind"], "market")
+        self.assertFalse(observed["criterion_passed"])
+        self.assertFalse(observed["passed"])
+        self.assertAlmostEqual(observed["observed_value"], 1_629_175_552_004.94)
+        self.assertEqual(observed["observed_unit"], "CNY")
+        # 市场级报告不画价格路径图，但要说清条件与观察值
+        self.assertIn("市场级条件", html)
+        self.assertIn("到期结果（市场级条件，无价格路径）", html)
+        self.assertNotIn('id="ch-path"', html)
+        # 成交额按「亿元」呈现：1,629,175,552,004.94 元 → 16,291.76 亿元
+        self.assertIn("16,291.76", html)
+        # 导出：价格路径的 records/outcomes 不被扰动，市场级单独成键
+        self.assertEqual(exported["records"], [])
+        self.assertEqual(exported["outcomes"], [])
+        self.assertEqual(len(exported["market_records"]), 1)
+        self.assertEqual(len(exported["market_outcomes"]), 1)
+        self.assertFalse(exported["market_outcomes"][0]["metrics"]["passed"])
+
+    def test_market_record_rejects_price_fields_and_price_criterion(self):
+        with_fields = self.market_snapshot()
+        with_fields["code"] = "600001"
+        with_fields["baseline"] = {"stock": {"value": 1, "unit": "CNY"}}
+        price_criterion = self.market_snapshot()
+        price_criterion["criterion"]["metric"] = "stock_return_pct"
+        with tempfile.TemporaryDirectory() as tmp:
+            a = self.write_json(tmp, "with-fields.json", with_fields)
+            b = self.write_json(tmp, "price-criterion.json", price_criterion)
+            first = self.run_cli(db_unused := Path(tmp) / "j.sqlite3", "record-market",
+                                 "--input", a, expected_returncode=2)
+            second = self.run_cli(db_unused, "record-market", "--input", b,
+                                  expected_returncode=2)
+
+        self.assertIn("不得包含 code/name/baseline", first.stderr)
+        self.assertIn("criterion.metric 不受支持", second.stderr)
+
+    def test_market_outcome_requires_criterion_metric_and_matching_unit(self):
+        # 单位不符：turnover_amount 固定 CNY，给成 count 直接拒收
+        wrong_unit = self.market_outcome()
+        wrong_unit["market_metrics"][0]["unit"] = "count"
+        # 缺判定指标：criterion 是 limit_balance，但结果只给了 limit_up_count
+        balance_snapshot = self.market_snapshot()
+        balance_snapshot["research_id"] = "r-market-20260911-balance"
+        balance_snapshot["criterion"] = {
+            "metric": "limit_balance",
+            "operator": "gt",
+            "value": 10,
+        }
+        missing = {
+            "schema_version": "1.0",
+            "research_id": "r-market-20260911-balance",
+            "evaluation_date": "2026-09-14",
+            "market_metrics": [self.market_metric("limit_up_count", 55, "count")],
+            "falsifiers_triggered": [],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "journal.sqlite3"
+            snap = self.write_json(tmp, "market.json", self.market_snapshot())
+            balance = self.write_json(tmp, "balance.json", balance_snapshot)
+            self.run_cli(db, "record-market", "--input", snap)
+            self.run_cli(db, "record-market", "--input", balance)
+            a = self.write_json(tmp, "missing.json", missing)
+            b = self.write_json(tmp, "wrong-unit.json", wrong_unit)
+            first = self.run_cli(db, "observe-market", "--id", "r-market-20260911-balance",
+                                 "--input", a, "--as-of", "2026-09-14", expected_returncode=2)
+            second = self.run_cli(db, "observe-market", "--id", "r-market-20260911-turnover",
+                                  "--input", b, "--as-of", "2026-09-14", expected_returncode=2)
+
+        self.assertIn("market_metrics 缺少criterion.metric", first.stderr)
+        self.assertIn("unit 必须是CNY", second.stderr)
+
+    def test_price_and_market_records_share_hit_rate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "journal.sqlite3"
+            # 一条价格路径记录（通过） + 一条市场级记录（未通过）→ 命中率 50%
+            self.run_cli(db, "record", "--input", SNAPSHOT)
+            self.run_cli(db, "observe", "--id", "r-600001-20260801-30d",
+                         "--input", OUTCOME, "--as-of", "2026-09-14")
+            snap = self.write_json(tmp, "market.json", self.market_snapshot())
+            out = self.write_json(tmp, "market_outcome.json", self.market_outcome())
+            self.run_cli(db, "record-market", "--input", snap)
+            self.run_cli(db, "observe-market", "--id", "r-market-20260911-turnover",
+                         "--input", out, "--as-of", "2026-09-14")
+            stats_path = Path(tmp) / "stats.html"
+            self.run_cli(db, "stats", "--as-of", "2026-09-14", "--out", stats_path)
+            html = read_html(stats_path)
+
+        self.assertIn("50.0%", html)
+        self.assertIn("市场级条件", html)
+        self.assertIn("市场级 1 条", html)
+        # 平均收益只覆盖价格路径记录，市场级不得摊进来
+        self.assertIn("平均股票收益", html)
+
     def test_default_out_paths_are_scoped_to_research_dir(self):
         record_path = rj.default_record_out("r-600001-20260801-30d")
         self.assertEqual(record_path.name, "r-600001-20260801-30d.html")

@@ -28,6 +28,22 @@ CRITERION_METRICS = {
 }
 
 
+# 市场级指标：衡量的是「整个盘面」的条件，不挂在单只股票上，因此没有价格路径。
+# 用 record-market / observe-market 记录，存进独立的 market_records / market_outcomes 两张表，
+# 不触碰价格路径那条链路（`record` / `observe` / research_records 语义完全不变）。
+# 值 → 单位 的对应关系是契约的一部分，记录与结算时都要校验一致。
+MARKET_METRICS = {
+    "turnover_amount": "CNY",
+    "advancer_share_pct": "percent",
+    "open_board_rate_pct": "percent",
+    "promotion_rate_pct": "percent",
+    "primary_index_change_pct": "percent",
+    "limit_balance": "count",
+    "limit_up_count": "count",
+    "limit_down_count": "count",
+}
+
+
 OPERATORS = {"lt", "lte", "gt", "gte", "eq", "ne"}
 
 

@@ -18,6 +18,7 @@ import _paths  # noqa: F401  确保 skills/_shared 在 sys.path 上
 from ashare_shared import inject_shared_css
 
 from page_template import COMMON_CSS, PAGE_TEMPLATE, RECORD_CSS, STATS_CSS
+from schema import MARKET_METRICS
 
 METRIC_LABEL = {
     "stock_return_pct": "股票区间收益",
@@ -28,6 +29,30 @@ METRIC_LABEL = {
     "max_adverse_excursion_pct": "最大不利偏离 MAE",
 }
 OPERATOR_LABEL = {"lt": "<", "lte": "≤", "gt": ">", "gte": "≥", "eq": "=", "ne": "≠"}
+
+# 市场级指标：记录的是「盘面条件」，没有价格路径，因此单独一套标签。
+MARKET_METRIC_LABEL = {
+    "turnover_amount": "两市成交额",
+    "advancer_share_pct": "上涨占比",
+    "open_board_rate_pct": "炸板率",
+    "promotion_rate_pct": "涨停池晋级率",
+    "primary_index_change_pct": "主要指数涨跌幅",
+    "limit_balance": "涨停净差（涨停−跌停）",
+    "limit_up_count": "涨停家数",
+    "limit_down_count": "跌停家数",
+}
+UNIT_LABEL = {"CNY": "元", "percent": "%", "count": "只"}
+
+
+def _fmt_market_value(value, unit):
+    if value is None:
+        return "—"
+    number = float(value)
+    if unit == "CNY":
+        return f"{number / 1e8:,.2f} 亿元"
+    if unit == "percent":
+        return f"{number:+.2f}%"
+    return f"{number:,.0f} 只"
 
 RECORD_FOOT = (
     "本报告为研究结论的事后复盘：快照与结果写入后不可覆盖；引用文字来自当时冻结的"
@@ -203,6 +228,23 @@ def _metrics_table(metrics):
             '<th>口径</th></tr></thead>\n    <tbody>\n' + "\n".join(rows) + "\n    </tbody>\n    </table>")
 
 
+def _market_metrics_table(metrics):
+    """市场级结果的当期观测值表：指标 / 取值 / 观察日 / 来源。"""
+    rows = []
+    for item in metrics or []:
+        source = item.get("source") or {}
+        metric = item.get("metric")
+        rows.append(
+            f'      <tr><td>{_e(MARKET_METRIC_LABEL.get(metric, metric))}</td>'
+            f'<td class="num">{_e(_fmt_market_value(item.get("value"), item.get("unit")))}</td>'
+            f'<td class="mono">{_e(item.get("observed_at", ""))}</td>'
+            f'<td class="src">{_e(source.get("name", ""))}</td></tr>'
+        )
+    return ('    <table class="tbl">\n      <thead><tr><th>市场指标</th><th class="num">取值</th>'
+            '<th>观察日</th><th>来源</th></tr></thead>\n    <tbody>\n'
+            + "\n".join(rows) + "\n    </tbody>\n    </table>")
+
+
 def _evidence_table(evidence):
     if not evidence:
         return '    <p class="list dim">快照未记录证据条目。</p>'
@@ -231,10 +273,15 @@ def render_record(record):
     snapshot = record["snapshot"]
     outcome = record.get("outcome")
     criterion = snapshot["criterion"]
+    is_market = record.get("kind") == "market"
 
+    if is_market:
+        subject_line = f'{snapshot["subject"]}（{snapshot["market"]} · 市场级条件）'
+    else:
+        subject_line = f'{snapshot["name"]}（{snapshot["code"]} · {snapshot["market"]}）'
     meta_rows = [
         ("Research ID", snapshot["research_id"]),
-        ("标的", f'{snapshot["name"]}（{snapshot["code"]} · {snapshot["market"]}）'),
+        ("研究对象", subject_line),
         ("研究截止日 as_of", snapshot["as_of"]),
         ("评价日 evaluation_date", snapshot["evaluation_date"]),
         ("持有期标签", snapshot["horizon_label"]),
@@ -252,9 +299,16 @@ def render_record(record):
     ]
     judge_inner = "\n".join(f'    <p class="judge"><b>{title}</b></p>\n{html}'
                             for title, html in judge_rows)
-    criterion_text = (f'{METRIC_LABEL.get(criterion["metric"], criterion["metric"])} '
-                      f'{OPERATOR_LABEL.get(criterion["operator"], criterion["operator"])} '
-                      f'{criterion["value"]}')
+    if is_market:
+        criterion_text = (
+            f'{MARKET_METRIC_LABEL.get(criterion["metric"], criterion["metric"])} '
+            f'{OPERATOR_LABEL.get(criterion["operator"], criterion["operator"])} '
+            f'{_fmt_market_value(criterion["value"], MARKET_METRICS.get(criterion["metric"]))}'
+        )
+    else:
+        criterion_text = (f'{METRIC_LABEL.get(criterion["metric"], criterion["metric"])} '
+                          f'{OPERATOR_LABEL.get(criterion["operator"], criterion["operator"])} '
+                          f'{criterion["value"]}')
     judge_inner += f'\n    <p class="judge" style="margin-top:0.5rem"><b>成功标准</b></p>\n    <div class="crit">{_e(criterion_text)}</div>'
     judge_inner += f'\n    <p class="judge" style="margin-top:0.75rem"><b>催化剂</b></p>\n{_bullet_list(snapshot["catalysts"])}'
     judge_inner += f'\n    <p class="judge" style="margin-top:0.75rem"><b>证伪条件</b></p>\n{_bullet_list(snapshot["falsifiers"])}'
@@ -262,7 +316,26 @@ def render_record(record):
 
     evidence_card = _render_card("当时证据", _evidence_table(snapshot.get("evidence") or []))
 
-    if outcome:
+    if outcome and is_market:
+        metrics = outcome["metrics"]
+        observed = metrics.get("observed_value")
+        unit = metrics.get("observed_unit") or MARKET_METRICS.get(criterion["metric"])
+        verdict_tile = _tile("条件判定", "达成" if metrics.get("criterion_passed") else "未达成")
+        tiles = ('    <div class="tiles">\n'
+                 + _tile("当期观察值", _fmt_market_value(observed, unit))
+                 + _tile(
+                     "判定阈值",
+                     f'{OPERATOR_LABEL.get(criterion["operator"], criterion["operator"])} '
+                     f'{_fmt_market_value(criterion["value"], unit)}',
+                 )
+                 + verdict_tile
+                 + "\n    </div>")
+        outcome_card = _render_card(
+            "到期结果（市场级条件，无价格路径）",
+            tiles + "\n" + _market_metrics_table(outcome["input"].get("market_metrics")),
+            kind="pass" if metrics.get("passed") else "fail",
+        )
+    elif outcome:
         metrics = outcome["metrics"]
         tiles = ('    <div class="tiles">\n'
                  + _tile("股票区间收益", _pct_signed(metrics.get("stock_return_pct")),
@@ -317,19 +390,22 @@ def render_record(record):
     body = "\n\n".join(cards)
 
     passed = outcome["metrics"].get("passed") if outcome else None
+    label = snapshot.get("name") or snapshot.get("subject")
+    label_sub = snapshot.get("code") or f'{snapshot["market"]} · 市场级条件'
+    kind_word = "市场条件" if is_market else "研究结论"
     if outcome is None:
-        lede = f'{snapshot["name"]} 的研究结论尚未进入到期复核：以下为当时冻结的判断与证据。'
+        lede = f'{label} 的{kind_word}尚未进入到期复核：以下为当时冻结的判断与证据。'
     elif passed:
-        lede = f'{snapshot["name"]} 的研究结论已到期复核：成功标准达成且未触发证伪条件。'
+        lede = f'{label} 的{kind_word}已到期复核：成功标准达成且未触发证伪条件。'
     else:
-        lede = f'{snapshot["name"]} 的研究结论已到期复核：未通过成功标准或触发了证伪条件。'
+        lede = f'{label} 的{kind_word}已到期复核：未通过成功标准或触发了证伪条件。'
 
     return _page(
-        title=f'{snapshot["name"]} 研究结论事后复盘 · {snapshot["research_id"]}',
+        title=f'{label} {kind_word}事后复盘 · {snapshot["research_id"]}',
         desc="A股研究结论的事后复盘：冻结快照、到期表现与判断审计（本地研究工具）",
         eyebrow="A-SHARE / RESEARCH JOURNAL REVIEW",
-        h1="研究结论事后复盘",
-        asof_line=(f'{_e(snapshot["name"])}（{_e(snapshot["code"])}）<br />'
+        h1=f'{kind_word}事后复盘',
+        asof_line=(f'{_e(label)}（{_e(label_sub)}）<br />'
                    f'研究截止 {_e(snapshot["as_of"])} · 评价日 {_e(snapshot["evaluation_date"])}'),
         lede=lede,
         body=body,
@@ -438,24 +514,35 @@ def _stats_script(stats):
 def _stats_table(records):
     rows = []
     for record in records:
+        is_market = record.get("kind") == "market"
         excess = record.get("excess_return_pct")
         stock = record.get("stock_return_pct")
         drawdown = record.get("max_drawdown_pct")
         probability = record.get("probability")
         verdict = ('<span class="badge b-pass">通过</span>' if record.get("passed")
                    else '<span class="badge b-fail">未通过</span>')
+        if is_market:
+            sub = "市场级条件"
+            primary_cell = (
+                f'<td class="num">{_e(_fmt_market_value(record.get("observed_value"), record.get("observed_unit")))}</td>'
+            )
+        else:
+            sub = record["code"]
+            primary_cell = (
+                f'<td class="num {_direction_class(stock)}">{_pct_signed(stock)}</td>'
+            )
         rows.append(
             f'      <tr><td class="mono">{_e(record["research_id"])}</td>'
-            f'<td>{_e(record["name"])}<br /><span class="src">{_e(record["code"])}</span></td>'
+            f'<td>{_e(record["name"])}<br /><span class="src">{_e(sub)}</span></td>'
             f'<td class="mono">{_e(record["evaluation_date"])}</td>'
             f'<td class="num">{_pct(probability * 100) if probability is not None else "—"}</td>'
-            f'<td class="num {_direction_class(stock)}">{_pct_signed(stock)}</td>'
+            f'{primary_cell}'
             f'<td class="num {_direction_class(excess)}">{_pct_signed(excess)}</td>'
             f'<td class="num {_direction_class(drawdown)}">{_pct_signed(drawdown)}</td>'
             f'<td>{verdict}</td></tr>'
         )
     return ('    <table class="tbl">\n      <thead><tr><th>Research ID</th><th>标的</th>'
-            '<th>评价日</th><th class="num">当时概率</th><th class="num">股票收益</th>'
+            '<th>评价日</th><th class="num">当时概率</th><th class="num">股票收益 / 观测值</th>'
             '<th class="num">超额</th><th class="num">最大回撤</th><th>判定</th></tr></thead>\n'
             '    <tbody>\n' + "\n".join(rows) + "\n    </tbody>\n    </table>")
 
@@ -493,8 +580,10 @@ def render_stats(stats):
         )
 
     calibrated = stats.get("calibrated_count") or 0
+    market_count = stats.get("market_matured_count") or 0
+    sample_sub = _e(scope) + (f' · 市场级 {market_count} 条' if market_count else '')
     tiles = ('    <div class="tiles">\n'
-             + _tile("成熟样本", str(matured), sub=f'{_e(scope)}')
+             + _tile("成熟样本", str(matured), sub=sample_sub)
              + _tile("命中数", str(stats.get("passed_count", 0)))
              + _tile("命中率", _pct(stats.get("hit_rate_pct"), 1))
              + _tile("Brier 分数", _num(stats.get("brier_score"), 4),
@@ -525,7 +614,13 @@ def render_stats(stats):
         + ('任何比例都接近噪声，不要据此推断能力。' if matured < 20 else '仍不足以代表全市场。')
         + '</li>\n'
         '      <li>行业集中：记录来自主观选题，行业分布未经加权。</li>\n'
-        '      <li>市场阶段：所有样本落在同一市场阶段时，结果很大程度上是阶段收益。</li>\n'
+        + (
+            f'      <li>样本构成：含 {market_count} 条市场级条件记录（无价格路径），'
+            '它们计入命中率与 Brier，但不摊入平均收益 / 超额 / 回撤——后三项只覆盖价格路径记录。</li>\n'
+            if market_count
+            else ''
+        )
+        + '      <li>市场阶段：所有样本落在同一市场阶段时，结果很大程度上是阶段收益。</li>\n'
         '      <li>选择偏差：只有被记录下来的研究进入样本，未记录的研究不在分母里。</li>\n'
         '      <li>命中率不等于赚钱：成功标准可以是任意指标，且未计入仓位与成本。</li>\n'
         '    </ul>'

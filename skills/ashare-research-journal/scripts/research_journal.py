@@ -23,7 +23,17 @@ from pathlib import Path
 from typing import Any
 
 import render
-from derive import connect, due, export_all, observe, record, show, stats
+from derive import (
+    connect,
+    due,
+    export_all,
+    observe,
+    observe_market,
+    record,
+    record_market,
+    show,
+    stats,
+)
 from schema import DEFAULT_DB, JournalError, parse_date
 from validate import load_json
 
@@ -62,6 +72,11 @@ def build_parser() -> argparse.ArgumentParser:
     record_parser = sub.add_parser("record", help="冻结研究快照")
     record_parser.add_argument("--input", type=Path, required=True)
 
+    market_record_parser = sub.add_parser(
+        "record-market", help="冻结市场级研究快照（盘面条件，无价格路径）"
+    )
+    market_record_parser.add_argument("--input", type=Path, required=True)
+
     show_parser = sub.add_parser("show", help="查看快照和结果，输出HTML复盘报告")
     show_parser.add_argument("--id", required=True)
     show_parser.add_argument("--out", type=Path, help="HTML 输出路径（默认 research/research-journal/<id>.html）")
@@ -73,6 +88,13 @@ def build_parser() -> argparse.ArgumentParser:
     observe_parser.add_argument("--id", required=True)
     observe_parser.add_argument("--input", type=Path, required=True)
     observe_parser.add_argument("--as-of", required=True)
+
+    market_observe_parser = sub.add_parser(
+        "observe-market", help="追加市场级到期结果（market_metrics，无价格路径）"
+    )
+    market_observe_parser.add_argument("--id", required=True)
+    market_observe_parser.add_argument("--input", type=Path, required=True)
+    market_observe_parser.add_argument("--as-of", required=True)
 
     stats_parser = sub.add_parser("stats", help="统计成熟记录，输出HTML统计看板")
     stats_parser.add_argument("--as-of", required=True)
@@ -89,6 +111,8 @@ def main() -> int:
         with connect(args.db) as db:
             if args.command == "record":
                 print_json(record(db, load_json(args.input)))
+            elif args.command == "record-market":
+                print_json(record_market(db, load_json(args.input)))
             elif args.command == "show":
                 result = show(db, args.id)
                 write_html(render.render_record(result), args.out or default_record_out(args.id))
@@ -97,6 +121,15 @@ def main() -> int:
             elif args.command == "observe":
                 print_json(
                     observe(
+                        db,
+                        args.id,
+                        load_json(args.input),
+                        parse_date(args.as_of, "as-of"),
+                    )
+                )
+            elif args.command == "observe-market":
+                print_json(
+                    observe_market(
                         db,
                         args.id,
                         load_json(args.input),
