@@ -195,7 +195,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["coverage"], {"available": 0, "partial": 0, "unknown": 8})
+        self.assertEqual(summary["coverage"], {"available": 0, "partial": 0, "unknown": 10})
         self.assertEqual(
             summary["derived"],
             {"short_term_sentiment": {"state": "unknown", "reason": "输入未提供该章节"}},
@@ -261,7 +261,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["schema_version"], "1.1")
+        self.assertEqual(summary["schema_version"], "1.2")
         self.assertEqual(summary["legacy_migration"]["from"], "1.0")
         self.assertIn("兼容归一化", markdown)
         self.assertIn("定性观察点（不自动结算）", markdown)
@@ -516,7 +516,7 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
         self.assertNotIn("<script>alert(1)</script>", html)
         self.assertNotIn("<script", html)
-        self.assertEqual(summary["coverage"], {"available": 4, "partial": 3, "unknown": 1})
+        self.assertEqual(summary["coverage"], {"available": 4, "partial": 3, "unknown": 3})
 
     def test_visual_html_all_unknown_does_not_draw_zero_value_charts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -555,6 +555,681 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertIn("下一交易日验证", html)
         self.assertIn('class="sentiment-kpis"', html)
         self.assertIn("查看股票池、口径与规则", html)
+
+
+    def with_extension(self, market):
+        """给基础 fixture 叠加 1.2 的可选分析层：板块资金流、主线矩阵、延续性检验、体检阈值。"""
+        sentiment_evidence = self.evidence
+        sectors = market["sections"]["sectors"]["items"]
+        # 板块资金流：只有 sw-d 故意缺失，用来验证「引用板块缺资金流 → 象限 unknown」。
+        flows = {"sw-a": 2_884_000_000, "sw-b": -500_000_000, "sw-c": 2_898_000_000}
+        for item in sectors:
+            if item["id"] in flows:
+                item["fund_flow"] = {
+                    "value": flows[item["id"]],
+                    "unit": "CNY",
+                    "observed_at": "2026-08-25",
+                    "published_at": "2026-08-25",
+                    "fetched_at": "2026-08-25T16:00:00+08:00",
+                    "source": {
+                        "id": "fixture-board-flow",
+                        "name": "测试板块资金源",
+                        "url": "https://example.com/board-flow",
+                    },
+                }
+                item["fund_flow_method_category"] = "provider_model"
+        exemplar = copy.deepcopy(sectors[0])
+        exemplar["id"] = "sw-d"
+        exemplar["name"] = "计算机"
+        exemplar.pop("fund_flow")
+        exemplar.pop("fund_flow_method_category")
+        sectors.append(exemplar)
+
+        theme_specs = [
+            ("pcb", "AI硬件·PCB链", ["sw-a", "sw-c"], 10),
+            ("upstream", "上游材料", ["sw-c"], 0),
+            ("aiapp", "AI应用·AI安全", ["sw-b"], 11),
+            ("optical", "光模块·光通信", ["sw-b"], 1),
+            ("pending", "待补主题", ["sw-d"], 5),
+        ]
+        market["sections"]["mainline_matrix"] = {
+            "availability": "available",
+            "status_reason": "主题成分板块与涨停家数由输入显式声明",
+            "classification": "申万一级",
+            "methodology": "按输入声明的成分板块与涨停归组，象限由派生规则判定",
+            "quadrant_rules": {
+                "limit_up_threshold": 3,
+                "capital_threshold_cny": 0,
+            },
+            "caveat": "主题成分由输入人工归组，跨主题个股可能重复计入。",
+            "themes": [
+                {
+                    "id": theme_id,
+                    "name": name,
+                    "boards": boards,
+                    "limit_up": sentiment_evidence(count),
+                }
+                for theme_id, name, boards, count in theme_specs
+            ],
+        }
+        market["sections"]["prev_pool_performance"] = {
+            "availability": "available",
+            "status_reason": "前一交易日涨停池当日表现全量重算",
+            "previous_market_date": "2026-08-24",
+            "universe": copy.deepcopy(market["sections"]["breadth"]["universe"]),
+            "health_threshold_pct": 30,
+            "metrics": {
+                "pool_size": sentiment_evidence(40),
+                "promotion_count": sentiment_evidence(11),
+                "avg_change_pct": {
+                    **sentiment_evidence(3.21),
+                    "unit": "percent",
+                },
+                "median_change_pct": {
+                    **sentiment_evidence(3.12),
+                    "unit": "percent",
+                },
+            },
+            "by_group": [
+                {
+                    "id": "group-electronics",
+                    "name": "电子元件",
+                    "count": sentiment_evidence(9),
+                    "avg_change_pct": {
+                        **sentiment_evidence(6.42),
+                        "unit": "percent",
+                    },
+                }
+            ],
+        }
+        self.with_sentiment(
+            market,
+            {"open_board_failed": 10, "limit_attempts": 100, "highest_streak": 6},
+        )
+        market["sections"]["short_term_sentiment"]["health_thresholds"] = {
+            "limit_up_min": 45,
+            "limit_down_max": 5,
+            "open_board_rate_max_pct": 25,
+            "promotion_rate_min_pct": 30,
+            "highest_streak_min": 3,
+        }
+        return market
+
+    def test_derives_mainline_quadrants_from_declared_rules(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "extended.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        mainline = summary["derived"]["mainline_matrix"]
+        quadrants = {theme["id"]: theme["quadrant"] for theme in mainline["themes"]}
+        self.assertEqual(
+            quadrants,
+            {
+                "pcb": "dual_confirmed",
+                "upstream": "capital_led",
+                "aiapp": "sentiment_only",
+                "optical": "bleeding",
+                "pending": "unknown",
+            },
+        )
+        pcb = next(theme for theme in mainline["themes"] if theme["id"] == "pcb")
+        # 多板块：资金求和、涨跌幅等权均值，都要可复算
+        self.assertAlmostEqual(pcb["board_fund_flow_cny"], 5_782_000_000)
+        self.assertAlmostEqual(pcb["board_change_pct_equal_weight"], 2.35)
+        self.assertEqual(pcb["missing_board_fund_flow"], [])
+        pending = next(theme for theme in mainline["themes"] if theme["id"] == "pending")
+        self.assertIsNone(pending["board_fund_flow_cny"])
+        self.assertEqual(pending["missing_board_fund_flow"], ["sw-d"])
+        self.assertEqual(mainline["quadrant_counts"]["dual_confirmed"], 1)
+        self.assertEqual(mainline["quadrant_counts"]["unknown"], 1)
+        self.assertIn("## 九、双确认主线矩阵", markdown)
+        self.assertIn("双确认主题：涨停家数达标且板块资金净流入", markdown)
+        self.assertIn("反方证据与自我证伪", markdown)
+
+    def test_bleeding_threshold_splits_sentiment_pulse_into_bleeding(self):
+        """声明失血线后，「家数达标」按资金流出深度拆成情绪脉冲与情绪失血。"""
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        market["sections"]["mainline_matrix"]["quadrant_rules"]["bleeding_threshold_cny"] = (
+            -200_000_000
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "bleeding.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        mainline = summary["derived"]["mainline_matrix"]
+        quadrants = {theme["id"]: theme["quadrant"] for theme in mainline["themes"]}
+        # aiapp 板块资金 -5 亿 ≤ 失血线 -2 亿 → 情绪失血；optical 涨停仅 1 家未达标，仍是失血。
+        self.assertEqual(quadrants["aiapp"], "sentiment_bleeding")
+        self.assertEqual(quadrants["optical"], "bleeding")
+        self.assertEqual(quadrants["pcb"], "dual_confirmed")
+        self.assertEqual(mainline["quadrant_rules"]["bleeding_threshold_cny"], -200_000_000)
+        self.assertEqual(mainline["quadrant_counts"]["sentiment_bleeding"], 1)
+        self.assertEqual(mainline["quadrant_counts"]["sentiment_only"], 0)
+        self.assertIn("情绪失血主题：涨停家数达标但板块资金大额净流出", markdown)
+        self.assertIn("情绪失血 1 个", markdown)
+        self.assertIn("失血线", markdown)
+        codes = [signal["code"] for signal in summary["signals"]]
+        self.assertIn("mainline_sentiment_bleeding", codes)
+        self.assertNotIn("mainline_sentiment_only", codes)
+
+    def test_undeclared_bleeding_threshold_keeps_legacy_quadrants(self):
+        """未声明失血线时，情绪失血不参与计数/图例/信号，输出与 1.2 原样一致。"""
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "extended.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        mainline = summary["derived"]["mainline_matrix"]
+        self.assertNotIn("bleeding_threshold_cny", mainline["quadrant_rules"])
+        self.assertNotIn("sentiment_bleeding", mainline["quadrant_counts"])
+        self.assertEqual(mainline["quadrant_counts"]["sentiment_only"], 1)
+        self.assertNotIn("情绪失血", markdown)
+        codes = [signal["code"] for signal in summary["signals"]]
+        self.assertIn("mainline_sentiment_only", codes)
+        self.assertNotIn("mainline_sentiment_bleeding", codes)
+
+    def test_rejects_invalid_bleeding_threshold_and_unsupported_rule_key(self):
+        not_below = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        not_below["sections"]["mainline_matrix"]["quadrant_rules"][
+            "bleeding_threshold_cny"
+        ] = 0  # 等于资金线：区间会倒挂，必须拒收
+        unsupported = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        unsupported["sections"]["mainline_matrix"]["quadrant_rules"]["bogus_rule"] = 1
+        bad_type = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        bad_type["sections"]["mainline_matrix"]["quadrant_rules"]["bleeding_threshold_cny"] = "低"
+        with tempfile.TemporaryDirectory() as tmp:
+            below_path = self.write_json(tmp, "not-below.json", not_below)
+            extra_path = self.write_json(tmp, "unsupported.json", unsupported)
+            type_path = self.write_json(tmp, "bad-type.json", bad_type)
+            below_result, _, _ = self.run_generator(below_path, tmp, expected_returncode=2)
+            extra_result, _, _ = self.run_generator(extra_path, tmp, expected_returncode=2)
+            type_result, _, _ = self.run_generator(type_path, tmp, expected_returncode=2)
+
+        self.assertIn(
+            "bleeding_threshold_cny 必须严格小于 capital_threshold_cny",
+            below_result.stderr,
+        )
+        self.assertIn("quadrant_rules 含不支持的键：bogus_rule", extra_result.stderr)
+        self.assertIn("bleeding_threshold_cny 必须是有限数值", type_result.stderr)
+
+    def test_derives_prev_pool_promotion_rate_and_health_line(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "extended.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        prev_pool = summary["derived"]["prev_pool_performance"]
+        self.assertAlmostEqual(prev_pool["promotion_rate_pct"], 27.5)
+        self.assertEqual(prev_pool["health"], "below_line")
+        self.assertEqual(prev_pool["previous_market_date"], "2026-08-24")
+        self.assertIn("## 八、延续性检验：前一涨停池当日表现", markdown)
+        self.assertIn("晋级率：27.50%，低于声明的健康线 30%", markdown)
+
+    def test_health_check_enumerates_conditions_without_aggregate_score(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "extended.json", market)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        health = summary["derived"]["sentiment_health_check"]
+        self.assertEqual(health["evaluated_count"], 5)
+        self.assertEqual(health["passed_count"], 4)
+        failed = [check["code"] for check in health["checks"] if check["status"] == "failed"]
+        self.assertEqual(failed, ["promotion_rate_min_pct"])
+        self.assertEqual(health["unresolved"], [])
+        self.assertNotIn("总分", markdown)
+        self.assertIn("不聚合成分数", markdown)
+
+    def test_health_check_omits_conditions_without_observed_value(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        market["sections"].pop("prev_pool_performance")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "no-prev-pool.json", market)
+            _, _, summary_path = self.run_generator(path, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        health = summary["derived"]["sentiment_health_check"]
+        self.assertIn("promotion_rate_min_pct", health["unresolved"])
+        self.assertEqual(health["evaluated_count"], 4)
+        self.assertEqual(health["passed_count"], 4)
+
+    def test_promotion_rate_pct_is_settlable_verification_point(self):
+        """晋级率必须能被 event_date 当天的同一口径自动结算，而不是停在 unknown。"""
+        current = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        prior = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        prior_date = "2026-08-24"
+        prior["market_date"] = prior_date
+        prior["as_of"] = prior_date
+        prior["snapshot"]["cutoff_at"] = f"{prior_date}T18:00:00+08:00"
+        self.retime_snapshot(prior["sections"], prior_date)
+        for event in prior["sections"]["events"]["items"]:
+            event["event_date"] = prior_date
+        # 前一日快照自身的延续性检验必须指向更早的交易日，否则会被契约拒收。
+        prior["sections"]["prev_pool_performance"]["previous_market_date"] = "2026-08-21"
+        prior["verification_points"] = [
+            {
+                "id": "verify-promotion-rate",
+                "title": "次日涨停池晋级率是否达到 20%",
+                "event_date": current["market_date"],
+                "published_at": prior_date,
+                "fetched_at": f"{prior_date}T16:00:00+08:00",
+                "condition": {
+                    "metric": "promotion_rate_pct",
+                    "operator": ">=",
+                    "value": 20,
+                    "unit": "percent",
+                },
+                "source": {
+                    "id": "derived-prev-pool",
+                    "name": "复盘派生验证点",
+                    "kind": "derived",
+                    "evidence_refs": ["sections.prev_pool_performance.metrics.pool_size"],
+                },
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            history_dir = Path(tmp) / "history"
+            self.write_history_entry(history_dir, prior, "f" * 64)
+            path = self.write_json(tmp, "current.json", current)
+            _, markdown_path, summary_path = self.run_generator(
+                path, tmp, history_dir=history_dir
+            )
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            markdown = markdown_path.read_text(encoding="utf-8")
+
+        resolved = summary["resolved_verifications"]
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0]["id"], "verify-promotion-rate")
+        self.assertEqual(resolved[0]["status"], "passed")
+        self.assertAlmostEqual(resolved[0]["observed_value"], 27.5)
+        self.assertEqual(resolved[0]["observed_market_date"], current["market_date"])
+        series = summary["history"]["metrics"]["promotion_rate_pct"]
+        self.assertEqual(series["unit"], "percent")
+        self.assertAlmostEqual(series["current"], 27.5)
+        self.assertIn("| 昨日涨停池晋级率 | +27.50% |", markdown)
+
+    def test_rejects_promotion_rate_point_with_wrong_unit(self):
+        market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["verification_points"][0]["condition"] = {
+            "metric": "promotion_rate_pct",
+            "operator": ">=",
+            "value": 20,
+            "unit": "count",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "wrong-unit.json", market)
+            result, _, _ = self.run_generator(path, tmp, expected_returncode=2)
+
+        self.assertIn("unit 与metric不匹配", result.stderr)
+
+    def test_history_omits_promotion_rate_without_prev_pool_section(self):
+        """旧输入没有延续性检验章节时，指标表不新增行，输出保持原样。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            _, markdown_path, summary_path = self.run_generator(MARKET, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            markdown = markdown_path.read_text(encoding="utf-8")
+
+        self.assertNotIn("promotion_rate_pct", summary["history"]["metrics"])
+        self.assertNotIn("昨日涨停池晋级率", markdown)
+
+    def test_rejects_mainline_with_missing_board_or_undeclared_rules(self):
+        missing = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        missing["sections"]["mainline_matrix"]["themes"][0]["boards"] = ["sw-nonexistent"]
+        undeclared = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        undeclared["sections"]["mainline_matrix"]["quadrant_rules"].pop("limit_up_threshold")
+        mismatched = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        mismatched["sections"]["mainline_matrix"]["classification"] = "东财概念"
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_path = self.write_json(tmp, "missing-board.json", missing)
+            undeclared_path = self.write_json(tmp, "undeclared.json", undeclared)
+            mismatched_path = self.write_json(tmp, "mismatched.json", mismatched)
+            missing_result, _, _ = self.run_generator(
+                missing_path, tmp, expected_returncode=2
+            )
+            undeclared_result, _, _ = self.run_generator(
+                undeclared_path, tmp, expected_returncode=2
+            )
+            mismatched_result, _, _ = self.run_generator(
+                mismatched_path, tmp, expected_returncode=2
+            )
+
+        self.assertIn("引用了sectors中不存在的板块", missing_result.stderr)
+        self.assertIn("必须显式声明", undeclared_result.stderr)
+        self.assertIn("必须与sections.sectors.classification一致", mismatched_result.stderr)
+
+    def test_rejects_prev_pool_with_mismatched_universe_or_impossible_promotion(self):
+        mismatched = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        mismatched["sections"]["prev_pool_performance"]["universe"]["id"] = "csi-300"
+        impossible = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        impossible["sections"]["prev_pool_performance"]["metrics"]["promotion_count"][
+            "value"
+        ] = 41
+        with tempfile.TemporaryDirectory() as tmp:
+            mismatched_path = self.write_json(tmp, "pool-universe.json", mismatched)
+            impossible_path = self.write_json(tmp, "pool-impossible.json", impossible)
+            mismatched_result, _, _ = self.run_generator(
+                mismatched_path, tmp, expected_returncode=2
+            )
+            impossible_result, _, _ = self.run_generator(
+                impossible_path, tmp, expected_returncode=2
+            )
+
+        self.assertIn(
+            "prev_pool_performance.universe 必须与breadth.universe一致",
+            mismatched_result.stderr,
+        )
+        self.assertIn("promotion_count 不能大于pool_size", impossible_result.stderr)
+
+    def test_rejects_board_fund_flow_without_declared_method_category(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        market["sections"]["sectors"]["items"][0].pop("fund_flow_method_category")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "flow-method.json", market)
+            result, _, _ = self.run_generator(path, tmp, expected_returncode=2)
+
+        self.assertIn("fund_flow_method_category 不受支持", result.stderr)
+
+    def test_schema_1_1_input_is_upgraded_without_backfilling_sections(self):
+        legacy = json.loads(MARKET.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write_json(tmp, "v11.json", legacy)
+            _, markdown_path, summary_path = self.run_generator(path, tmp)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(legacy["schema_version"], "1.1")
+        self.assertEqual(summary["schema_version"], "1.2")
+        self.assertEqual(summary["legacy_migration"]["from"], "1.1")
+        self.assertIn("可选", summary["legacy_migration"]["warnings"][0])
+        self.assertIn("兼容归一化", markdown)
+        self.assertEqual(
+            sorted(summary["sections"]),
+            sorted(
+                [
+                    "indices",
+                    "breadth",
+                    "short_term_sentiment",
+                    "turnover",
+                    "sectors",
+                    "funds",
+                    "style",
+                    "events",
+                    "mainline_matrix",
+                    "prev_pool_performance",
+                ]
+            ),
+        )
+
+    def test_html_renders_new_panels_and_keeps_unknown_honest(self):
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "extended.html"
+            path = self.write_json(tmp, "extended-html.json", market)
+            _, _, _ = self.run_generator(path, tmp, html_out=html_path)
+            html = html_path.read_text(encoding="utf-8")
+
+        self.assertIn("双确认主线矩阵", html)
+        self.assertIn("延续性检验", html)
+        self.assertIn("阈值体检", html)
+        self.assertIn("反方证据 · mainline_matrix", html)
+        self.assertIn("不是评分", html)
+        self.assertNotIn("<script", html)
+
+    def unit_evidence(self, value, unit, observed_at="2026-08-25"):
+        return {
+            "value": value,
+            "unit": unit,
+            "observed_at": observed_at,
+            "published_at": "2026-08-25",
+            "fetched_at": "2026-08-25T16:00:00+08:00",
+            "source": {
+                "id": "fixture-security",
+                "name": "测试个股源",
+                "url": "https://example.com/security",
+            },
+        }
+
+    def with_extended_structures(self, market):
+        """叠加 1.2 发布后追加的四项可选结构：连板梯队、高标质量、概念层资金流、板块内个股。"""
+        self.with_extension(market)
+        sentiment = market["sections"]["short_term_sentiment"]
+        # 各档之和 70+6+3+1 = 80 = breadth.limit_up；最高档 6 = highest_streak。
+        sentiment["streak_distribution"] = [
+            {"streak": streak, "count": self.evidence(count)}
+            for streak, count in ((1, 70), (2, 6), (3, 3), (6, 1))
+        ]
+        sentiment["high_boards"] = [
+            {
+                "name": "闽东电力",
+                "code": "600509",
+                "streak": 6,
+                "fund_flow": self.unit_evidence(55_000_000, "CNY"),
+                "fund_flow_method_category": "provider_model",
+                "turnover_pct": self.unit_evidence(12.3, "percent"),
+                "note": "空间龙头，机构未买",
+            },
+            {
+                "name": "超声电子",
+                "streak": 3,
+                "fund_flow": self.unit_evidence(282_000_000, "CNY"),
+                "fund_flow_method_category": "provider_model",
+                "turnover_pct": self.unit_evidence(19.3, "percent"),
+            },
+            {
+                "name": "中新赛克",
+                "streak": 3,
+                "fund_flow": self.unit_evidence(13_000_000, "CNY"),
+                "fund_flow_method_category": "provider_model",
+                "turnover_pct": self.unit_evidence(1.06, "percent"),
+            },
+            {
+                "name": "凯盛新能",
+                "streak": 3,
+                "fund_flow": self.unit_evidence(-1_000_000, "CNY"),
+                "fund_flow_method_category": "provider_model",
+                "turnover_pct": self.unit_evidence(10.4, "percent"),
+            },
+        ]
+        market["sections"]["sectors"]["concept_view"] = {
+            "classification": "东财概念",
+            "status_reason": "概念层与风格项资金流，与行业层分开成表",
+            "items": [
+                {
+                    "id": "cp-pcb",
+                    "name": "PCB",
+                    "fund_flow": self.unit_evidence(4_385_000_000, "CNY"),
+                    "fund_flow_method_category": "provider_model",
+                },
+                {
+                    "id": "cp-mlcc",
+                    "name": "MLCC",
+                    "fund_flow": self.unit_evidence(2_241_000_000, "CNY"),
+                    "fund_flow_method_category": "provider_model",
+                },
+                {
+                    "id": "cp-msci",
+                    "name": "MSCI中国",
+                    "fund_flow": self.unit_evidence(-23_116_000_000, "CNY"),
+                    "fund_flow_method_category": "provider_model",
+                },
+                {
+                    "id": "cp-margin",
+                    "name": "融资融券",
+                    "fund_flow": self.unit_evidence(-18_933_000_000, "CNY"),
+                    "fund_flow_method_category": "provider_model",
+                },
+            ],
+        }
+        market["sections"]["sectors"]["items"][0]["leaders"] = [
+            {
+                "name": "科翔股份",
+                "code": "300476",
+                "change_pct": self.unit_evidence(20.0, "percent"),
+                "turnover_pct": self.unit_evidence(25.5, "percent"),
+                "note": "二线小票放量",
+            },
+            {
+                "name": "深南电路",
+                "change_pct": self.unit_evidence(-1.9, "percent"),
+                "fund_flow": self.unit_evidence(-165_000_000, "CNY"),
+                "fund_flow_method_category": "provider_model",
+                "turnover_pct": self.unit_evidence(1.16, "percent"),
+                "note": "核心票缩量休整",
+            },
+        ]
+        return market
+
+    def test_extended_structures_render_and_enter_summary(self):
+        market = self.with_extended_structures(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "extended.html"
+            path = self.write_json(tmp, "extended.json", market)
+            _, markdown_path, summary_path = self.run_generator(
+                path, tmp, html_out=html_path
+            )
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+
+        derived = summary["derived"]
+        ladder = derived["streak_distribution"]
+        self.assertEqual([tier["streak"] for tier in ladder["tiers"]], [6, 3, 2, 1])
+        self.assertEqual(ladder["total"], 80)
+        self.assertEqual(ladder["first_board_count"], 70)
+        self.assertEqual(ladder["continued_count"], 10)
+        self.assertAlmostEqual(ladder["first_board_share_pct"], 87.5)
+        self.assertEqual(ladder["highest_streak_count"], 1)
+
+        quality = derived["high_board_quality"]
+        self.assertEqual(quality["count"], 4)
+        self.assertEqual(quality["declared_fund_flow_count"], 4)
+        self.assertEqual(quality["inflow_count"], 3)
+        self.assertEqual(quality["outflow_count"], 1)
+        self.assertEqual(quality["boards"][0]["name"], "闽东电力")
+
+        concept = derived["concept_flows"]
+        self.assertEqual(concept["classification"], "东财概念")
+        self.assertEqual([item["id"] for item in concept["inflows"]], ["cp-pcb", "cp-mlcc"])
+        self.assertEqual([item["id"] for item in concept["outflows"]], ["cp-msci", "cp-margin"])
+
+        leaders = derived["sector_leaders"]
+        self.assertEqual(len(leaders), 1)
+        self.assertEqual(leaders[0]["id"], "sw-a")
+        # 有资金流的按金额降序排在前，缺资金流的排最后（缺失视为 -inf）。
+        self.assertEqual(
+            [row["name"] for row in leaders[0]["leaders"]], ["深南电路", "科翔股份"]
+        )
+
+        for phrase in ("连板梯队", "最高板质量", "概念层（东财概念", "板块内重点个股"):
+            self.assertIn(phrase, markdown)
+        self.assertIn("| 6 板 | 1 |", markdown)
+        self.assertIn("不构成个股推荐", markdown)
+        for phrase in ("连板梯队", "最高板质量", "概念层资金流", "板块内重点个股"):
+            self.assertIn(phrase, html)
+        self.assertNotIn("<script", html)
+
+    def test_undeclared_extended_structures_keep_legacy_output(self):
+        """四项结构全部缺省时，摘要不产生任何新键，报告不出现任何新段落。"""
+        market = self.with_extension(json.loads(MARKET.read_text(encoding="utf-8")))
+        with tempfile.TemporaryDirectory() as tmp:
+            _, markdown_path, summary_path = self.run_generator(
+                self.write_json(tmp, "legacy.json", market), tmp
+            )
+            markdown = markdown_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        for key in (
+            "streak_distribution",
+            "high_board_quality",
+            "concept_flows",
+            "sector_leaders",
+        ):
+            self.assertNotIn(key, summary["derived"])
+        for phrase in ("连板梯队", "最高板质量", "概念层（", "板块内重点个股"):
+            self.assertNotIn(phrase, markdown)
+        # 章节数不变：追加结构没有新增顶层章节，coverage 分母与旧版一致。
+        self.assertEqual(summary["coverage"]["unknown"], 0)
+
+    def test_rejects_ladder_that_disagrees_with_limit_up_and_highest_streak(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mismatch_total = self.with_extended_structures(
+                json.loads(MARKET.read_text(encoding="utf-8"))
+            )
+            tiers = mismatch_total["sections"]["short_term_sentiment"]["streak_distribution"]
+            next(item for item in tiers if item["streak"] == 1)["count"]["value"] = 69
+            total_result, _, _ = self.run_generator(
+                self.write_json(tmp, "total.json", mismatch_total),
+                tmp,
+                expected_returncode=2,
+            )
+
+            mismatch_max = self.with_extended_structures(
+                json.loads(MARKET.read_text(encoding="utf-8"))
+            )
+            tiers = mismatch_max["sections"]["short_term_sentiment"]["streak_distribution"]
+            next(item for item in tiers if item["streak"] == 6)["streak"] = 5
+            max_result, _, _ = self.run_generator(
+                self.write_json(tmp, "max.json", mismatch_max),
+                tmp,
+                expected_returncode=2,
+            )
+
+        self.assertIn(
+            "streak_distribution 各档家数之和必须等于breadth.limit_up",
+            total_result.stderr,
+        )
+        self.assertIn("streak_distribution 的最高档必须等于", max_result.stderr)
+
+    def test_rejects_high_board_above_declared_max_and_missing_quality(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            above = self.with_extended_structures(json.loads(MARKET.read_text(encoding="utf-8")))
+            above["sections"]["short_term_sentiment"]["high_boards"][0]["streak"] = 7
+            above_result, _, _ = self.run_generator(
+                self.write_json(tmp, "above.json", above), tmp, expected_returncode=2
+            )
+
+            hollow = self.with_extended_structures(json.loads(MARKET.read_text(encoding="utf-8")))
+            board = hollow["sections"]["short_term_sentiment"]["high_boards"][0]
+            board.pop("fund_flow")
+            board.pop("fund_flow_method_category")
+            board.pop("turnover_pct")
+            hollow_result, _, _ = self.run_generator(
+                self.write_json(tmp, "hollow.json", hollow), tmp, expected_returncode=2
+            )
+
+        self.assertIn("不能高于short_term_sentiment最高连板", above_result.stderr)
+        self.assertIn("至少需要fund_flow或turnover_pct之一", hollow_result.stderr)
+
+    def test_rejects_concept_view_sharing_industry_classification(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            market = self.with_extended_structures(json.loads(MARKET.read_text(encoding="utf-8")))
+            market["sections"]["sectors"]["concept_view"]["classification"] = "申万一级"
+            result, _, _ = self.run_generator(
+                self.write_json(tmp, "same.json", market), tmp, expected_returncode=2
+            )
+
+        self.assertIn("必须区别于sectors.classification", result.stderr)
+
+    def test_rejects_sector_leader_without_any_signal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            market = self.with_extended_structures(json.loads(MARKET.read_text(encoding="utf-8")))
+            market["sections"]["sectors"]["items"][0]["leaders"][0].pop("change_pct")
+            result, _, _ = self.run_generator(
+                self.write_json(tmp, "leader.json", market), tmp, expected_returncode=2
+            )
+
+        self.assertIn("至少需要change_pct或fund_flow之一", result.stderr)
 
 
 if __name__ == "__main__":

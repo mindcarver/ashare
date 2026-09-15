@@ -22,6 +22,25 @@
 
 优先级按上述顺序执行。`repair`缺少前一交易日指标时不能推断；若当前数据完整但无前值且未命中前三类，输出`neutral`，并标注“未评估修复”。
 
+## 多条件阈值体检（可选）
+
+`short_term_sentiment.health_thresholds` 声明后，生成器追加一张**逐条**体检表。它把散落的多条件清单变成可复算、可审计的枚举，与上面的状态分类互不替代。
+
+| 键 | 观察值来源 | 成立条件 |
+|---|---|---|
+| `limit_up_min` | `breadth.limit_up` | `observed >= threshold` |
+| `limit_down_max` | `breadth.limit_down` | `observed <= threshold` |
+| `open_board_rate_max_pct` | 本技能派生的炸板率 | `observed <= threshold` |
+| `promotion_rate_min_pct` | `prev_pool_performance.promotion_rate_pct` | `observed >= threshold` |
+| `highest_streak_min` | `short_term_sentiment.highest_streak` | `observed >= threshold` |
+
+规则边界：
+
+- **未声明即不体检**，不得套用任何隐藏默认阈值。
+- `*_min` 一律用 `>=`、`*_max` 一律用 `<=`，不做例外，便于复核。
+- 某项缺少观察值时（例如未提供 `prev_pool_performance`）列入 `unresolved`，**不计入** `evaluated_count`，也不当作失败。
+- 输出只有「逐条成立情况」与「可判定项中成立几项」，**不聚合成分数或等级**，不得据此推导入场、仓位或收益结论。
+
 ## 限制
 
 - 阈值不是收益预测，也不能直接推出加仓、减仓、空仓或个股交易结论。

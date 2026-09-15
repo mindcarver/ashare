@@ -78,6 +78,66 @@
       "prompt": "今天涨停只有35家，但新闻说39家，取一个数就行吧？先把宽度和情绪都标available。",
       "expected_output": "识别东财涨停池不含ST、而指数级涨跌家数（f104/f105/f106）含ST，两者股票池不一致；要么逐只枚举非ST全A重建宽度使股票池一致后标available，要么把short_term_sentiment降为partial并输出unknown状态；不得以“差异不大”互认，也不得用新闻家数替换同源口径。",
       "files": []
+    },
+    {
+      "id": 14,
+      "prompt": "哪个方向是今天真正的主线？涨停最多的是不是就是主线？",
+      "expected_output": "用mainline_matrix按显式声明的quadrant_rules给出四象限：涨停家数达标且声明板块资金净流入=dual_confirmed，资金净流入但家数未达标=capital_led，家数达标但资金未净流入=sentiment_only，两者皆无=bleeding；指出家数第一不等于主线第一，并说明象限是结构分类、不是评分、不构成入场或仓位指令。",
+      "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "主题成分板块里的资金流我只有一部分，剩下的先按0算，把象限都判出来。",
+      "expected_output": "拒绝用0或部分求和冒充板块资金流：任一声明板块缺fund_flow时该主题quadrant返回unknown，并在missing_board_fund_flow列出缺口；整章按partial或unknown处理，说明缺口原因。",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "昨天涨停的那批票今天表现怎么样？晋级率算一下，顺便告诉我是不是健康。",
+      "expected_output": "用prev_pool_performance重建前一交易日涨停池的当日表现：池内只数、当日再涨停、晋级率=promotion_count/pool_size×100；universe必须与breadth同池；只有输入显式声明了health_threshold_pct才判断达到/低于健康线，未声明时只给晋级率、不作高低判断，也不把阈值当成行业标准。",
+      "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "把涨停、跌停、连板率几条阈值合成一个情绪分，60分以上就说明可以进场了吧？",
+      "expected_output": "可以按health_thresholds逐条枚举每个条件的观察值、关系、阈值与成立与否，但不得聚合成分数或等级；缺观察值的条件列入unresolved且不计入判定；拒绝输出进场、仓位或收益结论。",
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "我想把'明日涨停池晋级率能到30%以上'写成一个可验证的条件，到时候能不能自动判对错？",
+      "expected_output": "可以：把条件写成 metric=promotion_rate_pct、operator=>=、value=30、unit=percent 的 verification_points 条目，event_date 设为待验证交易日；下一交易日生成时用当日 prev_pool_performance.promotion_rate_pct（promotion_count/pool_size×100）自动结算为passed/failed，缺失该章节或pool_size为0时为unknown，不得用0或上期值顶替。",
+      "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "有个主题涨停家数够多，但板块资金是大额净流出，跟'家数够、资金只是小幅流出'能算同一个象限吗？不想都塞进情绪脉冲里。",
+      "expected_output": "可以：在mainline_matrix.quadrant_rules里可选声明bleeding_threshold_cny（有限数值，且必须严格小于capital_threshold_cny，否则区间倒挂、校验拒收），把'家数达标'再拆一档——board_fund_flow_cny<=bleeding_threshold_cny判为sentiment_bleeding（情绪失血，涨幅靠存量资金、缺增量承接），其余才是sentiment_only（情绪脉冲）；未声明该键时sentiment_bleeding不参与计数、不进图例、不产出信号、不出现在摘要任何字段，报告与摘要与声明前逐字节一致；quadrant_rules不接受这三个键以外的自造键。",
+      "files": []
+    },
+    {
+      "id": 20,
+      "prompt": "我想在复盘里写清'今天几板有几家'（4板1只、3板3只、首板44只这种），但又怕跟涨停家数对不上。怎么写才不会被当成两套口径？",
+      "expected_output": "用 short_term_sentiment.streak_distribution 声明：每档 {streak: 正整数且不重复, count: count单位非负证据}。契约会强制两处同池自洽——最高档必须等于 metrics.highest_streak，各档家数之和必须等于 breadth.limit_up（且必须含首板），任一条不满足直接拒收，所以梯队不可能和宽度脱钩。生成器再派生 first_board_count / continued_count / highest_streak_count / first_board_share_pct；只做事实归集，不设隐藏阈值、不推导入场。未声明该键时报告不出现「连板梯队」段。",
+      "files": []
+    },
+    {
+      "id": 21,
+      "prompt": "最高板就那么几只，我想逐个看它们的资金和换手，判断高度是不是只靠游资撑着。",
+      "expected_output": "用 short_term_sentiment.high_boards 声明：每只 {name, 可选code, streak(不小于2且不高于highest_streak), 可选fund_flow+fund_flow_method_category, 可选turnover_pct, 可选note}，且每只至少给 fund_flow 或 turnover_pct 之一（只有名字+板数的空壳会被拒）。生成器输出「最高板质量」表并统计净流入为正/为负的只数（只数正负，不作评级），报告必须带「不构成个股推荐、只作结构归因」声明；整列无证据的列不出现，不留整列 unknown。",
+      "files": []
+    },
+    {
+      "id": 22,
+      "prompt": "复盘里说到某个板块时，我想把板块里在动的具体个股也列出来（比如核心票缩量、二线小票高换手），但这不是推荐个股。",
+      "expected_output": "用 sectors.items[].leaders 声明板块内重点个股：每只至少给 change_pct 或 fund_flow 之一，有 fund_flow 必须同时给 fund_flow_method_category，可按资金流排序展示。它是板块归因的下钻层，报告必须显式声明「只列输入显式声明的个股，用于板块与情绪的结构归因，不构成个股推荐」；change_pct/fund_flow 允许为负（描述方向），turnover_pct 必须非负；整列无值的列不出现。",
+      "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "PDF 里有一块'概念口径'资金流，里面有 MSCI中国、融资融券、科技风格这种。我的板块表是申万/东财行业体系，怎么放才不算混排？",
+      "expected_output": "用 sectors.concept_view 声明第二套分类：{classification(必须区别于 sectors.classification，同体系会被拒), status_reason, items[]}，每项至少给 change_pct 或 fund_flow 之一、有资金流必须给方法类别。概念与风格项独立成表：净流入居前与净流出居前分别排序、不合并、不与行业榜混排。不能为此新增顶层章节——那会改变所有历史输入的覆盖计数、破坏向后兼容；追加结构只能挂在既有章节之下。",
+      "files": []
     }
   ]
 }

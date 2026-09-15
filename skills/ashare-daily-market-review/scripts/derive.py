@@ -11,8 +11,19 @@ import json
 from pathlib import Path
 from typing import Any
 
+from analysis import (
+    derive_concept_flows,
+    derive_high_boards,
+    derive_mainline_matrix,
+    derive_prev_pool_performance,
+    derive_sector_leaders,
+    derive_sentiment_health_check,
+    derive_streak_distribution,
+    mainline_signals,
+    prev_pool_signal,
+)
 from schema import ReviewError, VERIFICATION_UNITS, parse_date, require_text, value
-from validate import normalized_sections, validate_input
+from validate import normalized_sections, upgrade_legacy_input, validate_input
 
 
 def derive_short_term_sentiment(
@@ -183,6 +194,34 @@ def derive(
         )
         derived["leading_sector"] = ordered[0]["name"]
         derived["lagging_sector"] = ordered[-1]["name"]
+
+    # 1.2 分析语义层：章节缺失时完全不产生新键，保证旧输入的报告与摘要逐字节不变。
+    prev_pool = derive_prev_pool_performance(sections)
+    if prev_pool is not None:
+        derived["prev_pool_performance"] = prev_pool
+        signals.extend(prev_pool_signal(prev_pool))
+    mainline = derive_mainline_matrix(sections)
+    if mainline is not None:
+        derived["mainline_matrix"] = mainline
+        signals.extend(mainline_signals(mainline))
+    health_check = derive_sentiment_health_check(sections, derived)
+    if health_check is not None:
+        derived["sentiment_health_check"] = health_check
+
+    # 1.2 发布后追加的四项可选结构（个股颗粒度）。与上面同一条纪律：
+    # 结构缺省时**不产生任何新键**，旧输入的报告与摘要保持逐字节不变。
+    ladder = derive_streak_distribution(sections)
+    if ladder is not None:
+        derived["streak_distribution"] = ladder
+    high_boards = derive_high_boards(sections)
+    if high_boards is not None:
+        derived["high_board_quality"] = high_boards
+    concepts = derive_concept_flows(sections)
+    if concepts is not None:
+        derived["concept_flows"] = concepts
+    leaders = derive_sector_leaders(sections)
+    if leaders is not None:
+        derived["sector_leaders"] = leaders
     return derived, signals
 
 
@@ -212,9 +251,12 @@ def load_history_entries(history_dir: Path) -> list[dict[str, Any]]:
         if expected_content_sha != actual_content_sha:
             raise ReviewError(f"历史快照内容SHA不匹配：{path}")
         snapshot_as_of = parse_date(envelope["snapshot"].get("as_of"), "history.as_of")
-        validate_input(envelope["snapshot"], snapshot_as_of)
+        # 历史快照按写入时的版本落盘；读取时先走同一条升级链，保证旧版本历史
+        # （1.0/1.1）不会被新版本契约拒收，也保证跨版本比较使用同一套字段语义。
+        restored = upgrade_legacy_input(envelope["snapshot"], input_sha)
+        validate_input(restored, snapshot_as_of)
         entries.append(
-            {"path": path, "input_sha256": input_sha, "data": envelope["snapshot"]}
+            {"path": path, "input_sha256": input_sha, "data": restored}
         )
     return entries
 
@@ -288,7 +330,7 @@ def history_metric_values(
     sections: dict[str, dict[str, Any]], derived: dict[str, Any]
 ) -> dict[str, float | None]:
     sentiment = derived.get("short_term_sentiment", {})
-    return {
+    metrics: dict[str, float | None] = {
         "primary_index_change_pct": derived.get("primary_index_change_pct"),
         "advancer_share_pct": derived.get("advancer_share_pct"),
         "turnover_amount": derived.get("turnover_amount"),
@@ -296,6 +338,12 @@ def history_metric_values(
         "open_board_rate_pct": sentiment.get("open_board_rate_pct"),
         "limit_balance": derived.get("limit_balance"),
     }
+    # 晋级率来自延续性检验章节：该章节缺失时不产生新键，旧输入的报告与摘要保持逐字节不变。
+    # 有了这一项，以 promotion_rate_pct 为条件的验证点才能在 event_date 当天自动结算。
+    prev_pool = derived.get("prev_pool_performance")
+    if prev_pool is not None:
+        metrics["promotion_rate_pct"] = prev_pool.get("promotion_rate_pct")
+    return metrics
 
 
 def derive_history(

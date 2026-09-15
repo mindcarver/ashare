@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""输入读取、Schema 1.0 归一化与全部契约校验。
+"""输入读取、Schema 归一化与全部契约校验。
 
 拆分自 generate_daily_review.py（审计 P2-5）。只做校验，不派生、不渲染。
+通用「证据—来源」断言在 `evidence.py`，1.2 新章节校验在 `validate_analysis.py`。
 """
 
 import copy
@@ -15,9 +16,21 @@ from datetime import date
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
-from schema import AVAILABILITY, FUND_METHODS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, VERIFICATION_METRICS, VERIFICATION_OPERATORS, VERIFICATION_UNITS, parse_date, parse_datetime, require_text, value
+from evidence import (
+    require_market_date,
+    validate_event,
+    validate_evidence,
+    validate_universe,
+    validate_verification_point,
+    validate_window,
+)
+from schema import AVAILABILITY, FUND_METHODS, HEALTH_THRESHOLD_KEYS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, parse_date, parse_datetime, require_text, value
+from validate_analysis import (
+    validate_extended_structures,
+    validate_mainline_matrix,
+    validate_prev_pool_performance,
+)
 
 
 def load_input(path: Path) -> tuple[dict[str, Any], str]:
@@ -79,7 +92,22 @@ def infer_legacy_fund_method(item: dict[str, Any]) -> str:
 
 
 def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, Any]:
-    if data.get("schema_version") != "1.0":
+    version = data.get("schema_version")
+    if version == SCHEMA_VERSION:
+        return data
+    if version == "1.1":
+        # 1.2 的新增章节与字段全部可选，旧输入语义完全不变，因此只需显式升级版本号
+        # 并留下可审计的迁移记录，绝不回填任何 1.2 专属字段。
+        migrated = copy.deepcopy(data)
+        migrated["schema_version"] = SCHEMA_VERSION
+        migrated["legacy_migration"] = {
+            "from": "1.1",
+            "warnings": [
+                "输入由Schema 1.1升级为1.2；新增章节与字段均为可选，未改写任何既有证据"
+            ],
+        }
+        return migrated
+    if version != "1.0":
         return data
     migrated = copy.deepcopy(data)
     market_date = require_text(migrated, "market_date")
@@ -95,7 +123,7 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         "supersedes_sha256": None,
         "raw_evidence_sha256": input_sha256,
     }
-    warnings = ["输入由Schema 1.0保守归一化为1.1；未伪造缺失字段"]
+    warnings = ["输入由Schema 1.0保守归一化；未伪造缺失字段"]
     sections = migrated.get("sections", {})
     breadth = sections.get("breadth", {})
     sentiment = sections.get("short_term_sentiment", {})
@@ -164,83 +192,6 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         warnings.append("旧版定性验证点保留展示，但不冒充机器可结算条件")
     migrated["legacy_migration"] = {"from": "1.0", "warnings": warnings}
     return migrated
-
-
-def validate_source(source: Any, field: str) -> None:
-    if not isinstance(source, dict):
-        raise ReviewError(f"{field}.source 必须是object")
-    for key in ("id", "name"):
-        if not isinstance(source.get(key), str) or not source[key].strip():
-            raise ReviewError(f"{field}.source.{key} 必须是非空字符串")
-    kind = source.get("kind", "external")
-    if kind == "derived":
-        refs = source.get("evidence_refs")
-        if not isinstance(refs, list) or not refs or not all(
-            isinstance(item, str) and item.strip() for item in refs
-        ):
-            raise ReviewError(f"{field}.source.evidence_refs 必须是非空字符串数组")
-        if source.get("url"):
-            raise ReviewError(f"{field}.source.kind=derived 时不能伪造url")
-        return
-    if kind != "external":
-        raise ReviewError(f"{field}.source.kind 不受支持")
-    if not isinstance(source.get("url"), str) or not source["url"].strip():
-        raise ReviewError(f"{field}.source.url 必须是非空字符串")
-    parsed = urlparse(source["url"])
-    is_web = parsed.scheme in {"http", "https"} and parsed.netloc
-    is_file = parsed.scheme == "file" and parsed.path.startswith("/")
-    if not (is_web or is_file):
-        raise ReviewError(f"{field}.source.url 必须是http(s)或绝对file URL")
-
-
-def validate_evidence(
-    evidence: Any,
-    field: str,
-    as_of: date,
-    expected_unit: str | None = None,
-    value_constraint: str = "any",
-) -> None:
-    if not isinstance(evidence, dict):
-        raise ReviewError(f"{field} 必须是object")
-    raw_value = evidence.get("value")
-    if isinstance(raw_value, bool) or not isinstance(raw_value, (int, float)):
-        raise ReviewError(f"{field}.value 必须是数值")
-    number = float(raw_value)
-    if not math.isfinite(number):
-        raise ReviewError(f"{field}.value 必须是有限数值")
-    if expected_unit == "count" and not number.is_integer():
-        raise ReviewError(f"{field}.value 使用count时必须是整数")
-    if value_constraint == "positive" and number <= 0:
-        raise ReviewError(f"{field}.value 必须是正的有限数值")
-    if value_constraint == "nonnegative" and number < 0:
-        raise ReviewError(f"{field}.value 必须是非负的有限数值")
-    unit = require_text(evidence, "unit", field)
-    if expected_unit and unit != expected_unit:
-        raise ReviewError(f"{field}.unit 必须是{expected_unit}")
-    observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")
-    published_at = parse_date(evidence.get("published_at"), f"{field}.published_at")
-    if observed_at > as_of:
-        raise ReviewError(f"{field}.observed_at 晚于 as-of")
-    if published_at > as_of:
-        raise ReviewError(f"{field}.published_at 晚于 as-of")
-    parse_datetime(evidence.get("fetched_at"), f"{field}.fetched_at")
-    validate_source(evidence.get("source"), field)
-
-
-def validate_event(item: Any, field: str, as_of: date, allow_future_event: bool) -> None:
-    if not isinstance(item, dict):
-        raise ReviewError(f"{field} 必须是object")
-    require_text(item, "title", field)
-    event_date = parse_date(item.get("event_date"), f"{field}.event_date")
-    published_at = parse_date(item.get("published_at"), f"{field}.published_at")
-    if not allow_future_event and event_date > as_of:
-        raise ReviewError(f"{field}.event_date 晚于 as-of")
-    if published_at > as_of:
-        raise ReviewError(f"{field}.published_at 晚于 as-of")
-    parse_datetime(item.get("fetched_at"), f"{field}.fetched_at")
-    validate_source(item.get("source"), field)
-
-
 def validate_snapshot(data: dict[str, Any], market_date: date, as_of: date) -> None:
     snapshot = data.get("snapshot")
     if not isinstance(snapshot, dict):
@@ -274,51 +225,6 @@ def validate_snapshot(data: dict[str, Any], market_date: date, as_of: date) -> N
         char not in "0123456789abcdef" for char in raw_hash
     ):
         raise ReviewError("snapshot.raw_evidence_sha256 必须是SHA-256")
-
-
-def validate_universe(universe: Any, field: str) -> None:
-    if not isinstance(universe, dict):
-        raise ReviewError(f"{field} 必须是object")
-    for key in ("id", "label", "population_rule"):
-        require_text(universe, key, field)
-    for key in ("includes_st", "includes_bse"):
-        if not isinstance(universe.get(key), bool):
-            raise ReviewError(f"{field}.{key} 必须是boolean")
-    exclusions = universe.get("exclusions")
-    if not isinstance(exclusions, list) or not all(
-        isinstance(item, str) and item.strip() for item in exclusions
-    ):
-        raise ReviewError(f"{field}.exclusions 必须是字符串数组")
-
-
-def validate_window(window: Any, field: str, market_date: date) -> None:
-    if not isinstance(window, dict):
-        raise ReviewError(f"{field}.window 必须是object")
-    trading_days = window.get("trading_days")
-    if isinstance(trading_days, bool) or not isinstance(trading_days, int) or trading_days < 1:
-        raise ReviewError(f"{field}.window.trading_days 必须是正整数")
-    if parse_date(window.get("end_at"), f"{field}.window.end_at") != market_date:
-        raise ReviewError(f"{field}.window.end_at 必须等于market_date")
-
-
-def validate_verification_point(item: Any, field: str, as_of: date) -> None:
-    validate_event(item, field, as_of, True)
-    require_text(item, "id", field)
-    condition = item.get("condition")
-    if not isinstance(condition, dict):
-        raise ReviewError(f"{field}.condition 必须是object")
-    if condition.get("metric") not in VERIFICATION_METRICS:
-        raise ReviewError(f"{field}.condition.metric 不受支持")
-    if condition.get("operator") not in VERIFICATION_OPERATORS:
-        raise ReviewError(f"{field}.condition.operator 不受支持")
-    target = condition.get("value")
-    if isinstance(target, bool) or not isinstance(target, (int, float)) or not math.isfinite(target):
-        raise ReviewError(f"{field}.condition.value 必须是有限数值")
-    unit = require_text(condition, "unit", f"{field}.condition")
-    if unit != VERIFICATION_UNITS[condition["metric"]]:
-        raise ReviewError(f"{field}.condition.unit 与metric不匹配")
-
-
 def validate_cutoff(value: Any, cutoff: datetime, field: str = "input") -> None:
     if isinstance(value, dict):
         if "fetched_at" in value:
@@ -351,20 +257,25 @@ def normalized_sections(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if availability not in AVAILABILITY:
             raise ReviewError(f"sections.{name}.availability 不受支持")
         require_text(section, "status_reason", f"sections.{name}")
+        caveat = section.get("caveat")
+        if caveat is not None and (not isinstance(caveat, str) or not caveat.strip()):
+            raise ReviewError(f"sections.{name}.caveat 必须是非空字符串")
         if availability == "unknown" and any(
-            section.get(name) for name in ("items", "metrics", "previous_metrics")
+            section.get(name)
+            for name in (
+                "items",
+                "metrics",
+                "previous_metrics",
+                "themes",
+                # 1.2 发布后追加的可选结构：unknown 章节同样不得携带它们。
+                "streak_distribution",
+                "high_boards",
+                "concept_view",
+            )
         ):
             raise ReviewError(f"sections.{name} 标记unknown时不能携带数值数据")
         sections[name] = section
     return sections
-
-
-def require_market_date(evidence: dict[str, Any], field: str, market_date: date) -> None:
-    observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")
-    if observed_at != market_date:
-        raise ReviewError(f"{field} 标记available时observed_at必须等于market_date")
-
-
 def validate_sections(
     sections: dict[str, dict[str, Any]], as_of: date, market_date: date
 ) -> None:
@@ -491,6 +402,21 @@ def validate_sections(
                 {"metrics": previous}, "limit_attempts"
             ):
                 raise ReviewError("previous_metrics.open_board_failed 不能大于limit_attempts")
+        thresholds = sentiment.get("health_thresholds")
+        if thresholds is not None:
+            if not isinstance(thresholds, dict) or not thresholds:
+                raise ReviewError(
+                    "sections.short_term_sentiment.health_thresholds 必须是非空object"
+                )
+            for key, number in thresholds.items():
+                if key not in HEALTH_THRESHOLD_KEYS:
+                    raise ReviewError(f"health_thresholds.{key} 不受支持")
+                if (
+                    isinstance(number, bool)
+                    or not isinstance(number, (int, float))
+                    or not math.isfinite(number)
+                ):
+                    raise ReviewError(f"health_thresholds.{key} 必须是有限数值")
 
     turnover = sections["turnover"]
     if turnover["availability"] != "unknown":
@@ -529,15 +455,27 @@ def validate_sections(
         items = sectors.get("items")
         if not isinstance(items, list) or not items:
             raise ReviewError("sections.sectors.items 必须是非空数组")
+        sector_ids: set[str] = set()
         for index, item in enumerate(items):
             field = f"sections.sectors.items[{index}]"
             if not isinstance(item, dict):
                 raise ReviewError(f"{field} 必须是object")
             require_text(item, "id", field)
             require_text(item, "name", field)
+            if item["id"] in sector_ids:
+                raise ReviewError("sectors.items.id 不能重复")
+            sector_ids.add(item["id"])
             validate_evidence(item.get("change_pct"), f"{field}.change_pct", as_of, "percent")
+            fund_flow = item.get("fund_flow")
+            if fund_flow is not None:
+                validate_evidence(fund_flow, f"{field}.fund_flow", as_of, "CNY")
+                method = item.get("fund_flow_method_category")
+                if method not in FUND_METHODS:
+                    raise ReviewError(f"{field}.fund_flow_method_category 不受支持")
             if sectors["availability"] == "available":
                 require_market_date(item["change_pct"], f"{field}.change_pct", market_date)
+                if fund_flow is not None:
+                    require_market_date(fund_flow, f"{field}.fund_flow", market_date)
 
     for section_name in ("funds", "style"):
         section = sections[section_name]
@@ -587,6 +525,11 @@ def validate_sections(
             raise ReviewError("sections.events.items 必须是非空数组")
         for index, item in enumerate(items):
             validate_event(item, f"sections.events.items[{index}]", as_of, False)
+
+    # 1.2 新增章节：在同一次校验里检查跨章节引用，避免渲染阶段才发现引用悬空。
+    validate_mainline_matrix(sections, as_of, market_date)
+    validate_prev_pool_performance(sections, as_of, market_date)
+    validate_extended_structures(sections, as_of, market_date)
 
 
 def validate_input(
