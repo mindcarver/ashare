@@ -136,4 +136,4 @@ Schema 1.3验证点必须新增：
 - `theme`：`limit_up_count/board_fund_flow_cny/top1_positive_share_pct`。
 - `benchmark`：`change_pct/volume_ratio_5d/ma20_distance_pct/ma60_distance_pct/return_percentile_120d/volume_percentile_120d`。
 
-scope决定metric与unit，subject id/label必须与当前输入实体完全一致；标题也必须包含非市场subject名称/ID及对应metric语义词。旧1.2验证点只有在标题明确匹配其全市场metric时才迁为`market`；否则降为定性观察，防止“某个股能否连板”被全市场涨停净差错误结算。
+scope决定metric与unit，subject id/label必须与当前输入实体完全一致；标题也必须包含非市场subject名称/ID及对应metric语义词，并且不能引用另一个已声明实体。联合多个板块的贡献分解不下放为任一单板块的验证观察值。旧1.2验证点只有在标题明确匹配其全市场metric时才迁为`market`；否则降为定性观察，防止“某个股能否连板”被全市场涨停净差错误结算。

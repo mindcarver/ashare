@@ -504,10 +504,13 @@ def verification_observation_index(
     board_concentrations: dict[str, list[float]] = {}
     for group in (deep.get("capital_co_movement") or {}).get("groups", []):
         top1 = group.get("top1_positive_share_pct")
-        if not group.get("contributions_complete") or top1 is None:
+        if (
+            not group.get("contributions_complete")
+            or top1 is None
+            or len(group["board_ids"]) != 1
+        ):
             continue
-        for board_id in group["board_ids"]:
-            board_concentrations.setdefault(board_id, []).append(top1)
+        board_concentrations.setdefault(group["board_ids"][0], []).append(top1)
     for board_id, candidates in board_concentrations.items():
         if board_id in sectors and len(candidates) == 1:
             sectors[board_id]["top1_positive_share_pct"] = candidates[0]

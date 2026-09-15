@@ -575,6 +575,19 @@ def validate_verification_subjects(
             raise ReviewError(f"{field}.subject.id 未在当前输入中声明")
         if subject["label"] != labels[subject["scope"]][subject["id"]]:
             raise ReviewError(f"{field}.subject.label 与当前输入实体名称不一致")
+        title = point["title"]
+        for scope, entities in labels.items():
+            if scope == "market":
+                continue
+            for entity_id, entity_label in entities.items():
+                if scope == subject["scope"] and entity_id == subject["id"]:
+                    continue
+                mentions_id = len(entity_id) >= 4 and entity_id in title
+                mentions_label = len(entity_label) >= 2 and entity_label in title
+                if mentions_id or mentions_label:
+                    raise ReviewError(
+                        f"{field}.title 引用了非subject实体{scope}:{entity_label}"
+                    )
 
 
 def validate_deep_analysis(

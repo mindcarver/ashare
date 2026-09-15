@@ -370,6 +370,19 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertIsNone(observations["sector"]["sw-a"]["top1_positive_share_pct"])
         self.assertNotIn(">None<", html)
 
+    def test_joint_board_concentration_does_not_settle_single_board_metric(self):
+        market = self.deep_market()
+        group = market["deep_analysis"]["capital_co_movement"]["groups"][0]
+        group["board_ids"] = ["sw-a", "sw-c"]
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, _ = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        observations = verification_observation_index(
+            market["sections"], summary["derived"]
+        )
+        self.assertIsNone(observations["sector"]["sw-a"]["top1_positive_share_pct"])
+        self.assertIsNone(observations["sector"]["sw-c"]["top1_positive_share_pct"])
+
     def test_sentiment_cycle_requires_evidence_and_renders_unknown_as_unknown(self):
         empty = self.deep_market()
         for point in empty["deep_analysis"]["sentiment_cycle"]["points"]:
@@ -439,15 +452,20 @@ class DeepAnalysisTests(unittest.TestCase):
         unknown["verification_points"][0]["title"] = "不存在个股能否达到3连板"
         mismatched_title = self.deep_market()
         mismatched_title["verification_points"][0]["title"] = "超声电子能否完成4板"
+        mismatched_entity = self.deep_market()
+        mismatched_entity["verification_points"][0]["title"] = "华正新材成交额能否超过100亿元"
         with tempfile.TemporaryDirectory() as tmp:
             first, *_ = self.run_generator(wrong_metric, tmp, expected=2)
         with tempfile.TemporaryDirectory() as tmp:
             second, *_ = self.run_generator(unknown, tmp, expected=2)
         with tempfile.TemporaryDirectory() as tmp:
             third, *_ = self.run_generator(mismatched_title, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            fourth, *_ = self.run_generator(mismatched_entity, tmp, expected=2)
         self.assertIn("condition.metric 不受支持", first.stderr)
         self.assertIn("subject.id 未在当前输入中声明", second.stderr)
         self.assertIn("title 与condition.metric语义不一致", third.stderr)
+        self.assertIn("title 引用了非subject实体stock:华正新材", fourth.stderr)
 
     def test_legacy_mismatched_verifications_become_qualitative(self):
         market = self.deep_market()
