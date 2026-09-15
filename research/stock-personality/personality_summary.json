@@ -1,0 +1,155 @@
+{
+  "archetype_table": [
+    {
+      "archetype": "wire_legend",
+      "count": 44,
+      "label": "连板妖股型",
+      "mean_bury_rate_pct": 29.0787,
+      "mean_composite": 60.8964,
+      "mean_next_day_pct": 3.1703,
+      "mean_selected_per_year": 38.4318,
+      "share_pct": 14.62
+    },
+    {
+      "archetype": "hot_volatile",
+      "count": 12,
+      "label": "高波动题材型",
+      "mean_bury_rate_pct": 32.1302,
+      "mean_composite": 56.2147,
+      "mean_next_day_pct": 1.3106,
+      "mean_selected_per_year": 45.5833,
+      "share_pct": 3.99
+    },
+    {
+      "archetype": "emotional_active",
+      "count": 23,
+      "label": "情绪活跃型",
+      "mean_bury_rate_pct": 24.7988,
+      "mean_composite": 70.2318,
+      "mean_next_day_pct": 3.0893,
+      "mean_selected_per_year": 43.4783,
+      "share_pct": 7.64
+    },
+    {
+      "archetype": "bury_trap",
+      "count": 46,
+      "label": "高埋人风险型",
+      "mean_bury_rate_pct": 49.8753,
+      "mean_composite": 33.4289,
+      "mean_next_day_pct": -0.2028,
+      "mean_selected_per_year": 29.2609,
+      "share_pct": 15.28
+    },
+    {
+      "archetype": "trend_slow_bull",
+      "count": 29,
+      "label": "趋势慢牛型",
+      "mean_bury_rate_pct": 28.2449,
+      "mean_composite": 47.1044,
+      "mean_next_day_pct": 2.6098,
+      "mean_selected_per_year": 21.6552,
+      "share_pct": 9.63
+    },
+    {
+      "archetype": "weight_steady",
+      "count": 8,
+      "label": "权重稳重型",
+      "mean_bury_rate_pct": 24.7065,
+      "mean_composite": 50.7349,
+      "mean_next_day_pct": 2.3744,
+      "mean_selected_per_year": 21.25,
+      "share_pct": 2.66
+    },
+    {
+      "archetype": "ordinary",
+      "count": 139,
+      "label": "普通型",
+      "mean_bury_rate_pct": 29.3723,
+      "mean_composite": 49.3229,
+      "mean_next_day_pct": 2.0832,
+      "mean_selected_per_year": 29.0072,
+      "share_pct": 46.18
+    }
+  ],
+  "caveats": [
+    "维度分是**池内百分位**，只表示在这批股票里的相对位置，不是绝对好坏，换池子必须重算。",
+    "涨跌幅由前复权序列的相邻收盘价算出：除权日的涨跌幅会失真，该日若真实涨停可能被低估。",
+    "最高连板按相邻交易日判定，遇到停牌即断板；连板门槛与板块无关，ST 与北交所涨跌幅只有 5%、更易连板，因此高连板样本会偏向 ST，解释时必须说明。",
+    "龙虎榜的 D1/D2/D5/D10 是上榜后的事后涨跌幅，只用于统计已发生的历史事件，不用于当下判断。",
+    "「被选中次数/年」按全部龙虎榜上榜日与异动日去重计算；龙虎榜净额门槛只作用于资金关注度维度，不改变被选中次数。",
+    "原型规则按固定优先级首个命中即归类；普通型代表「未获足够证据归类」，不代表质地普通。",
+    "埋人率与溢价质量只在有异动事件的样本上计算，事件数少的个股统计噪声大。",
+    "板块归属取快照日的东财行业，历史上行业分类可能变动；同一只股票在不同时期可能属不同板块。",
+    "流动性容量用的是**流通市值**口径（东财快照直接披露），代理「装得下多少成交」；这是体量代理，不是实际成交额。"
+  ],
+  "overview": {
+    "capacity_metric": "float_cap_cny",
+    "mean_bury_rate_pct": 32.0169,
+    "mean_composite": 50.5829,
+    "mean_next_day_pct": 1.9964,
+    "mean_selected_per_year": 31.2757,
+    "scored": 283,
+    "scored_share_pct": 94.02,
+    "total": 301,
+    "trading_days": 243,
+    "unscored": 18,
+    "window_end": "2026-09-15",
+    "window_start": "2025-09-15"
+  },
+  "quadrant_counts": {
+    "hh": 93,
+    "hl": 58,
+    "lh": 56,
+    "ll": 91
+  },
+  "run": {
+    "as_of": "2026-09-15",
+    "capacity_metric": "float_cap_cny",
+    "input_sha256": "11cd4cdf537d210d853414181ad8478439bc7a5297535087d72331ef2cef7930",
+    "universe": {
+      "count": 301,
+      "description": "近 12 个月登上东财龙虎榜的股票，按上榜次数降序取前 301 只；东财全A快照共 5915 只，龙虎榜命中 3628 只。北交所 226 只因日K源不覆盖而排除，日线不足 8 只被剔除（其中 291 只因日K源中断未尝试）。交易日历来源：池内日线日期并集（腾讯日K不可得时的降级口径）。",
+      "excluded_count": 8,
+      "name": "lhb-12m-top301",
+      "selection_rule": "龙虎榜命中次数降序 + 日线不少于 60 根"
+    },
+    "window": {
+      "end": "2026-09-15",
+      "start": "2025-09-15",
+      "trading_days": 243
+    }
+  },
+  "schema_version": "1.0",
+  "signals": [
+    {
+      "evidence": "map.points + 全样本 d1/d2 中位切点",
+      "kind": "quadrant_structure",
+      "text": "股性地图分布：高异动·高溢价 93 只、高异动·低溢价 58 只，高异动样本共 151 只（占 50.17%）。低溢价一侧代表被选中频繁但次日承接偏弱的结构。"
+    },
+    {
+      "evidence": "archetype == bury_trap",
+      "kind": "bury_concentration",
+      "text": "高埋人风险型 46 只，集中在：未知行业 5 只、IT服务Ⅱ 3 只、汽车零部件 3 只。该原型要求埋人风险进入池内前段且溢价质量低于 40 分位。"
+    },
+    {
+      "evidence": "bury_trap ∩ avg_next_day_pct < 0",
+      "kind": "negative_premium",
+      "text": "高埋人风险型中有 14 只异动后次日平均涨跌幅为负（最低 -9.09%），属结构描述，不构成任何操作判断。"
+    },
+    {
+      "evidence": "max_streak ≥ 连板阈值",
+      "kind": "legend_streak",
+      "text": "连板妖股型 44 只，窗口内最高连板为 *ST中迪（000609）的 19 板。"
+    },
+    {
+      "evidence": "composite is None",
+      "kind": "coverage",
+      "text": "18 只因维度缺证据未给综合分（多为异动事件样本不足），已在明细表标为空缺，未用 0 顶替。"
+    },
+    {
+      "evidence": "sector_table 排序首行 ∩ count ≥ 3",
+      "kind": "sector_ranking",
+      "text": "板块平均股性分最高为 燃气Ⅱ（66.2072 分，3 只）；仅统计样本 ≥ 3 只的板块，这是池内相对排序，不是板块评级。"
+    }
+  ]
+}
