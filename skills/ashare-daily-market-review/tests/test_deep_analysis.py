@@ -11,6 +11,9 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts" / "generate_daily_review.py"
 MARKET = Path(__file__).parent / "fixtures" / "market.json"
+sys.path.insert(0, str(SKILL_DIR / "scripts"))
+
+from deep_analysis import verification_observation_index  # noqa: E402
 
 
 SOURCE = {"id": "deep-fixture", "name": "深度测试源", "url": "https://example.com/deep"}
@@ -281,6 +284,8 @@ class DeepAnalysisTests(unittest.TestCase):
             deep["capital_co_movement"]["groups"][0]["pseudo_sector_status"],
             "flagged",
         )
+        outflow = deep["capital_co_movement"]["groups"][1]
+        self.assertEqual(outflow["opposite_direction_count"], 0)
         self.assertIn("## 深度分析层（Schema 1.3）", report)
         self.assertIn("产业催化证据链", report)
         self.assertIn("同日流出与流入只构成共现候选", report)
@@ -345,6 +350,49 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertIn("禁止不可复算的综合情绪分", second.stderr)
         self.assertIn("贡献分解之和必须等于", third.stderr)
 
+    def test_incomplete_contributions_do_not_produce_concentration_or_observation(self):
+        market = self.deep_market()
+        group = market["deep_analysis"]["capital_co_movement"]["groups"][0]
+        group["contributions_complete"] = False
+        group["contributions"] = group["contributions"][:1]
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, html_path = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        derived_group = summary["derived"]["deep_analysis"]["capital_co_movement"]["groups"][0]
+        self.assertIsNone(derived_group["top1_positive_share_pct"])
+        self.assertIsNone(derived_group["absolute_hhi"])
+        self.assertIsNone(derived_group["opposite_direction_count"])
+        self.assertEqual(derived_group["pseudo_sector_status"], "unknown")
+        observations = verification_observation_index(
+            market["sections"], summary["derived"]
+        )
+        self.assertIsNone(observations["sector"]["sw-a"]["top1_positive_share_pct"])
+        self.assertNotIn(">None<", html)
+
+    def test_sentiment_cycle_requires_evidence_and_renders_unknown_as_unknown(self):
+        empty = self.deep_market()
+        for point in empty["deep_analysis"]["sentiment_cycle"]["points"]:
+            point["metrics"] = {}
+        partial = self.deep_market()
+        cycle = partial["deep_analysis"]["sentiment_cycle"]
+        cycle["availability"] = "partial"
+        cycle["status_reason"] = "当前涨停家数缺失"
+        cycle["points"][-1]["metrics"].pop("limit_up")
+        with tempfile.TemporaryDirectory() as tmp:
+            first, *_ = self.run_generator(empty, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, summary_path, html_path = self.run_generator(partial, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        self.assertIn("metrics 不能为空", first.stderr)
+        self.assertIsNone(
+            summary["derived"]["deep_analysis"]["sentiment_cycle"]["new_window_low_limit_up"]
+        )
+        self.assertIn("窗口新低：未知", report)
+        self.assertIn("新低 未知", html)
+
     def test_rejects_catalyst_without_counterevidence_and_lhb_intent(self):
         catalyst = self.deep_market()
         catalyst["deep_analysis"]["catalyst_chains"]["items"][0]["counter_evidence"] = []
@@ -388,12 +436,18 @@ class DeepAnalysisTests(unittest.TestCase):
             "value": 3,
             "unit": "count",
         }
+        unknown["verification_points"][0]["title"] = "不存在个股能否达到3连板"
+        mismatched_title = self.deep_market()
+        mismatched_title["verification_points"][0]["title"] = "超声电子能否完成4板"
         with tempfile.TemporaryDirectory() as tmp:
             first, *_ = self.run_generator(wrong_metric, tmp, expected=2)
         with tempfile.TemporaryDirectory() as tmp:
             second, *_ = self.run_generator(unknown, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            third, *_ = self.run_generator(mismatched_title, tmp, expected=2)
         self.assertIn("condition.metric 不受支持", first.stderr)
         self.assertIn("subject.id 未在当前输入中声明", second.stderr)
+        self.assertIn("title 与condition.metric语义不一致", third.stderr)
 
     def test_legacy_mismatched_verifications_become_qualitative(self):
         market = self.deep_market()

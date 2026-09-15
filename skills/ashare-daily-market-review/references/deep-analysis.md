@@ -102,6 +102,7 @@
 - `inflow`总额必须为正，`outflow`必须为负。
 - 完整贡献分解至少两只，逐只之和必须等于group总额。
 - 派生Top1正流入占比、绝对流量HHI、反向个股数、板块引用重叠率和成分股跨组重叠率。
+- `contributions_complete=false`时Top1、HHI、反向个股数和依赖它们的自动验证全部保持unknown；不得用样本子集冒充整个板块。
 - `pseudo_sector_top1_share_pct`由输入声明。板块上涨不强、净流入为正且Top1占比越线时标`flagged`；贡献不完整时只能unknown。
 - `relations[].from_group_id`必须指向outflow，`to_group_id`必须指向inflow；每条关系必须有`hypothesis`和非空`counter_evidence`。
 
@@ -135,4 +136,4 @@ Schema 1.3验证点必须新增：
 - `theme`：`limit_up_count/board_fund_flow_cny/top1_positive_share_pct`。
 - `benchmark`：`change_pct/volume_ratio_5d/ma20_distance_pct/ma60_distance_pct/return_percentile_120d/volume_percentile_120d`。
 
-scope决定metric与unit，subject id/label必须与当前输入实体完全一致。旧1.2验证点只有在标题明确匹配其全市场metric时才迁为`market`；否则降为定性观察，防止“某个股能否连板”被全市场涨停净差错误结算。
+scope决定metric与unit，subject id/label必须与当前输入实体完全一致；标题也必须包含非市场subject名称/ID及对应metric语义词。旧1.2验证点只有在标题明确匹配其全市场metric时才迁为`market`；否则降为定性观察，防止“某个股能否连板”被全市场涨停净差错误结算。

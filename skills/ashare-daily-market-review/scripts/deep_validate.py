@@ -307,6 +307,14 @@ def validate_sentiment_cycle(
         metrics = point.get("metrics")
         if not isinstance(metrics, dict):
             raise ReviewError(f"{field}.metrics 必须是object")
+        if not metrics:
+            raise ReviewError(f"{field}.metrics 不能为空；无数值证据时应使用unknown组件")
+        if component["availability"] == "available" and any(
+            key not in metrics for key in ("limit_up", "limit_down", "seal_rate_pct")
+        ):
+            raise ReviewError(
+                f"available sentiment_cycle 的每个point必须有limit_up/limit_down/seal_rate_pct"
+            )
         for key, unit, constraint in (
             ("limit_up", "count", "nonnegative"),
             ("limit_down", "count", "nonnegative"),

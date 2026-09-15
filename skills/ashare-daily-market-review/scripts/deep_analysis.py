@@ -214,7 +214,9 @@ def derive_sentiment_cycle(component: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _concentration(contributions: list[dict[str, Any]]) -> dict[str, Any]:
+def _concentration(
+    contributions: list[dict[str, Any]], role: str
+) -> dict[str, Any]:
     values = [float(item["fund_flow"]["value"]) for item in contributions]
     positive = [value for value in values if value > 0]
     absolute = [abs(value) for value in values]
@@ -230,7 +232,7 @@ def _concentration(contributions: list[dict[str, Any]]) -> dict[str, Any]:
             else None
         ),
         "opposite_direction_count": sum(
-            value < 0 for value in values
+            value < 0 if role == "inflow" else value > 0 for value in values
         ),
     }
 
@@ -247,17 +249,26 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
             }
             for item in group.get("contributions", [])
         ]
-        concentration = _concentration(group.get("contributions", []))
         if not group["contributions_complete"]:
+            concentration = {
+                "top1_positive_share_pct": None,
+                "absolute_hhi": None,
+                "opposite_direction_count": None,
+            }
             pseudo_status = "unknown"
-        elif (
-            float(group["total_fund_flow"]["value"]) > 0
+        else:
+            concentration = _concentration(
+                group.get("contributions", []), group["role"]
+            )
+        if (
+            group["contributions_complete"]
+            and float(group["total_fund_flow"]["value"]) > 0
             and float(group["change_pct"]["value"]) <= 0
             and concentration["top1_positive_share_pct"] is not None
             and concentration["top1_positive_share_pct"] >= threshold
         ):
             pseudo_status = "flagged"
-        else:
+        elif group["contributions_complete"]:
             pseudo_status = "clear"
         groups.append(
             {
@@ -490,10 +501,16 @@ def verification_observation_index(
         }
         for item in (derived.get("mainline_matrix") or {}).get("themes", [])
     }
+    board_concentrations: dict[str, list[float]] = {}
     for group in (deep.get("capital_co_movement") or {}).get("groups", []):
+        top1 = group.get("top1_positive_share_pct")
+        if not group.get("contributions_complete") or top1 is None:
+            continue
         for board_id in group["board_ids"]:
-            if board_id in sectors:
-                sectors[board_id]["top1_positive_share_pct"] = group.get("top1_positive_share_pct")
+            board_concentrations.setdefault(board_id, []).append(top1)
+    for board_id, candidates in board_concentrations.items():
+        if board_id in sectors and len(candidates) == 1:
+            sectors[board_id]["top1_positive_share_pct"] = candidates[0]
     benchmarks = {
         item["id"]: {
             key: item.get(key)

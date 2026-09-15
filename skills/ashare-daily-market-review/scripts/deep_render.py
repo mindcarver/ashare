@@ -24,6 +24,12 @@ def _time(value: str | None) -> str:
     return value.split("T")[-1].split("+")[0]
 
 
+def _yes_no_unknown(value: bool | None) -> str:
+    if value is None:
+        return "未知"
+    return "是" if value else "否"
+
+
 def markdown_security(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
         return [f"> UNKNOWN：{component['status_reason']}", ""]
@@ -96,7 +102,7 @@ def markdown_cycle(component: dict[str, Any]) -> list[str]:
         "",
         f"- 当前：`{component['current_state']}`；涨停较前值 {fmt_level(component['limit_up_change'], 'count')}；"
         f"跌停较前值 {fmt_level(component['limit_down_change'], 'count')}；窗口新低："
-        f"{'是' if component['new_window_low_limit_up'] else '否'}。",
+        f"{_yes_no_unknown(component['new_window_low_limit_up'])}。",
         f"- {component['note']}。",
         "",
         "| 日期 | 状态 | 涨停 | 跌停 | 封板率 | 晋级率 | 规则 |",
@@ -131,7 +137,7 @@ def markdown_capital(component: dict[str, Any]) -> list[str]:
             f"| {item['name']} | {item['role']} | {_pct(item['change_pct'])} | "
             f"{_flow(item['total_fund_flow_cny'])} | {_pct(top1)} | "
             f"{item['absolute_hhi'] if item['absolute_hhi'] is not None else 'unknown'} | "
-            f"{item['opposite_direction_count']} | {item['pseudo_sector_status']} |"
+            f"{fmt_level(item['opposite_direction_count'], 'count')} | {item['pseudo_sector_status']} |"
         )
     if component["overlaps"]:
         lines.extend(["", "重叠警告："])
@@ -308,7 +314,7 @@ def html_deep_analysis(deep: dict[str, Any] | None) -> str:
         ]
         panels.append(
             '<article class="panel wide"><div class="panel-head"><h2>情绪周期</h2>'
-            f'<span>{html_text(cycle["current_state"])} · 新低 {"是" if cycle["new_window_low_limit_up"] else "否"}</span></div>'
+            f'<span>{html_text(cycle["current_state"])} · 新低 {_yes_no_unknown(cycle["new_window_low_limit_up"])}</span></div>'
             + _html_table(["日期", "状态", "涨停", "跌停", "封板率", "晋级率", "公开规则"], rows)
             + f'<p class="section-note">{html_text(cycle["note"])}</p></article>'
         )
@@ -322,7 +328,7 @@ def html_deep_analysis(deep: dict[str, Any] | None) -> str:
                 html_text(_flow(item["total_fund_flow_cny"])),
                 html_text(_pct(item["top1_positive_share_pct"])),
                 html_text(item["absolute_hhi"] if item["absolute_hhi"] is not None else "unknown"),
-                html_text(item["opposite_direction_count"]),
+                html_text(fmt_level(item["opposite_direction_count"], "count")),
                 html_text(item["pseudo_sector_status"]),
             ]
             for item in capital["groups"]

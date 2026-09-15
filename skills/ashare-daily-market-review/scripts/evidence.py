@@ -16,6 +16,45 @@ from urllib.parse import urlparse
 from schema import ReviewError, VERIFICATION_OPERATORS, VERIFICATION_UNITS_BY_SCOPE, parse_date, parse_datetime, require_text
 
 
+VERIFICATION_TITLE_TERMS = {
+    "market": {
+        "primary_index_change_pct": ("指数", "上证"),
+        "advancer_share_pct": ("上涨家数占比", "上涨参与度"),
+        "turnover_amount": ("成交额", "两市成交"),
+        "turnover_vs_previous_pct": ("成交额较前", "成交变化"),
+        "open_board_rate_pct": ("炸板率",),
+        "limit_balance": ("涨停家数减跌停家数", "涨停净差"),
+        "promotion_rate_pct": ("晋级率",),
+    },
+    "stock": {
+        "streak": ("连板", "板"),
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "fund_flow_1d_cny": ("资金", "净额", "主力"),
+        "sealed_order_amount_cny": ("封单",),
+        "break_count": ("炸板", "开板"),
+    },
+    "sector": {
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "fund_flow_cny": ("资金", "净流入", "净流出"),
+        "top1_positive_share_pct": ("Top1", "首位贡献", "最大贡献"),
+        "first_board_count": ("首板",),
+    },
+    "theme": {
+        "limit_up_count": ("涨停",),
+        "board_fund_flow_cny": ("资金", "净流入", "净流出"),
+        "top1_positive_share_pct": ("Top1", "首位贡献", "最大贡献"),
+    },
+    "benchmark": {
+        "change_pct": ("涨跌", "涨幅", "跌幅"),
+        "volume_ratio_5d": ("量比",),
+        "ma20_distance_pct": ("MA20", "20日线"),
+        "ma60_distance_pct": ("MA60", "60日线"),
+        "return_percentile_120d": ("收益120日分位", "涨跌120日分位"),
+        "volume_percentile_120d": ("成交120日分位", "量能120日分位"),
+    },
+}
+
+
 def validate_source(source: Any, field: str) -> None:
     if not isinstance(source, dict):
         raise ReviewError(f"{field}.source 必须是object")
@@ -136,6 +175,14 @@ def validate_verification_point(item: Any, field: str, as_of: date) -> None:
     unit = require_text(condition, "unit", f"{field}.condition")
     if unit != VERIFICATION_UNITS_BY_SCOPE[scope][metric]:
         raise ReviewError(f"{field}.condition.unit 与scope/metric不匹配")
+    title = item["title"]
+    subject_id = subject["id"]
+    subject_label = subject["label"]
+    if scope != "market" and subject_label not in title and subject_id not in title:
+        raise ReviewError(f"{field}.title 必须包含subject名称或ID")
+    title_terms = VERIFICATION_TITLE_TERMS[scope][metric]
+    if not any(term in title for term in title_terms):
+        raise ReviewError(f"{field}.title 与condition.metric语义不一致")
 
 def require_market_date(evidence: dict[str, Any], field: str, market_date: date) -> None:
     observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")
