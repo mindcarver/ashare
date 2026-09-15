@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-09-15",
+  "window": {
+    "start": "2025-09-15",
+    "end": "2026-09-15",
+    "trading_days": 243
+  },
+  "capacity_metric": "turnover_avg_pct",
+  "thresholds": {
+    "limit_up_pct": {
+      "main": 9.8,
+      "gem": 19.8,
+      "star": 19.8,
+      "bse": 29.8,
+      "st": 4.8
+    },
+    "spike_pct": 7.0,
+    "dump_drawdown_pct": -8.0,
+    "dump_window_days": 5,
+    "lhb_net_min_cny": 5000000,
+    "score_weights": {
+      "d1": 0.2,
+      "d2": 0.2,
+      "d3": 0.2,
+      "d4": 0.1,
+      "d5": 0.15,
+      "d6": 0.15
+    },
+    "archetype": {
+      "high": 70,
+      "mid": 55,
+      "low": 40,
+      "legend_streak": 6,
+      "capacity_high": 70,
+      "elastic_high": 70,
+      "trend_high": 70
+    }
+  },
+  "universe": {
+    "name": "测试样本池",
+    "description": "六只覆盖不同交易行为结构的测试样本，用于校验六维、原型与地图的结构一致性。",
+    "count": 6,
+    "selection_rule": "按最近一年异动事件与成交活跃度人工抽取，仅用于测试，不代表任何真实股票池。",
+    "excluded_count": 2
+  },
+  "stocks": [
+    {
+      "code": "300001",
+      "name": "样本妖股",
+      "board": "gem",
+      "sector": "计算机",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 25.0,
+      "volatility_ann_pct": 95.0,
+      "ret_60d_pct": 35.0,
+      "ret_20d_pct": 18.0,
+      "ret_5d_pct": 6.0,
+      "float_cap_cny": 8200000000,
+      "spikes": [
+        {"date": "2025-10-13", "change_pct": 19.8, "limit_up": true, "streak": 1, "next_day_pct": 5.2, "drawdown_nd_pct": -9.0},
+        {"date": "2025-12-08", "change_pct": 20.0, "limit_up": true, "streak": 1, "next_day_pct": 3.1, "drawdown_nd_pct": -7.0},
+        {"date": "2026-01-20", "change_pct": 19.9, "limit_up": true, "streak": 1, "next_day_pct": 8.0, "drawdown_nd_pct": -11.0},
+        {"date": "2026-03-16", "change_pct": 19.8, "limit_up": true, "streak": 1, "next_day_pct": 6.4, "drawdown_nd_pct": -6.0},
+        {"date": "2026-05-11", "change_pct": 19.9, "limit_up": true, "streak": 1, "next_day_pct": 4.0, "drawdown_nd_pct": -8.5},
+        {"date": "2026-07-06", "change_pct": 19.8, "limit_up": true, "streak": 1, "next_day_pct": 7.2, "drawdown_nd_pct": -10.0},
+        {"date": "2026-08-03", "change_pct": 19.8, "limit_up": true, "streak": 6, "next_day_pct": 1.0, "drawdown_nd_pct": -12.0}
+      ],
+      "lhb": [
+        {"date": "2026-08-03", "net_amt_cny": 180000000, "d1_pct": 10.0, "d2_pct": 12.5, "d5_pct": 8.0, "d10_pct": -4.0},
+        {"date": "2026-01-20", "net_amt_cny": 95000000, "d1_pct": 6.0, "d2_pct": 9.0, "d5_pct": 3.0, "d10_pct": 1.5}
+      ]
+    },
+    {
+      "code": "300750",
+      "name": "样本高波动",
+      "board": "gem",
+      "sector": "电力设备",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 8.0,
+      "volatility_ann_pct": 88.0,
+      "ret_60d_pct": -5.0,
+      "ret_20d_pct": -3.0,
+      "ret_5d_pct": -1.0,
+      "float_cap_cny": 680000000000,
+      "spikes": [
+        {"date": "2025-09-25", "change_pct": 20.0, "limit_up": true, "streak": 1, "next_day_pct": -3.0, "drawdown_nd_pct": -10.0},
+        {"date": "2025-11-18", "change_pct": 19.9, "limit_up": true, "streak": 1, "next_day_pct": -1.5, "drawdown_nd_pct": -9.0},
+        {"date": "2026-02-09", "change_pct": 20.0, "limit_up": true, "streak": 1, "next_day_pct": 2.0, "drawdown_nd_pct": -11.0},
+        {"date": "2026-04-14", "change_pct": 19.8, "limit_up": true, "streak": 2, "next_day_pct": -4.2, "drawdown_nd_pct": -13.0},
+        {"date": "2026-06-01", "change_pct": 19.9, "limit_up": true, "streak": 1, "next_day_pct": 1.0, "drawdown_nd_pct": -9.5},
+        {"date": "2026-08-17", "change_pct": 20.0, "limit_up": true, "streak": 1, "next_day_pct": -2.0, "drawdown_nd_pct": -8.0}
+      ],
+      "lhb": [
+        {"date": "2026-04-14", "net_amt_cny": -220000000, "d1_pct": -6.5, "d2_pct": -8.0, "d5_pct": -10.0, "d10_pct": -12.0}
+      ]
+    },
+    {
+      "code": "002594",
+      "name": "样本活跃",
+      "board": "main",
+      "sector": "汽车",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 6.0,
+      "volatility_ann_pct": 55.0,
+      "ret_60d_pct": 10.0,
+      "ret_20d_pct": 4.0,
+      "ret_5d_pct": 2.0,
+      "float_cap_cny": 300000000000,
+      "spikes": [
+        {"date": "2025-10-28", "change_pct": 9.9, "limit_up": true, "streak": 1, "next_day_pct": 4.5, "drawdown_nd_pct": -5.0},
+        {"date": "2026-01-07", "change_pct": 10.0, "limit_up": true, "streak": 2, "next_day_pct": 6.0, "drawdown_nd_pct": -4.0},
+        {"date": "2026-03-25", "change_pct": 9.8, "limit_up": true, "streak": 1, "next_day_pct": 2.2, "drawdown_nd_pct": -6.0},
+        {"date": "2026-05-20", "change_pct": 9.9, "limit_up": true, "streak": 1, "next_day_pct": 5.1, "drawdown_nd_pct": -4.5},
+        {"date": "2026-07-15", "change_pct": 10.0, "limit_up": true, "streak": 1, "next_day_pct": 3.6, "drawdown_nd_pct": -5.5}
+      ],
+      "lhb": [
+        {"date": "2026-01-07", "net_amt_cny": 320000000, "d1_pct": 8.0, "d2_pct": 11.0, "d5_pct": 14.0, "d10_pct": 9.0},
+        {"date": "2026-05-20", "net_amt_cny": 150000000, "d1_pct": 5.5, "d2_pct": 7.0, "d5_pct": 6.0, "d10_pct": 4.0}
+      ]
+    },
+    {
+      "code": "000001",
+      "name": "样本埋人",
+      "board": "main",
+      "sector": "银行",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 3.0,
+      "volatility_ann_pct": 30.0,
+      "ret_60d_pct": -12.0,
+      "ret_20d_pct": -6.0,
+      "ret_5d_pct": -2.5,
+      "float_cap_cny": 400000000000,
+      "spikes": [
+        {"date": "2025-11-04", "change_pct": 9.9, "limit_up": true, "streak": 1, "next_day_pct": -6.0, "drawdown_nd_pct": -14.0},
+        {"date": "2026-01-13", "change_pct": 9.8, "limit_up": true, "streak": 1, "next_day_pct": -5.5, "drawdown_nd_pct": -15.0},
+        {"date": "2026-03-03", "change_pct": 10.0, "limit_up": true, "streak": 1, "next_day_pct": -7.0, "drawdown_nd_pct": -16.0},
+        {"date": "2026-05-06", "change_pct": 9.9, "limit_up": true, "streak": 1, "next_day_pct": -4.0, "drawdown_nd_pct": -12.0},
+        {"date": "2026-07-21", "change_pct": 9.8, "limit_up": true, "streak": 1, "next_day_pct": -6.5, "drawdown_nd_pct": -18.0}
+      ],
+      "lhb": [
+        {"date": "2026-03-03", "net_amt_cny": -180000000, "d1_pct": -7.0, "d2_pct": -9.0, "d5_pct": -14.0, "d10_pct": -19.0}
+      ]
+    },
+    {
+      "code": "601988",
+      "name": "样本趋势",
+      "board": "main",
+      "sector": "银行",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 0.6,
+      "volatility_ann_pct": 18.0,
+      "ret_60d_pct": 12.0,
+      "ret_20d_pct": 5.0,
+      "ret_5d_pct": 1.2,
+      "float_cap_cny": 1200000000000,
+      "spikes": [
+        {"date": "2026-02-24", "change_pct": 7.5, "limit_up": false, "streak": 0, "next_day_pct": 1.0, "drawdown_nd_pct": -3.0},
+        {"date": "2026-08-11", "change_pct": 8.2, "limit_up": false, "streak": 0, "next_day_pct": 0.8, "drawdown_nd_pct": -2.5}
+      ],
+      "lhb": []
+    },
+    {
+      "code": "600519",
+      "name": "样本权重",
+      "board": "main",
+      "sector": "食品饮料",
+      "bars": 243,
+      "first_bar": "2025-09-15",
+      "last_bar": "2026-09-15",
+      "turnover_avg_pct": 0.4,
+      "volatility_ann_pct": 22.0,
+      "ret_60d_pct": 5.0,
+      "ret_20d_pct": 2.0,
+      "ret_5d_pct": 0.5,
+      "float_cap_cny": 2100000000000,
+      "spikes": [],
+      "lhb": []
+    }
+  ],
+  "sources": [
+    {"name": "腾讯前复权日K", "url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"},
+    {"name": "东方财富龙虎榜明细", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get"},
+    {"name": "东方财富行情快照", "url": "https://push2delay.eastmoney.com/api/qt/clist/get"}
+  ]
+}
