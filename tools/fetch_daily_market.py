@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.3 输入 market.json。
+"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.4 输入 market.json。
 
 分工原则（机器能取的自动取，需要研究判断的显式声明）：
 
@@ -20,7 +20,8 @@
     streak_distribution / high_boards → short_term_sentiment
     concept_view → sectors.concept_view（第二套分类，须区别于行业层）
     sector_leaders → 以板块代码键控，落到 sectors.items[].leaders
-  深度分析（1.3，可选）：
+  深度分析（1.4）：
+    analysis_mode → 显式core/deep；未声明时有deep_analysis推为deep，否则core
     deep_analysis → 顶层原样透传，再由生成器严格校验、派生与渲染
 
 组装后会调用技能的生成器做一次契约校验（--validate，默认开），通过才落盘。
@@ -127,6 +128,16 @@ def make_source(ident, name, url=None):
     if url:
         src["url"] = url
     return src
+
+
+def analysis_mode_from_context(ctx):
+    """显式模式优先；完整深度对象缺省推为deep，否则为core。"""
+    mode = ctx.get("analysis_mode")
+    if mode is not None:
+        if mode not in {"core", "deep"}:
+            raise SystemExit("context.analysis_mode 必须是core或deep")
+        return mode
+    return "deep" if ctx.get("deep_analysis") else "core"
 
 
 def evidence(value, unit, observed_at, fetched_at, source, published_at=None):
@@ -576,7 +587,8 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
             target["leaders"] = leaders
 
     market = {
-        "schema_version": "1.3",
+        "schema_version": "1.4",
+        "analysis_mode": analysis_mode_from_context(ctx),
         "market_date": date_str,
         "as_of": as_of,
         "snapshot": {
@@ -622,7 +634,7 @@ def validate_output(path, as_of):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.3 输入")
+    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.4 输入")
     parser.add_argument("--date", required=True, help="交易日 YYYY-MM-DD")
     parser.add_argument("--out", type=Path, default=Path("market.json"))
     parser.add_argument("--as-of", help="默认同 --date")

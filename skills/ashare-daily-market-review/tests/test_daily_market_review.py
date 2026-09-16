@@ -197,9 +197,11 @@ class DailyMarketReviewTests(unittest.TestCase):
 
         self.assertEqual(summary["coverage"], {"available": 0, "partial": 0, "unknown": 10})
         self.assertEqual(
-            summary["derived"],
-            {"short_term_sentiment": {"state": "unknown", "reason": "输入未提供该章节"}},
+            summary["derived"]["short_term_sentiment"],
+            {"state": "unknown", "reason": "输入未提供该章节"},
         )
+        self.assertEqual(summary["derived"]["four_axis"]["analysis_mode"], "core")
+        self.assertEqual(summary["derived"]["four_axis"]["axes"]["depth"]["status"], "not_enabled")
         self.assertIn("无可得盘面数据", markdown)
         self.assertIn("宽度源不可用", markdown)
 
@@ -261,7 +263,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["schema_version"], "1.3")
+        self.assertEqual(summary["schema_version"], "1.4")
         self.assertEqual(summary["legacy_migration"]["from"], "1.0")
         self.assertIn("兼容归一化", markdown)
         self.assertIn("定性观察点（不自动结算）", markdown)
@@ -955,9 +957,9 @@ class DailyMarketReviewTests(unittest.TestCase):
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
         self.assertEqual(legacy["schema_version"], "1.1")
-        self.assertEqual(summary["schema_version"], "1.3")
+        self.assertEqual(summary["schema_version"], "1.4")
         self.assertEqual(summary["legacy_migration"]["from"], "1.1")
-        self.assertIn("可选", summary["legacy_migration"]["warnings"][0])
+        self.assertIn("设为core", summary["legacy_migration"]["warnings"][0])
         self.assertIn("兼容归一化", markdown)
         self.assertEqual(
             sorted(summary["sections"]),

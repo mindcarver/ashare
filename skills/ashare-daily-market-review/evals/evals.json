@@ -178,7 +178,31 @@
     {
       "id": 30,
       "prompt": "明天验证超声电子能不能4板，condition继续用全市场涨停净差行不行？",
-      "expected_output": "不行。Schema 1.3验证点必须声明subject；个股问题用scope=stock、subject.id=股票代码，并使用stock scope允许的streak等指标。stock标题配market.limit_balance会被拒绝；旧1.2中无法证明标题与全市场metric一致的验证点会降为定性观察，不再错误自动结算。",
+      "expected_output": "不行。Schema 1.4验证点必须声明subject；个股问题用scope=stock、subject.id=股票代码，并使用stock scope允许的streak等指标。stock标题配market.limit_balance会被拒绝；旧1.2中无法证明标题与全市场metric一致的验证点会降为定性观察，不再错误自动结算。",
+      "files": []
+    },
+    {
+      "id": 31,
+      "prompt": "我要深度复盘，但今天龙虎榜和产业催化还没拿到，能不能先省略这两块？",
+      "expected_output": "不能静默省略。Schema 1.4设置analysis_mode=deep后，六个deep_analysis组件必须全部声明；龙虎榜和催化可分别标availability=unknown并写明原因，但缺键会fail closed。报告同时显示基础覆盖与深度覆盖，避免把基础满格误称完整深度复盘。",
+      "files": []
+    },
+    {
+      "id": 32,
+      "prompt": "双确认矩阵里半导体是主线，是否可以直接写多轴确认？",
+      "expected_output": "不可以。四轴交汇先检查横向象限，再检查纵向情绪/晋级、量价条件、相关资金组集中度、催化链与验证条件。只有六项全部supported才是multi_axis_supported；纵向、量价或集中度出现反证时为regime_conflicted；缺证据时只能horizontal_only。不得聚合隐藏总分。",
+      "files": []
+    },
+    {
+      "id": 33,
+      "prompt": "普通每日快报需要把六个深度组件都采全吗？",
+      "expected_output": "普通快报使用analysis_mode=core，可不声明deep_analysis，但必须公开深度模式未启用，并把深度覆盖显示为未声明6项；基础十章覆盖与深度覆盖分开，不能用基础覆盖替代深度覆盖。",
+      "files": []
+    },
+    {
+      "id": 34,
+      "prompt": "旧的1.3复盘文件升级后应该自动变成deep吗？",
+      "expected_output": "不自动推断。旧1.0到1.3输入统一保守升级为analysis_mode=core，已有深度组件可继续展示，但不倒推历史交付承诺，也不补造缺失组件。只有新的1.4输入显式声明deep才启用六组件硬门禁。",
       "files": []
     }
   ]

@@ -25,7 +25,7 @@ from evidence import (
     validate_verification_point,
     validate_window,
 )
-from schema import AVAILABILITY, FUND_METHODS, HEALTH_THRESHOLD_KEYS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, parse_date, parse_datetime, require_text, value
+from schema import ANALYSIS_MODES, AVAILABILITY, DEEP_COMPONENTS, FUND_METHODS, HEALTH_THRESHOLD_KEYS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, parse_date, parse_datetime, require_text, value
 from validate_analysis import (
     validate_extended_structures,
     validate_mainline_matrix,
@@ -132,13 +132,13 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
     version = data.get("schema_version")
     if version == SCHEMA_VERSION:
         return data
-    if version in {"1.1", "1.2"}:
+    if version in {"1.1", "1.2", "1.3"}:
         migrated = copy.deepcopy(data)
         migrated["schema_version"] = SCHEMA_VERSION
-        warnings = [
-            f"输入由Schema {version}升级为1.3；深度分析组件均为可选，未伪造新证据"
-        ]
-        upgrade_verification_subjects(migrated, warnings)
+        migrated["analysis_mode"] = "core"
+        warnings = [f"输入由Schema {version}升级为1.4并设为core；未伪造深度证据"]
+        if version in {"1.1", "1.2"}:
+            upgrade_verification_subjects(migrated, warnings)
         migrated["legacy_migration"] = {
             "from": version,
             "warnings": warnings,
@@ -153,6 +153,7 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         raise ReviewError("Schema 1.0输入缺少fetched_at，无法确定快照截止时间")
     cutoff = max(fetched)
     migrated["schema_version"] = SCHEMA_VERSION
+    migrated["analysis_mode"] = "core"
     migrated["snapshot"] = {
         "type": "close" if cutoff.date().isoformat() == market_date else "post_close",
         "cutoff_at": cutoff.isoformat(),
@@ -574,6 +575,16 @@ def validate_input(
 ) -> dict[str, dict[str, Any]]:
     if data.get("schema_version") != SCHEMA_VERSION:
         raise ReviewError(f"schema_version 必须是{SCHEMA_VERSION}")
+    analysis_mode = data.get("analysis_mode")
+    if analysis_mode not in ANALYSIS_MODES:
+        raise ReviewError("analysis_mode 必须是core或deep")
+    if analysis_mode == "deep":
+        deep = data.get("deep_analysis")
+        if not isinstance(deep, dict):
+            raise ReviewError("deep模式必须声明deep_analysis")
+        missing = [name for name in DEEP_COMPONENTS if name not in deep]
+        if missing:
+            raise ReviewError(f"deep模式缺少深度组件：{missing}")
     market_date = parse_date(data.get("market_date"), "market_date")
     input_as_of = parse_date(data.get("as_of"), "as_of")
     if input_as_of != requested_as_of:

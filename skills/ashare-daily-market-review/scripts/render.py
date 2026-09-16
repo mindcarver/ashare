@@ -37,6 +37,7 @@ from render_analysis import (
     markdown_streak_distribution,
 )
 from deep_render import html_deep_analysis, markdown_deep_analysis
+from four_axis_render import html_four_axis, markdown_four_axis
 from schema import FORBIDDEN, ReviewError, SECTION_NAMES
 
 
@@ -258,8 +259,9 @@ main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}
 .state-repair strong{{color:var(--loss)}}
 .timeline .future time{{color:var(--state-warn)}}
 @media(max-width:760px){{main{{padding:22px 14px 40px}}}}
+@media(max-width:620px){{.four-axis-theme-table{{min-width:760px}}}}
 
-</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
+</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节 · 模式 {html_text(data["analysis_mode"].upper())}</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{html_four_axis(derived.get("four_axis"), coverage_counts)}{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
 
 
 def _history_row(history: dict[str, Any], metric: str, label: str) -> str:
@@ -294,6 +296,7 @@ def build_markdown(
         f"- 截止日期：{data['as_of']}",
         f"- 快照：{data['snapshot']['type']} / 修订 {data['snapshot']['revision']} / 截止 {data['snapshot']['cutoff_at']}",
         f"- 输入SHA-256：`{input_sha256}`",
+        f"- 分析模式：`{data['analysis_mode']}`",
         f"- 覆盖：可得{coverage_counts['available']} / 部分{coverage_counts['partial']} / 未知{coverage_counts['unknown']}",
         "- 结论属性：盘面证据与结构观察，不构成投资建议",
         "",
@@ -305,7 +308,9 @@ def build_markdown(
         )
         lines.append("")
     if coverage_counts["unknown"] == len(SECTION_NAMES):
-        lines.extend(["## 无可得盘面数据", "", "本次八个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+        lines.extend(["## 无可得盘面数据", "", "本次十个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+
+    lines.extend(markdown_four_axis(derived.get("four_axis"), coverage_counts))
 
     lines.extend(["## 连续历史", ""])
     lines.append(

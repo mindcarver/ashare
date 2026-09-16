@@ -1,12 +1,13 @@
 # A股每日盘面数据契约
 
-采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.3`。
+采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.4`。
 
 ## 顶层与快照
 
 ```json
 {
-  "schema_version": "1.3",
+  "schema_version": "1.4",
+  "analysis_mode": "core",
   "market_date": "2026-08-25",
   "as_of": "2026-08-25",
   "snapshot": {
@@ -28,6 +29,7 @@
 - `close`快照的截止日期必须等于`market_date`；盘后或周末补充使用另外两类。
 - 同日首版`revision=1`且`supersedes_sha256=null`；后续修订递增并指向上一修订的输入SHA。
 - `raw_evidence_sha256`是采集原始证据清单或原始响应包的SHA，不是报告输出SHA。
+- `analysis_mode`只能是`core/deep`。deep是交付承诺：六个深度组件必须全部出现，缺数据用unknown和原因，不能省略。
 
 ## 版本化历史
 
@@ -72,6 +74,12 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 ### 1.2 → 1.3 升级
 
 `1.3`新增顶层可选`deep_analysis`，详见[深度分析层契约](deep-analysis.md)。旧输入不回填深度证据。验证点新增`subject.scope/id/label`：旧1.2验证点只有在标题明确匹配其全市场metric时才补为`market/all-a`，其余降为`qualitative_verification_points`，不继续错误自动结算。
+
+### 1.3 → 1.4 升级
+
+`1.4`新增`analysis_mode`、独立深度覆盖和[四轴复盘派生](four-axis-analysis.md)。旧1.0–1.3统一迁为`core`，即使历史输入带部分深度组件也不倒推当时承诺了完整深度交付；已有组件仍照常校验和展示。新1.4输入必须显式声明模式。
+
+基础覆盖只统计十个`sections`；深度覆盖独立统计六组件的available/partial/unknown/missing。deep模式的missing必须为0。
 
 ## 章节状态
 
