@@ -550,24 +550,65 @@ def validate_verification_subjects(
     data: dict[str, Any], sections: dict[str, dict[str, Any]]
 ) -> None:
     deep = data.get("deep_analysis") or {}
+    stock_entities: dict[str, str] = {}
+    benchmark_entities: dict[str, str] = {}
+    extra_mentions: list[tuple[str, str, str]] = []
+
+    def add_entity(target: dict[str, str], entity_id: Any, label: Any) -> None:
+        if not isinstance(entity_id, str) or not entity_id.strip():
+            return
+        if not isinstance(label, str) or not label.strip():
+            return
+        target.setdefault(entity_id, label)
+
+    for item in (deep.get("security_details") or {}).get("items", []):
+        add_entity(stock_entities, item.get("code"), item.get("name"))
+    for item in sections["short_term_sentiment"].get("high_boards", []):
+        add_entity(stock_entities, item.get("code"), item.get("name"))
+        if not item.get("code") and isinstance(item.get("name"), str):
+            extra_mentions.append(("stock", "", item["name"]))
+    for sector in sections["sectors"].get("items", []):
+        for item in sector.get("leaders", []):
+            add_entity(stock_entities, item.get("code"), item.get("name"))
+            if not item.get("code") and isinstance(item.get("name"), str):
+                extra_mentions.append(("stock", "", item["name"]))
+    for group in (deep.get("capital_co_movement") or {}).get("groups", []):
+        for item in group.get("contributions", []):
+            add_entity(stock_entities, item.get("code"), item.get("name"))
+    for item in (deep.get("lhb_structure") or {}).get("items", []):
+        add_entity(stock_entities, item.get("code"), item.get("name"))
+
+    for item in sections["indices"].get("items", []):
+        add_entity(benchmark_entities, item.get("id"), item.get("name"))
+    for item in (deep.get("liquidity_regime") or {}).get("benchmarks", []):
+        add_entity(benchmark_entities, item.get("id"), item.get("name"))
+
+    sector_entities = {
+        item["id"]: item["name"] for item in sections["sectors"].get("items", [])
+    }
+    for item in (sections["sectors"].get("concept_view") or {}).get("items", []):
+        add_entity(sector_entities, item.get("id"), item.get("name"))
     labels = {
         "market": {"all-a": "A股全市场"},
-        "stock": {
-            item["code"]: item["name"]
-            for item in (deep.get("security_details") or {}).get("items", [])
-        },
-        "sector": {
-            item["id"]: item["name"] for item in sections["sectors"].get("items", [])
-        },
+        "stock": stock_entities,
+        "sector": sector_entities,
         "theme": {
             item["id"]: item["name"]
             for item in sections["mainline_matrix"].get("themes", [])
         },
-        "benchmark": {
-            item["id"]: item["name"]
-            for item in (deep.get("liquidity_regime") or {}).get("benchmarks", [])
-        },
+        "benchmark": benchmark_entities,
     }
+    primary_index_ids = {
+        item["id"]
+        for item in sections["indices"].get("items", [])
+        if item.get("primary") is True
+    }
+    entity_mentions = extra_mentions + [
+        (scope, entity_id, entity_label)
+        for scope, entities in labels.items()
+        if scope != "market"
+        for entity_id, entity_label in entities.items()
+    ]
     for index, point in enumerate(data.get("verification_points", [])):
         field = f"verification_points[{index}]"
         subject = point["subject"]
@@ -576,18 +617,22 @@ def validate_verification_subjects(
         if subject["label"] != labels[subject["scope"]][subject["id"]]:
             raise ReviewError(f"{field}.subject.label 与当前输入实体名称不一致")
         title = point["title"]
-        for scope, entities in labels.items():
-            if scope == "market":
+        for scope, entity_id, entity_label in entity_mentions:
+            if scope == subject["scope"] and entity_id == subject["id"]:
                 continue
-            for entity_id, entity_label in entities.items():
-                if scope == subject["scope"] and entity_id == subject["id"]:
-                    continue
-                mentions_id = len(entity_id) >= 4 and entity_id in title
-                mentions_label = len(entity_label) >= 2 and entity_label in title
-                if mentions_id or mentions_label:
-                    raise ReviewError(
-                        f"{field}.title 引用了非subject实体{scope}:{entity_label}"
-                    )
+            if (
+                subject["scope"] == "market"
+                and point["condition"]["metric"] == "primary_index_change_pct"
+                and scope == "benchmark"
+                and entity_id in primary_index_ids
+            ):
+                continue
+            mentions_id = len(entity_id) >= 4 and entity_id in title
+            mentions_label = len(entity_label) >= 2 and entity_label in title
+            if mentions_id or mentions_label:
+                raise ReviewError(
+                    f"{field}.title 引用了非subject实体{scope}:{entity_label}"
+                )
 
 
 def validate_deep_analysis(

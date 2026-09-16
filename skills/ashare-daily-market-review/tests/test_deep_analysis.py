@@ -467,6 +467,41 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertIn("title 与condition.metric语义不一致", third.stderr)
         self.assertIn("title 引用了非subject实体stock:华正新材", fourth.stderr)
 
+    def test_core_entities_cannot_masquerade_as_market_verification(self):
+        leader = self.deep_market()
+        leader.pop("deep_analysis")
+        leader["sections"]["sectors"]["items"][0]["leaders"] = [
+            {
+                "code": "603186",
+                "name": "华正新材",
+                "change_pct": evidence(10, "percent"),
+            }
+        ]
+        leader["verification_points"][0]["title"] = "华正新材成交额能否超过100亿元"
+
+        index = self.deep_market()
+        index.pop("deep_analysis")
+        index["verification_points"][0]["title"] = "沪深300成交额能否超过100亿元"
+
+        primary = self.deep_market()
+        primary.pop("deep_analysis")
+        primary["verification_points"][0]["title"] = "沪深300指数涨跌幅能否为正"
+        primary["verification_points"][0]["condition"] = {
+            "metric": "primary_index_change_pct",
+            "operator": ">",
+            "value": 0,
+            "unit": "percent",
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            first, *_ = self.run_generator(leader, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            second, *_ = self.run_generator(index, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_generator(primary, tmp)
+        self.assertIn("title 引用了非subject实体stock:华正新材", first.stderr)
+        self.assertIn("title 引用了非subject实体benchmark:沪深300", second.stderr)
+
     def test_legacy_mismatched_verifications_become_qualitative(self):
         market = self.deep_market()
         market["schema_version"] = "1.2"
