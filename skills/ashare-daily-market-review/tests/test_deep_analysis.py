@@ -43,7 +43,8 @@ def datetime_evidence(value, observed="2026-08-25"):
 class DeepAnalysisTests(unittest.TestCase):
     def deep_market(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
-        market["schema_version"] = "1.3"
+        market["schema_version"] = "1.4"
+        market["analysis_mode"] = "deep"
         market["verification_points"][0]["subject"] = {
             "scope": "market",
             "id": "all-a",
@@ -286,7 +287,7 @@ class DeepAnalysisTests(unittest.TestCase):
         )
         outflow = deep["capital_co_movement"]["groups"][1]
         self.assertEqual(outflow["opposite_direction_count"], 0)
-        self.assertIn("## 深度分析层（Schema 1.3）", report)
+        self.assertIn("## 深度分析层（Schema 1.4）", report)
         self.assertIn("产业催化证据链", report)
         self.assertIn("同日流出与流入只构成共现候选", report)
         self.assertIn('aria-label="深度分析层"', html)
@@ -307,11 +308,20 @@ class DeepAnalysisTests(unittest.TestCase):
     def test_declared_unknown_deep_component_is_visible_in_html(self):
         market = self.deep_market()
         market["deep_analysis"] = {
-            "lhb_structure": {
+            name: {
                 "availability": "unknown",
-                "status_reason": "当日龙虎榜尚未披露",
+                "status_reason": "深度证据尚未披露",
             }
+            for name in (
+                "security_details",
+                "liquidity_regime",
+                "sentiment_cycle",
+                "capital_co_movement",
+                "catalyst_chains",
+                "lhb_structure",
+            )
         }
+        market["deep_analysis"]["lhb_structure"]["status_reason"] = "当日龙虎榜尚未披露"
         with tempfile.TemporaryDirectory() as tmp:
             _, _, _, html_path = self.run_generator(market, tmp)
             html = html_path.read_text(encoding="utf-8")
@@ -470,6 +480,7 @@ class DeepAnalysisTests(unittest.TestCase):
     def test_core_entities_cannot_masquerade_as_market_verification(self):
         leader = self.deep_market()
         leader.pop("deep_analysis")
+        leader["analysis_mode"] = "core"
         leader["sections"]["sectors"]["items"][0]["leaders"] = [
             {
                 "code": "603186",
@@ -481,10 +492,12 @@ class DeepAnalysisTests(unittest.TestCase):
 
         index = self.deep_market()
         index.pop("deep_analysis")
+        index["analysis_mode"] = "core"
         index["verification_points"][0]["title"] = "沪深300成交额能否超过100亿元"
 
         primary = self.deep_market()
         primary.pop("deep_analysis")
+        primary["analysis_mode"] = "core"
         primary["verification_points"][0]["title"] = "沪深300指数涨跌幅能否为正"
         primary["verification_points"][0]["condition"] = {
             "metric": "primary_index_change_pct",
@@ -609,6 +622,7 @@ class DeepAnalysisTests(unittest.TestCase):
 
     def test_stock_scoped_verification_resolves_against_same_stock(self):
         prior = self.deep_market()
+        prior["analysis_mode"] = "core"
         prior["deep_analysis"] = {
             "security_details": prior["deep_analysis"]["security_details"]
         }

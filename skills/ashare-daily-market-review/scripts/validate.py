@@ -25,7 +25,7 @@ from evidence import (
     validate_verification_point,
     validate_window,
 )
-from schema import AVAILABILITY, FUND_METHODS, HEALTH_THRESHOLD_KEYS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, parse_date, parse_datetime, require_text, value
+from schema import ANALYSIS_MODES, AVAILABILITY, DEEP_COMPONENTS, FUND_METHODS, HEALTH_THRESHOLD_KEYS, HIGH_TRUST_FUND_METHODS, ReviewError, SCHEMA_VERSION, SECTION_NAMES, SNAPSHOT_TYPES, parse_date, parse_datetime, require_text, value
 from validate_analysis import (
     validate_extended_structures,
     validate_mainline_matrix,
@@ -128,17 +128,37 @@ def upgrade_verification_subjects(migrated: dict[str, Any], warnings: list[str])
     migrated["qualitative_verification_points"] = qualitative
 
 
+def downgrade_nonfuture_verifications(
+    migrated: dict[str, Any], warnings: list[str]
+) -> None:
+    """旧输入的同日/过期验证点保留为定性观察，不再冒充未来点。"""
+    market_date = parse_date(migrated.get("market_date"), "market_date")
+    structured = []
+    qualitative = list(migrated.get("qualitative_verification_points", []))
+    for point in migrated.get("verification_points", []):
+        if parse_date(point.get("event_date"), "verification_point.event_date") <= market_date:
+            qualitative.append(point)
+            warnings.append(
+                f"验证点{point.get('id', 'unknown')}不晚于market_date，降为定性观察"
+            )
+        else:
+            structured.append(point)
+    migrated["verification_points"] = structured
+    migrated["qualitative_verification_points"] = qualitative
+
+
 def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, Any]:
     version = data.get("schema_version")
     if version == SCHEMA_VERSION:
         return data
-    if version in {"1.1", "1.2"}:
+    if version in {"1.1", "1.2", "1.3"}:
         migrated = copy.deepcopy(data)
         migrated["schema_version"] = SCHEMA_VERSION
-        warnings = [
-            f"输入由Schema {version}升级为1.3；深度分析组件均为可选，未伪造新证据"
-        ]
-        upgrade_verification_subjects(migrated, warnings)
+        migrated["analysis_mode"] = "core"
+        warnings = [f"输入由Schema {version}升级为1.4并设为core；未伪造深度证据"]
+        if version in {"1.1", "1.2"}:
+            upgrade_verification_subjects(migrated, warnings)
+        downgrade_nonfuture_verifications(migrated, warnings)
         migrated["legacy_migration"] = {
             "from": version,
             "warnings": warnings,
@@ -153,6 +173,7 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         raise ReviewError("Schema 1.0输入缺少fetched_at，无法确定快照截止时间")
     cutoff = max(fetched)
     migrated["schema_version"] = SCHEMA_VERSION
+    migrated["analysis_mode"] = "core"
     migrated["snapshot"] = {
         "type": "close" if cutoff.date().isoformat() == market_date else "post_close",
         "cutoff_at": cutoff.isoformat(),
@@ -574,6 +595,18 @@ def validate_input(
 ) -> dict[str, dict[str, Any]]:
     if data.get("schema_version") != SCHEMA_VERSION:
         raise ReviewError(f"schema_version 必须是{SCHEMA_VERSION}")
+    analysis_mode = data.get("analysis_mode")
+    if analysis_mode not in ANALYSIS_MODES:
+        raise ReviewError("analysis_mode 必须是core或deep")
+    if analysis_mode == "deep":
+        deep = data.get("deep_analysis")
+        if not isinstance(deep, dict):
+            raise ReviewError("deep模式必须声明deep_analysis")
+        missing = [
+            name for name in DEEP_COMPONENTS if name not in deep or deep[name] is None
+        ]
+        if missing:
+            raise ReviewError(f"deep模式缺少深度组件：{missing}")
     market_date = parse_date(data.get("market_date"), "market_date")
     input_as_of = parse_date(data.get("as_of"), "as_of")
     if input_as_of != requested_as_of:
@@ -594,6 +627,8 @@ def validate_input(
     for index, item in enumerate(verification_points):
         field = f"verification_points[{index}]"
         validate_verification_point(item, field, requested_as_of)
+        if parse_date(item["event_date"], f"{field}.event_date") <= market_date:
+            raise ReviewError(f"{field}.event_date 必须晚于market_date")
         if item["id"] in point_ids:
             raise ReviewError("verification_points.id 不能重复")
         point_ids.add(item["id"])

@@ -13,14 +13,18 @@ import _paths  # noqa: F401  确保 skills/_shared 在 sys.path 上
 from ashare_shared import forbidden_terms
 
 
-SCHEMA_VERSION = "1.3"
+SCHEMA_VERSION = "1.4"
 
 
 # 兼容可读的旧版本：升级链只前进不后退。
 #   1.0 → 1.1  结构性归一化（旧文本口径 → 结构化 universe/窗口/资金类别）
 #   1.1 → 1.2  纯版本升级（1.2 全部新增字段均为可选，旧输入语义不变）
 #   1.2 → 1.3  验证点增加 subject 语义；深度分析层全部可选
-SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1", "1.2"}
+#   1.3 → 1.4  增加分析模式、独立深度覆盖和四轴交汇；旧输入默认 core
+SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1", "1.2", "1.3"}
+
+
+ANALYSIS_MODES = {"core", "deep"}
 
 
 SECTION_NAMES = (
@@ -196,9 +200,12 @@ class ReviewError(ValueError):
 
 def parse_date(value: Any, field: str) -> date:
     try:
-        return date.fromisoformat(value)
+        parsed = date.fromisoformat(value)
     except (TypeError, ValueError) as exc:
         raise ReviewError(f"{field} 必须是YYYY-MM-DD") from exc
+    if parsed.isoformat() != value:
+        raise ReviewError(f"{field} 必须是YYYY-MM-DD")
+    return parsed
 
 
 def parse_datetime(value: Any, field: str) -> datetime:

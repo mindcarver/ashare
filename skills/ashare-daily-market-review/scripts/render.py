@@ -37,7 +37,8 @@ from render_analysis import (
     markdown_streak_distribution,
 )
 from deep_render import html_deep_analysis, markdown_deep_analysis
-from schema import FORBIDDEN, ReviewError, SECTION_NAMES
+from four_axis_render import html_four_axis, markdown_four_axis
+from schema import FORBIDDEN, ReviewError, SECTION_NAMES, parse_date
 
 
 def build_html(
@@ -58,6 +59,12 @@ def build_html(
     sectors = sections["sectors"]
     sentiment_section = sections["short_term_sentiment"]
     sentiment = derived["short_term_sentiment"]
+    market_date = parse_date(data["market_date"], "market_date")
+    future_points = [
+        item
+        for item in data.get("verification_points", [])
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
+    ]
 
     primary = None
     if indices["availability"] != "unknown":
@@ -205,7 +212,7 @@ def build_html(
         event_items.extend(f'<li><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>{html_text(item["source"]["name"])}</small></li>' for item in sections["events"]["items"])
     event_items.extend(
         f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["subject"]["scope"])}:{html_text(item["subject"]["label"])} · {html_text(item["condition"]["metric"])} {html_text(item["condition"]["operator"])} {html_text(item["condition"]["value"])} {html_text(item["condition"]["unit"])} · {html_text(item["source"]["name"])}</small></li>'
-        for item in data.get("verification_points", [])
+        for item in future_points
     )
     event_items.extend(
         f'<li class="future qualitative"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>定性观察点 · 不自动结算 · {html_text(item["source"]["name"])}</small></li>'
@@ -235,9 +242,9 @@ def build_html(
     source_rows = "".join(source_row_parts)
     all_unknown = coverage_counts["unknown"] == len(SECTION_NAMES)
     content = '<div class="no-data">该日期没有可得的盘面数据；未绘制任何零值替代图表。</div>' if all_unknown else f'''<section class="dashboard-grid" aria-label="盘面核心数据"><article class="panel wide"><div class="panel-head"><h2>主要指数</h2>{availability_badge(indices)}</div>{index_rows}</article><article class="panel"><div class="panel-head"><h2>市场宽度</h2>{availability_badge(breadth)}</div>{breadth_chart}</article><article class="panel"><div class="panel-head"><h2>短线情绪</h2>{availability_badge(sentiment_section)}</div>{sentiment_html}</article><article class="panel wide"><div class="panel-head"><h2>板块温度</h2>{availability_badge(sectors)}</div>{sector_html}</article><article class="panel"><div class="panel-head"><h2>资金证据</h2>{availability_badge(sections["funds"])}</div>{evidence_rows("funds", "methodology")}</article><article class="panel"><div class="panel-head"><h2>风格结构</h2>{availability_badge(sections["style"])}</div>{evidence_rows("style", "interpretation")}</article><article class="panel wide"><div class="panel-head"><h2>延续性检验</h2>{availability_badge(sections["prev_pool_performance"])}</div>{prev_pool_html}</article><article class="panel wide"><div class="panel-head"><h2>双确认主线矩阵</h2>{availability_badge(sections["mainline_matrix"])}</div>{mainline_html}</article><article class="panel wide"><div class="panel-head"><h2>事件与验证点</h2>{availability_badge(sections["events"])}</div>{events_html}</article></section>'''
-    if not all_unknown and data.get("verification_points"):
-        next_point = min(data["verification_points"], key=lambda item: item["event_date"])
-        remaining = len(data["verification_points"]) - 1
+    if not all_unknown and future_points:
+        next_point = min(future_points, key=lambda item: item["event_date"])
+        remaining = len(future_points) - 1
         suffix = f"；另有 {remaining} 项" if remaining else ""
         content = f'''<aside class="verify-strip" aria-label="下一交易日验证"><span>下一交易日验证</span><strong>{html_text(next_point["event_date"])} · {html_text(next_point["title"])}{suffix}</strong><small>{html_text(next_point["source"]["name"])} · 已在信息截止日前公开</small></aside>''' + content
 
@@ -258,8 +265,9 @@ main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}
 .state-repair strong{{color:var(--loss)}}
 .timeline .future time{{color:var(--state-warn)}}
 @media(max-width:760px){{main{{padding:22px 14px 40px}}}}
+@media(max-width:620px){{.four-axis-theme-table{{min-width:760px}}}}
 
-</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
+</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节 · 模式 {html_text(data["analysis_mode"].upper())}</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{html_four_axis(derived.get("four_axis"), coverage_counts)}{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><section class="source-box"><div class="panel-head"><h2>来源汇总</h2><span>{len(sources)} 个来源</span></div><table><thead><tr><th>来源</th><th>URL</th><th>使用次数</th></tr></thead><tbody>{source_rows}</tbody></table></section><footer>本报告只描述输入证据和显式规则，不构成投资建议。短线情绪状态不是仓位、交易或收益预测。</footer></main></body></html>'''
 
 
 def _history_row(history: dict[str, Any], metric: str, label: str) -> str:
@@ -288,12 +296,19 @@ def build_markdown(
     history: dict[str, Any],
     resolved_verifications: list[dict[str, Any]],
 ) -> str:
+    market_date = parse_date(data["market_date"], "market_date")
+    future_points = [
+        item
+        for item in data.get("verification_points", [])
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
+    ]
     lines = [
         f"# A股每日盘面复盘｜{data['market_date']}",
         "",
         f"- 截止日期：{data['as_of']}",
         f"- 快照：{data['snapshot']['type']} / 修订 {data['snapshot']['revision']} / 截止 {data['snapshot']['cutoff_at']}",
         f"- 输入SHA-256：`{input_sha256}`",
+        f"- 分析模式：`{data['analysis_mode']}`",
         f"- 覆盖：可得{coverage_counts['available']} / 部分{coverage_counts['partial']} / 未知{coverage_counts['unknown']}",
         "- 结论属性：盘面证据与结构观察，不构成投资建议",
         "",
@@ -305,7 +320,9 @@ def build_markdown(
         )
         lines.append("")
     if coverage_counts["unknown"] == len(SECTION_NAMES):
-        lines.extend(["## 无可得盘面数据", "", "本次八个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+        lines.extend(["## 无可得盘面数据", "", "本次十个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+
+    lines.extend(markdown_four_axis(derived.get("four_axis"), coverage_counts))
 
     lines.extend(["## 连续历史", ""])
     lines.append(
@@ -532,10 +549,10 @@ def build_markdown(
                 f"- {item['event_date']}｜{item['title']}｜{item['source']['name']}"
             )
         lines.append("")
-    if data.get("verification_points"):
+    if future_points:
         lines.append("后续验证点：")
         lines.append("")
-        for item in data["verification_points"]:
+        for item in future_points:
             condition = item["condition"]
             lines.append(
                 f"- {item['event_date']}｜{item['title']}｜{item['subject']['scope']}:{item['subject']['label']}｜`{condition['metric']} {condition['operator']} {condition['value']} {condition['unit']}`｜{item['source']['name']}"

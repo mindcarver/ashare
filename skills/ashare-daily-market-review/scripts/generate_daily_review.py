@@ -22,6 +22,7 @@ from ashare_shared import inject_shared_css
 
 from derive import coverage, derive, derive_history, load_history_entries, persist_snapshot, resolve_verification_points, source_summary
 from deep_analysis import deep_signals, derive_deep_analysis
+from four_axis import deep_coverage, derive_four_axis, four_axis_signals
 from render import build_html, build_markdown
 from schema import ReviewError, SCHEMA_VERSION, parse_date
 from validate import load_input, validate_input
@@ -44,7 +45,11 @@ def generate(
     resolved_verifications = resolve_verification_points(
         history_entries, data, sections, derived
     )
+    four_axis = derive_four_axis(data, derived, history, resolved_verifications)
+    derived["four_axis"] = four_axis
+    signals.extend(four_axis_signals(four_axis))
     coverage_counts = coverage(sections)
+    deep_coverage_counts = deep_coverage(data)
     sources = source_summary(data)
     summary = {
         "schema_version": SCHEMA_VERSION,
@@ -55,6 +60,8 @@ def generate(
             "snapshot": data["snapshot"],
         },
         "coverage": coverage_counts,
+        "analysis_mode": data["analysis_mode"],
+        "deep_coverage": deep_coverage_counts,
         "derived": derived,
         "signals": signals,
         "history": history,

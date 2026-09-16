@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Schema 1.3 深度分析层的 Markdown/HTML 片段。"""
+"""Schema 1.4 深度分析层的 Markdown/HTML 片段。"""
 
 from typing import Any
 
@@ -214,7 +214,7 @@ MARKDOWN_RENDERERS = {
 def markdown_deep_analysis(deep: dict[str, Any] | None) -> list[str]:
     if not deep:
         return []
-    lines = ["## 深度分析层（Schema 1.3）", "", "事实、规则派生、机制假设和反方证据分层展示。", ""]
+    lines = ["## 深度分析层（Schema 1.4）", "", "事实、规则派生、机制假设和反方证据分层展示。", ""]
     for name, renderer in MARKDOWN_RENDERERS.items():
         if name in deep:
             lines.extend(renderer(deep[name]))
