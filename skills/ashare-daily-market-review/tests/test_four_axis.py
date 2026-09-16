@@ -263,7 +263,7 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(axis["resolved_counts"], {"passed": 0, "failed": 0, "unknown": 0})
 
     def test_expired_or_same_day_point_cannot_support_verification_axis(self):
-        for event_date in ("2026-08-20", "2026-08-25"):
+        for event_date in ("2026-08-20", "20260820", "2026-08-25", "20260825"):
             market = deep_fixture.DeepAnalysisTests().deep_market()
             market["verification_points"][0]["event_date"] = event_date
             market["legacy_migration"] = {}
@@ -275,7 +275,7 @@ class FourAxisTests(unittest.TestCase):
         market = deep_fixture.DeepAnalysisTests().deep_market()
         market["schema_version"] = "1.3"
         market.pop("analysis_mode")
-        market["verification_points"][0]["event_date"] = "2026-08-20"
+        market["verification_points"][0]["event_date"] = "20260820"
         market["deep_analysis"]["catalyst_chains"] = {
             "availability": "unknown",
             "status_reason": "旧输入未保留可结算催化链",
@@ -287,6 +287,17 @@ class FourAxisTests(unittest.TestCase):
         self.assertTrue(
             any("降为定性观察" in warning for warning in summary["legacy_migration"]["warnings"])
         )
+
+    def test_compact_future_date_is_parsed_not_compared_as_text(self):
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["verification_points"][0]["event_date"] = "20260826"
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, summary_path, _ = self.run_generator(market, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        axis = summary["derived"]["four_axis"]["axes"]["verification"]
+        self.assertEqual(axis["future_count"], 1)
+        self.assertIn("20260826", report)
 
     def test_fetch_context_mode_routing(self):
         tool_path = SKILL_DIR.parents[1] / "tools" / "fetch_daily_market.py"

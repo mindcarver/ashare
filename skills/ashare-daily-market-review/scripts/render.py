@@ -38,7 +38,7 @@ from render_analysis import (
 )
 from deep_render import html_deep_analysis, markdown_deep_analysis
 from four_axis_render import html_four_axis, markdown_four_axis
-from schema import FORBIDDEN, ReviewError, SECTION_NAMES
+from schema import FORBIDDEN, ReviewError, SECTION_NAMES, parse_date
 
 
 def build_html(
@@ -59,10 +59,11 @@ def build_html(
     sectors = sections["sectors"]
     sentiment_section = sections["short_term_sentiment"]
     sentiment = derived["short_term_sentiment"]
+    market_date = parse_date(data["market_date"], "market_date")
     future_points = [
         item
         for item in data.get("verification_points", [])
-        if item["event_date"] > data["market_date"]
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
     ]
 
     primary = None
@@ -295,10 +296,11 @@ def build_markdown(
     history: dict[str, Any],
     resolved_verifications: list[dict[str, Any]],
 ) -> str:
+    market_date = parse_date(data["market_date"], "market_date")
     future_points = [
         item
         for item in data.get("verification_points", [])
-        if item["event_date"] > data["market_date"]
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
     ]
     lines = [
         f"# A股每日盘面复盘｜{data['market_date']}",

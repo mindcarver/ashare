@@ -8,7 +8,7 @@
 from collections import Counter
 from typing import Any
 
-from schema import DEEP_COMPONENTS
+from schema import DEEP_COMPONENTS, parse_date
 
 
 def deep_coverage(data: dict[str, Any]) -> dict[str, Any]:
@@ -214,10 +214,11 @@ def _depth(derived: dict[str, Any], mode: str) -> dict[str, Any]:
 
 
 def _verification(data: dict[str, Any], resolved: list[dict[str, Any]]) -> dict[str, Any]:
+    market_date = parse_date(data["market_date"], "market_date")
     future = [
         item
         for item in data.get("verification_points", [])
-        if item["event_date"] > data["market_date"]
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
     ]
     resolved_counts = Counter(item["status"] for item in resolved)
     scopes = sorted({item["subject"]["scope"] for item in future})
@@ -260,10 +261,11 @@ def _theme_rows(
     for item in catalysts.get("items", []):
         for theme_id in item.get("affected_theme_ids", []):
             catalyst_by_theme.setdefault(theme_id, []).append(item)
+    market_date = parse_date(data["market_date"], "market_date")
     future_points = [
         item
         for item in data.get("verification_points", [])
-        if item["event_date"] > data["market_date"]
+        if parse_date(item["event_date"], "verification_point.event_date") > market_date
     ]
     future_point_ids = {item["id"] for item in future_points}
     direct_verifications = {
