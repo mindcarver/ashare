@@ -200,9 +200,12 @@ class ReviewError(ValueError):
 
 def parse_date(value: Any, field: str) -> date:
     try:
-        return date.fromisoformat(value)
+        parsed = date.fromisoformat(value)
     except (TypeError, ValueError) as exc:
         raise ReviewError(f"{field} 必须是YYYY-MM-DD") from exc
+    if parsed.isoformat() != value:
+        raise ReviewError(f"{field} 必须是YYYY-MM-DD")
+    return parsed
 
 
 def parse_datetime(value: Any, field: str) -> datetime:
