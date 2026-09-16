@@ -607,6 +607,10 @@ def validate_input(
     for index, item in enumerate(verification_points):
         field = f"verification_points[{index}]"
         validate_verification_point(item, field, requested_as_of)
+        if data.get("legacy_migration") is None and parse_date(
+            item["event_date"], f"{field}.event_date"
+        ) <= market_date:
+            raise ReviewError(f"{field}.event_date 必须晚于market_date")
         if item["id"] in point_ids:
             raise ReviewError("verification_points.id 不能重复")
         point_ids.add(item["id"])

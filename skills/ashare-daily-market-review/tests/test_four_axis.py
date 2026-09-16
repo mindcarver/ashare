@@ -233,6 +233,14 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(axis["future_scopes"], ["market"])
         self.assertEqual(axis["resolved_counts"], {"passed": 0, "failed": 0, "unknown": 0})
 
+    def test_expired_or_same_day_point_cannot_support_verification_axis(self):
+        for event_date in ("2026-08-20", "2026-08-25"):
+            market = deep_fixture.DeepAnalysisTests().deep_market()
+            market["verification_points"][0]["event_date"] = event_date
+            with tempfile.TemporaryDirectory() as tmp:
+                result, *_ = self.run_generator(market, tmp, expected=2)
+            self.assertIn("event_date 必须晚于market_date", result.stderr)
+
     def test_fetch_context_mode_routing(self):
         tool_path = SKILL_DIR.parents[1] / "tools" / "fetch_daily_market.py"
         spec = importlib.util.spec_from_file_location("fetch_daily_market", tool_path)

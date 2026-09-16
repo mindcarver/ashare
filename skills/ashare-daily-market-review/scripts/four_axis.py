@@ -207,7 +207,11 @@ def _depth(derived: dict[str, Any], mode: str) -> dict[str, Any]:
 
 
 def _verification(data: dict[str, Any], resolved: list[dict[str, Any]]) -> dict[str, Any]:
-    future = data.get("verification_points", [])
+    future = [
+        item
+        for item in data.get("verification_points", [])
+        if item["event_date"] > data["market_date"]
+    ]
     resolved_counts = Counter(item["status"] for item in resolved)
     scopes = sorted({item["subject"]["scope"] for item in future})
     status = "supported" if future or resolved else "unknown"
@@ -249,9 +253,15 @@ def _theme_rows(
     for item in catalysts.get("items", []):
         for theme_id in item.get("affected_theme_ids", []):
             catalyst_by_theme.setdefault(theme_id, []).append(item)
+    future_points = [
+        item
+        for item in data.get("verification_points", [])
+        if item["event_date"] > data["market_date"]
+    ]
+    future_point_ids = {item["id"] for item in future_points}
     direct_verifications = {
         item["subject"]["id"]
-        for item in data.get("verification_points", [])
+        for item in future_points
         if item["subject"]["scope"] == "theme"
     }
     rows = []
@@ -272,6 +282,7 @@ def _theme_rows(
             verification_id
             for item in mapped
             for verification_id in item.get("verification_point_ids", [])
+            if verification_id in future_point_ids
         }
         verification = _check(
             "supported" if verification_ids or theme["id"] in direct_verifications else "unknown",
