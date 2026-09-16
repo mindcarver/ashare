@@ -261,7 +261,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["schema_version"], "1.2")
+        self.assertEqual(summary["schema_version"], "1.3")
         self.assertEqual(summary["legacy_migration"]["from"], "1.0")
         self.assertIn("兼容归一化", markdown)
         self.assertIn("定性观察点（不自动结算）", markdown)
@@ -861,6 +861,12 @@ class DailyMarketReviewTests(unittest.TestCase):
 
     def test_rejects_promotion_rate_point_with_wrong_unit(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
+        market["schema_version"] = "1.3"
+        market["verification_points"][0]["subject"] = {
+            "scope": "market",
+            "id": "all-a",
+            "label": "A股全市场",
+        }
         market["verification_points"][0]["condition"] = {
             "metric": "promotion_rate_pct",
             "operator": ">=",
@@ -871,7 +877,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             path = self.write_json(tmp, "wrong-unit.json", market)
             result, _, _ = self.run_generator(path, tmp, expected_returncode=2)
 
-        self.assertIn("unit 与metric不匹配", result.stderr)
+        self.assertIn("unit 与scope/metric不匹配", result.stderr)
 
     def test_history_omits_promotion_rate_without_prev_pool_section(self):
         """旧输入没有延续性检验章节时，指标表不新增行，输出保持原样。"""
@@ -949,7 +955,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
         self.assertEqual(legacy["schema_version"], "1.1")
-        self.assertEqual(summary["schema_version"], "1.2")
+        self.assertEqual(summary["schema_version"], "1.3")
         self.assertEqual(summary["legacy_migration"]["from"], "1.1")
         self.assertIn("可选", summary["legacy_migration"]["warnings"][0])
         self.assertIn("兼容归一化", markdown)

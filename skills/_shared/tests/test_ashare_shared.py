@@ -331,6 +331,15 @@ class ComponentsTests(unittest.TestCase):
     def test_components_have_no_forbidden_terms(self):
         self.assertIsNone(find_forbidden(components_css(), "strict"))
 
+    def test_mobile_hero_collapses_to_one_column(self):
+        """窄屏摘要卡必须单列，避免深度指标横向溢出。"""
+        mini = minified_components_css()
+        self.assertIn(".panel{min-width:0}", mini)
+        self.assertIn(
+            "@media(max-width:620px){.hero-grid{grid-template-columns:1fr}",
+            mini,
+        )
+
     def test_brand_css_is_shell_plus_components(self):
         self.assertEqual(brand_css(), minified_shell_css() + minified_components_css())
 
