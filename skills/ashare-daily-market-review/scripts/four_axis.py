@@ -66,14 +66,34 @@ def _longitudinal(derived: dict[str, Any], history: dict[str, Any]) -> dict[str,
                 "current limit_up must not equal the declared-window minimum",
             )
         )
+    else:
+        checks.append(
+            _check(
+                "unknown",
+                cycle.get("status_reason", "情绪周期证据未声明"),
+                "sentiment_cycle must provide a declared comparison window",
+            )
+        )
     prev_pool = derived.get("prev_pool_performance") or {}
     if prev_pool.get("availability") not in {None, "unknown"}:
         health = prev_pool.get("health")
+        health_status = {
+            "at_or_above_line": "supported",
+            "below_line": "contradicted",
+        }.get(health, "unknown")
         checks.append(
             _check(
-                "supported" if health == "at_or_above_line" else "contradicted",
+                health_status,
                 f"晋级率{prev_pool.get('promotion_rate_pct')}%，健康状态{health}",
                 "promotion_rate_pct >= declared health_threshold_pct",
+            )
+        )
+    else:
+        checks.append(
+            _check(
+                "unknown",
+                prev_pool.get("status_reason", "前涨停池延续证据未声明"),
+                "prev_pool_performance must declare a health threshold",
             )
         )
     return {

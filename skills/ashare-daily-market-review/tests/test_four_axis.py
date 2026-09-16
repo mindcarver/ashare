@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 import test_deep_analysis as deep_fixture
+import test_daily_market_review as daily_fixture
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
@@ -150,8 +151,50 @@ class FourAxisTests(unittest.TestCase):
         )
         self.assertEqual(capital_check["status"], "unknown")
 
+    def test_longitudinal_requires_cycle_and_declared_health_line(self):
+        extension = daily_fixture.DailyMarketReviewTests().with_extension(
+            json.loads(MARKET.read_text(encoding="utf-8"))
+        )
+        previous_pool = extension["sections"]["prev_pool_performance"]
+
+        no_health = deep_fixture.DeepAnalysisTests().deep_market()
+        no_health["sections"]["prev_pool_performance"] = copy.deepcopy(previous_pool)
+        no_health["sections"]["prev_pool_performance"].pop("health_threshold_pct")
+        no_health["deep_analysis"]["sentiment_cycle"]["points"][-1]["metrics"]["limit_up"]["value"] = 70
+
+        no_cycle = deep_fixture.DeepAnalysisTests().deep_market()
+        no_cycle["sections"]["prev_pool_performance"] = copy.deepcopy(previous_pool)
+        no_cycle["sections"]["prev_pool_performance"]["metrics"]["promotion_count"]["value"] = 20
+        no_cycle["deep_analysis"]["sentiment_cycle"] = {
+            "availability": "unknown",
+            "status_reason": "同口径历史不足",
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, first_summary, _ = self.run_generator(no_health, tmp)
+            first = json.loads(first_summary.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, second_summary, _ = self.run_generator(no_cycle, tmp)
+            second = json.loads(second_summary.read_text(encoding="utf-8"))
+
+        self.assertEqual(first["derived"]["four_axis"]["axes"]["longitudinal"]["status"], "unknown")
+        self.assertEqual(second["derived"]["four_axis"]["axes"]["longitudinal"]["status"], "unknown")
+        theme = next(
+            item
+            for item in second["derived"]["four_axis"]["theme_intersections"]
+            if item["id"] == "electronics-chain"
+        )
+        self.assertNotEqual(theme["result"], "multi_axis_supported")
+
     def test_all_six_checks_can_produce_multi_axis_supported(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
+        extension = daily_fixture.DailyMarketReviewTests().with_extension(
+            json.loads(MARKET.read_text(encoding="utf-8"))
+        )
+        market["sections"]["prev_pool_performance"] = copy.deepcopy(
+            extension["sections"]["prev_pool_performance"]
+        )
+        market["sections"]["prev_pool_performance"]["metrics"]["promotion_count"]["value"] = 20
         cycle = market["deep_analysis"]["sentiment_cycle"]
         cycle["points"][-1]["metrics"]["limit_up"]["value"] = 70
         liquidity = market["deep_analysis"]["liquidity_regime"]
