@@ -186,6 +186,35 @@ class FourAxisTests(unittest.TestCase):
         )
         self.assertNotEqual(theme["result"], "multi_axis_supported")
 
+    def test_stale_partial_cycle_cannot_support_longitudinal_axis(self):
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        extension = daily_fixture.DailyMarketReviewTests().with_extension(
+            json.loads(MARKET.read_text(encoding="utf-8"))
+        )
+        market["sections"]["prev_pool_performance"] = copy.deepcopy(
+            extension["sections"]["prev_pool_performance"]
+        )
+        market["sections"]["prev_pool_performance"]["metrics"]["promotion_count"]["value"] = 20
+        cycle = market["deep_analysis"]["sentiment_cycle"]
+        cycle["availability"] = "partial"
+        cycle["points"][-1]["market_date"] = "2026-08-24"
+        for metric in cycle["points"][-1]["metrics"].values():
+            metric["observed_at"] = "2026-08-24"
+        cycle["points"][-1]["metrics"]["limit_up"]["value"] = 70
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, _ = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            summary["derived"]["four_axis"]["axes"]["longitudinal"]["status"],
+            "unknown",
+        )
+        theme = next(
+            item
+            for item in summary["derived"]["four_axis"]["theme_intersections"]
+            if item["id"] == "electronics-chain"
+        )
+        self.assertNotEqual(theme["result"], "multi_axis_supported")
+
     def test_all_six_checks_can_produce_multi_axis_supported(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
         extension = daily_fixture.DailyMarketReviewTests().with_extension(
@@ -237,9 +266,27 @@ class FourAxisTests(unittest.TestCase):
         for event_date in ("2026-08-20", "2026-08-25"):
             market = deep_fixture.DeepAnalysisTests().deep_market()
             market["verification_points"][0]["event_date"] = event_date
+            market["legacy_migration"] = {}
             with tempfile.TemporaryDirectory() as tmp:
                 result, *_ = self.run_generator(market, tmp, expected=2)
             self.assertIn("event_date 必须晚于market_date", result.stderr)
+
+    def test_legacy_expired_point_is_downgraded_to_qualitative(self):
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["schema_version"] = "1.3"
+        market.pop("analysis_mode")
+        market["verification_points"][0]["event_date"] = "2026-08-20"
+        market["deep_analysis"]["catalyst_chains"] = {
+            "availability": "unknown",
+            "status_reason": "旧输入未保留可结算催化链",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, _ = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        self.assertEqual(summary["derived"]["four_axis"]["axes"]["verification"]["future_count"], 0)
+        self.assertTrue(
+            any("降为定性观察" in warning for warning in summary["legacy_migration"]["warnings"])
+        )
 
     def test_fetch_context_mode_routing(self):
         tool_path = SKILL_DIR.parents[1] / "tools" / "fetch_daily_market.py"

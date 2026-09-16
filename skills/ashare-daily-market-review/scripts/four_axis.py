@@ -52,18 +52,25 @@ def _combine(checks: list[dict[str, str]], not_enabled: bool = False) -> str:
     return "unknown"
 
 
-def _longitudinal(derived: dict[str, Any], history: dict[str, Any]) -> dict[str, Any]:
+def _longitudinal(
+    derived: dict[str, Any], history: dict[str, Any], market_date: str
+) -> dict[str, Any]:
     checks = []
     deep = derived.get("deep_analysis") or {}
     cycle = deep.get("sentiment_cycle") or {}
     if cycle.get("availability") not in {None, "unknown"}:
+        points = cycle.get("points", [])
+        latest_date = points[-1]["market_date"] if points else None
         new_low = cycle.get("new_window_low_limit_up")
-        status = "unknown" if new_low is None else ("contradicted" if new_low else "supported")
+        if latest_date != market_date:
+            status = "unknown"
+        else:
+            status = "unknown" if new_low is None else ("contradicted" if new_low else "supported")
         checks.append(
             _check(
                 status,
-                f"当前状态{cycle.get('current_state', 'unknown')}；窗口涨停新低={new_low}",
-                "current limit_up must not equal the declared-window minimum",
+                f"窗口末日{latest_date or 'unknown'}；当前状态{cycle.get('current_state', 'unknown')}；窗口涨停新低={new_low}",
+                "sentiment window must cover market_date and current limit_up must not equal its minimum",
             )
         )
     else:
@@ -332,7 +339,7 @@ def derive_four_axis(
     history: dict[str, Any],
     resolved_verifications: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    longitudinal = _longitudinal(derived, history)
+    longitudinal = _longitudinal(derived, history, data["market_date"])
     horizontal = _horizontal(derived)
     depth = _depth(derived, data["analysis_mode"])
     verification = _verification(data, resolved_verifications)

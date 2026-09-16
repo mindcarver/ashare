@@ -128,6 +128,25 @@ def upgrade_verification_subjects(migrated: dict[str, Any], warnings: list[str])
     migrated["qualitative_verification_points"] = qualitative
 
 
+def downgrade_nonfuture_verifications(
+    migrated: dict[str, Any], warnings: list[str]
+) -> None:
+    """旧输入的同日/过期验证点保留为定性观察，不再冒充未来点。"""
+    market_date = parse_date(migrated.get("market_date"), "market_date")
+    structured = []
+    qualitative = list(migrated.get("qualitative_verification_points", []))
+    for point in migrated.get("verification_points", []):
+        if parse_date(point.get("event_date"), "verification_point.event_date") <= market_date:
+            qualitative.append(point)
+            warnings.append(
+                f"验证点{point.get('id', 'unknown')}不晚于market_date，降为定性观察"
+            )
+        else:
+            structured.append(point)
+    migrated["verification_points"] = structured
+    migrated["qualitative_verification_points"] = qualitative
+
+
 def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, Any]:
     version = data.get("schema_version")
     if version == SCHEMA_VERSION:
@@ -139,6 +158,7 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         warnings = [f"输入由Schema {version}升级为1.4并设为core；未伪造深度证据"]
         if version in {"1.1", "1.2"}:
             upgrade_verification_subjects(migrated, warnings)
+        downgrade_nonfuture_verifications(migrated, warnings)
         migrated["legacy_migration"] = {
             "from": version,
             "warnings": warnings,
@@ -607,9 +627,7 @@ def validate_input(
     for index, item in enumerate(verification_points):
         field = f"verification_points[{index}]"
         validate_verification_point(item, field, requested_as_of)
-        if data.get("legacy_migration") is None and parse_date(
-            item["event_date"], f"{field}.event_date"
-        ) <= market_date:
+        if parse_date(item["event_date"], f"{field}.event_date") <= market_date:
             raise ReviewError(f"{field}.event_date 必须晚于market_date")
         if item["id"] in point_ids:
             raise ReviewError("verification_points.id 不能重复")

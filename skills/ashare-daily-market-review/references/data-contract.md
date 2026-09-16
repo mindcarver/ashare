@@ -81,6 +81,8 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 
 基础覆盖只统计十个`sections`；深度覆盖独立统计六组件的available/partial/unknown/missing。deep模式的missing必须为0。
 
+新1.4输入的`verification_points[].event_date`必须严格晚于`market_date`。旧版本中不满足该条件的点迁为定性观察，不继续进入未来验证计数或主题交汇。
+
 ## 章节状态
 
 十个章节统一使用`available/partial/unknown`和非空`status_reason`。
