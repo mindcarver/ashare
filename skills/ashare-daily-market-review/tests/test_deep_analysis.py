@@ -502,6 +502,88 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertIn("title 引用了非subject实体stock:华正新材", first.stderr)
         self.assertIn("title 引用了非subject实体benchmark:沪深300", second.stderr)
 
+    def test_benchmark_aliases_and_nested_names_do_not_false_positive(self):
+        alias = self.deep_market()
+        index_alias = copy.deepcopy(alias["sections"]["indices"]["items"][1])
+        index_alias.update({"id": "sh000688", "name": "科创50", "primary": False})
+        alias["sections"]["indices"]["items"].append(index_alias)
+        alias["verification_points"][0].update(
+            {
+                "title": "科创50量比能否达到1.3倍",
+                "subject": {"scope": "benchmark", "id": "000688", "label": "科创50"},
+                "condition": {
+                    "metric": "volume_ratio_5d",
+                    "operator": ">=",
+                    "value": 1.3,
+                    "unit": "ratio",
+                },
+            }
+        )
+
+        etf = copy.deepcopy(alias)
+        etf_benchmark = copy.deepcopy(
+            etf["deep_analysis"]["liquidity_regime"]["benchmarks"][0]
+        )
+        etf_benchmark.update({"id": "588000", "name": "科创50ETF", "kind": "etf"})
+        etf["deep_analysis"]["liquidity_regime"]["benchmarks"].append(etf_benchmark)
+        etf["verification_points"][0]["title"] = "科创50ETF量比能否达到1.3倍"
+        etf["verification_points"][0]["subject"] = {
+            "scope": "benchmark",
+            "id": "588000",
+            "label": "科创50ETF",
+        }
+
+        wrong = copy.deepcopy(etf)
+        wrong["verification_points"][0]["subject"] = {
+            "scope": "benchmark",
+            "id": "000688",
+            "label": "科创50",
+        }
+
+        theme = self.deep_market()
+        theme["verification_points"][0].update(
+            {
+                "title": "电子链涨停家数能否达到3只",
+                "subject": {
+                    "scope": "theme",
+                    "id": "electronics-chain",
+                    "label": "电子链",
+                },
+                "condition": {
+                    "metric": "limit_up_count",
+                    "operator": ">=",
+                    "value": 3,
+                    "unit": "count",
+                },
+            }
+        )
+        wrong_sector = self.deep_market()
+        wrong_sector["verification_points"][0].update(
+            {
+                "title": "电子链涨幅能否为正",
+                "subject": {"scope": "sector", "id": "sw-a", "label": "电子"},
+                "condition": {
+                    "metric": "change_pct",
+                    "operator": ">",
+                    "value": 0,
+                    "unit": "percent",
+                },
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_generator(alias, tmp)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_generator(etf, tmp)
+        with tempfile.TemporaryDirectory() as tmp:
+            rejected, *_ = self.run_generator(wrong, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_generator(theme, tmp)
+        with tempfile.TemporaryDirectory() as tmp:
+            rejected_sector, *_ = self.run_generator(wrong_sector, tmp, expected=2)
+        self.assertIn("title 引用了非subject实体benchmark:科创50ETF", rejected.stderr)
+        self.assertIn("title 引用了非subject实体theme:电子链", rejected_sector.stderr)
+
     def test_legacy_mismatched_verifications_become_qualitative(self):
         market = self.deep_market()
         market["schema_version"] = "1.2"

@@ -620,6 +620,8 @@ def validate_verification_subjects(
         for scope, entity_id, entity_label in entity_mentions:
             if scope == subject["scope"] and entity_id == subject["id"]:
                 continue
+            if entity_label == subject["label"] or entity_label in subject["label"]:
+                continue
             if (
                 subject["scope"] == "market"
                 and point["condition"]["metric"] == "primary_index_change_pct"
