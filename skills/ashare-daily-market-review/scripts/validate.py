@@ -582,7 +582,9 @@ def validate_input(
         deep = data.get("deep_analysis")
         if not isinstance(deep, dict):
             raise ReviewError("deep模式必须声明deep_analysis")
-        missing = [name for name in DEEP_COMPONENTS if name not in deep]
+        missing = [
+            name for name in DEEP_COMPONENTS if name not in deep or deep[name] is None
+        ]
         if missing:
             raise ReviewError(f"deep模式缺少深度组件：{missing}")
     market_date = parse_date(data.get("market_date"), "market_date")

@@ -66,13 +66,19 @@ class FourAxisTests(unittest.TestCase):
         missing_mode["schema_version"] = "1.4"
         deep = deep_fixture.DeepAnalysisTests().deep_market()
         deep["deep_analysis"].pop("lhb_structure")
+        null_component = deep_fixture.DeepAnalysisTests().deep_market()
+        null_component["deep_analysis"]["lhb_structure"] = None
         with tempfile.TemporaryDirectory() as tmp:
             first, *_ = self.run_generator(missing_mode, tmp, expected=2)
         with tempfile.TemporaryDirectory() as tmp:
             second, *_ = self.run_generator(deep, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            third, *_ = self.run_generator(null_component, tmp, expected=2)
         self.assertIn("analysis_mode 必须是core或deep", first.stderr)
         self.assertIn("deep模式缺少深度组件", second.stderr)
         self.assertIn("lhb_structure", second.stderr)
+        self.assertIn("deep模式缺少深度组件", third.stderr)
+        self.assertIn("lhb_structure", third.stderr)
 
     def test_deep_unknown_is_explicit_and_counted(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
