@@ -642,9 +642,11 @@ def validate_verification_subjects(
 def validate_deep_analysis(
     data: dict[str, Any], sections: dict[str, dict[str, Any]], as_of: date, market_date: date
 ) -> None:
-    if data.get("deep_analysis") is None:
+    if "deep_analysis" not in data:
         validate_verification_subjects(data, sections)
         return
+    if data["deep_analysis"] is None:
+        raise ReviewError("deep_analysis 不能是null")
     validate_security_details(data, as_of, market_date)
     validate_liquidity_regime(data, as_of, market_date)
     validate_sentiment_cycle(data, as_of, market_date)

@@ -358,6 +358,13 @@ class FourAxisTests(unittest.TestCase):
             result, *_ = self.run_generator(market, tmp, expected=2)
         self.assertIn("deep_analysis.lhb_structure 不能是null", result.stderr)
 
+        top_level = deep_fixture.DeepAnalysisTests().deep_market()
+        top_level["analysis_mode"] = "core"
+        top_level["deep_analysis"] = None
+        with tempfile.TemporaryDirectory() as tmp:
+            top_result, *_ = self.run_generator(top_level, tmp, expected=2)
+        self.assertIn("deep_analysis 不能是null", top_result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
