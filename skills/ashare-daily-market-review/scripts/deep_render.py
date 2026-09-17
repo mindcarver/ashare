@@ -4,7 +4,14 @@
 
 from typing import Any
 
-from formatting import fmt_flow_cny, fmt_level, fmt_signed_pct, html_text, value_tone
+from formatting import (
+    fmt_flow_cny,
+    fmt_level,
+    fmt_signed_pct,
+    html_text,
+    public_status_reason,
+    value_tone,
+)
 
 
 STATUS_LABELS = {"passed": "成立", "failed": "未成立", "unknown": "缺观察值"}
@@ -32,7 +39,7 @@ def _yes_no_unknown(value: bool | None) -> str:
 
 def markdown_security(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = [
         "### 个股证据纵深",
         "",
@@ -63,7 +70,7 @@ def markdown_security(component: dict[str, Any]) -> list[str]:
 
 def markdown_liquidity(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = [
         "### 量能、价格位置与历史分位",
         "",
@@ -96,7 +103,7 @@ def markdown_liquidity(component: dict[str, Any]) -> list[str]:
 
 def markdown_cycle(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = [
         "### 情绪周期（公开规则序列）",
         "",
@@ -120,12 +127,11 @@ def markdown_cycle(component: dict[str, Any]) -> list[str]:
 
 def markdown_capital(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = [
         "### 资金流入/流出共现与伪板块检查",
         "",
         f"- {component['note']}。",
-        f"- 方法：{component['methodology']}",
         f"- 板块引用重叠率：{component['board_overlap_rate_pct']:.2f}%；成分股跨组重叠率：{component['security_overlap_rate_pct']:.2f}%。",
         "",
         "| 组 | 角色 | 涨跌 | 资金 | Top1正流入占比 | 绝对流量HHI | 反向个股数 | 伪板块 |",
@@ -159,7 +165,7 @@ def markdown_capital(component: dict[str, Any]) -> list[str]:
 
 def markdown_catalysts(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = ["### 产业催化证据链", ""]
     for item in component["items"]:
         lines.extend(
@@ -171,7 +177,7 @@ def markdown_catalysts(component: dict[str, Any]) -> list[str]:
                 f"- 关联主题：{'、'.join(item['affected_theme_ids'])}",
                 f"- 反方证据：{'；'.join(item['counter_evidence'])}",
                 f"- 后续验证：{'、'.join(item['verification_point_ids'])}",
-                f"- 来源：{item['source']['name']}；发布：{item['published_at']}",
+                f"- 发布日：{item['published_at']}",
                 "",
             ]
         )
@@ -180,12 +186,11 @@ def markdown_catalysts(component: dict[str, Any]) -> list[str]:
 
 def markdown_lhb(component: dict[str, Any]) -> list[str]:
     if component["availability"] == "unknown":
-        return [f"> UNKNOWN：{component['status_reason']}", ""]
+        return [f"> UNKNOWN：{public_status_reason(component)}", ""]
     lines = [
         "### 龙虎榜结构（只报披露事实）",
         "",
         f"- 观察日：{component['observed_at']}；发布日期：{component['published_at']}；{component['note']}。",
-        f"- 方法：{component['methodology']}",
         "",
         "| 个股 | 买入 | 卖出 | 净额 | 买/卖席位数 | 买一占比 | 卖一占比 | 席位类型 |",
         "|---|---:|---:|---:|---:|---:|---:|---|",
@@ -354,7 +359,7 @@ def html_deep_analysis(deep: dict[str, Any] | None) -> str:
             '<small>主题：' + html_text("、".join(item["affected_theme_ids"]))
             + ' · 验证：' + html_text("、".join(item["verification_point_ids"]))
             + ' · 反方证据：' + html_text("；".join(item["counter_evidence"]))
-            + ' · 来源：' + html_text(item["source"]["name"]) + '（' + html_text(item["published_at"]) + '）</small></li>'
+            + ' · 发布日：' + html_text(item["published_at"]) + '</small></li>'
             for item in catalysts["items"]
         )
         panels.append(
@@ -380,7 +385,7 @@ def html_deep_analysis(deep: dict[str, Any] | None) -> str:
             '<article class="panel wide"><div class="panel-head"><h2>龙虎榜结构</h2>'
             f'<span>观察日 {html_text(lhb["observed_at"])}</span></div>'
             + _html_table(["个股", "买入", "卖出", "净额", "买/卖席位", "买一占比", "卖一占比", "席位类型"], rows)
-            + f'<p class="section-note">{html_text(lhb["methodology"])} · {html_text(lhb["note"])}</p></article>'
+            + f'<p class="section-note">{html_text(lhb["note"])}</p></article>'
         )
     unknown_labels = {
         "security_details": "个股证据纵深",
@@ -397,7 +402,7 @@ def html_deep_analysis(deep: dict[str, Any] | None) -> str:
                 '<article class="panel wide"><div class="panel-head"><h2>'
                 + html_text(label)
                 + '</h2><span>UNKNOWN</span></div><p class="empty-state">'
-                + html_text(component["status_reason"])
+                + html_text(public_status_reason(component))
                 + "</p></article>"
             )
     if not panels:

@@ -96,7 +96,9 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 
 任意章节可选的`caveat`字段用于登记**反方证据或自我证伪**（例如「某标的的催化尚未贡献收入，属预期交易」）。它是非空字符串，聚合渲染在「结构信号与限制」一节，不改写任何数值。
 
-## 数值证据与来源
+公开HTML/Markdown与内部审计证据严格分离。`status_reason`、`classification`、`caveat`可保留完整内部信息；如需在公开报告解释，分别声明不含采集渠道的`public_status_reason`、`public_classification`、`public_caveat`。公开字段不得含平台名、连接器、域名/URL、接口、参数、字段编号、文件路径或采集命令。未声明公开字段时，渲染器使用保守通用说明，不直接回显内部文本。
+
+## 数值证据与内部来源
 
 ```json
 {
@@ -114,6 +116,8 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 ```
 
 外部来源默认`kind=external`并要求真实HTTP(S)或绝对file URL。自设验证条件使用派生来源，不伪造URL：
+
+这些来源字段只进入内部`market.json`、摘要JSON与历史快照；公开HTML/Markdown只显示观察日、发布日期和方法类别。
 
 ```json
 {

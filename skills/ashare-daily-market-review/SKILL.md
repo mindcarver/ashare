@@ -46,6 +46,14 @@ description: 生成可审计的A股每日深度复盘；用户只需指定交易
 
 每章标记`available/partial/unknown`和原因。每项数值必须保存单位、观察日、发布日期、抓取时间和来源。缺失就是unknown，不用0填充。第9、10章是`1.2`新增的**可选**分析层：不提供即按unknown处理，旧输入无需改动。
 
+### 公开报告与内部证据分离（强制）
+
+HTML/Markdown 是面向用户的公开报告，**不得写出数据从哪里获取**。禁止展示或暗示：平台/连接器名称、域名与URL、API/接口名、请求参数、字段编号、文件路径、采集命令、抓取主机、来源汇总表和采集故障细节。产业事件也只写事实、发布日期、机制、反证与验证点，不在正文署名媒体或链接。
+
+公开报告只保留判断所必需的证据边界：观察日、发布日期、单位、窗口、`available/partial/unknown`、`exchange_fact/provider_model/derived`等方法类别，以及不含采集渠道的口径说明。需要向用户解释缺口、分类或反方证据时，分别使用可选的`public_status_reason`、`public_classification`、`public_caveat`；没有安全公开文本时由渲染器输出保守通用说明，不得直接回显内部`status_reason/methodology/source`。
+
+完整来源、URL、抓取时间和可复现证据继续保存在`market.json`、摘要JSON和历史快照中，作为内部审计侧车；不得把它们嵌入HTML/Markdown，也不得随公开报告主动列出。隐藏采集渠道不能成为删掉时间口径、资金方法类别或把缺失值改成0的理由。
+
 **默认路由是deep。** 用户只说“复盘YYYY-MM-DD”“用A股复盘技能看某日”或其他普通日期复盘请求时，也必须读取[深度分析层契约](references/deep-analysis.md)和[四轴复盘规则](references/four-axis-analysis.md)，使用`analysis_mode=deep`并声明六个深度组件。先尽力采集；仍缺数据时保留组件、写`availability=unknown`和原因，绝不退回core。只有用户明确说“简版”“快速版”或`core`时才允许`analysis_mode=core`。
 
 ## 四、生成复盘
@@ -87,7 +95,7 @@ python3 scripts/generate_daily_review.py \
 
 生成器可直接读取旧`schema_version=1.0/1.1/1.2/1.3`产物并保守归一化为`core`。1.2验证点若不能证明标题与condition语义一致，会降为定性观察；不会为了兼容伪造深度证据。新输入必须使用1.4并显式声明`analysis_mode`。
 
-`--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、下一交易日验证、限制与来源。板块默认只展示涨幅前10与跌幅前10，完整榜单折叠；条形按真实绝对涨跌幅绘制，不人为放大接近零的波动。HTML不依赖在线图表库；数据缺失时展示unknown/原因，不绘制零值替代图表。视觉由报告族共享的「ASHARE EDITORIAL」品牌层统一提供（`skills/_shared/design-tokens.css` + `shell.css` + `components.css`，由 `inject_shared_css()` 注入，注入点在 head 结束标签之前，对同名选择器有最终解释权）；本技能模板只保留短线情绪五态语义色（`.state-ice/-euphoria/-divergence/-repair`）与 `.section-note` / `.evidence` 附注小字，**不得回填骨架或组件规则**。
+`--html-out`是可选的静态可视化交付：以同一份已校验输入生成市场脉搏卡、宽度环图、板块强弱条、情绪状态、下一交易日验证和限制；不生成来源汇总，不显示采集渠道。板块默认只展示涨幅前10与跌幅前10，完整榜单折叠；条形按真实绝对涨跌幅绘制，不人为放大接近零的波动。HTML不依赖在线图表库；数据缺失时展示unknown/公开原因，不绘制零值替代图表。视觉由报告族共享的「ASHARE EDITORIAL」品牌层统一提供（`skills/_shared/design-tokens.css` + `shell.css` + `components.css`，由 `inject_shared_css()` 注入，注入点在 head 结束标签之前，对同名选择器有最终解释权）；本技能模板只保留短线情绪五态语义色（`.state-ice/-euphoria/-divergence/-repair`）与 `.section-note` / `.evidence` 附注小字，**不得回填骨架或组件规则**。
 
 内置背离和情绪规则公开在JSON摘要中。读取[短线情绪规则](references/short-term-sentiment.md)以确认所需字段、口径和状态优先级。例如：主要指数上涨但上涨家数占比低于40%，标记“指数上涨但宽度偏窄”；这只是结构观察，不预测次日方向。
 
@@ -137,6 +145,7 @@ python3 scripts/generate_daily_review.py \
 - 深度请求是否设置`analysis_mode=deep`并声明六组件；四轴结果是否按[四轴复盘规则](references/four-axis-analysis.md)逐项可复算。
 - 象限与体检结果是否只作结构枚举，没有被渲染成评分、入场信号或仓位指令。
 - 相同输入和as-of是否产生相同Markdown、JSON和SHA。
+- HTML/Markdown是否完全不含来源汇总、平台/连接器名称、URL、接口、字段编号、文件路径或采集命令；内部JSON与历史快照是否仍保留完整证据链。
 - 是否避免隐藏总分、个股推荐、买卖、目标价和仓位指令；情绪状态是否只作为市场观察。
 
 ## 七、实测口径与避坑

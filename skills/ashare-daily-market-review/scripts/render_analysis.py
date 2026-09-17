@@ -13,6 +13,8 @@ from formatting import (
     fmt_level,
     fmt_signed_pct,
     html_text,
+    public_classification,
+    public_status_reason,
     unknown_line,
     value_tone,
 )
@@ -139,7 +141,7 @@ def markdown_mainline(
     counts = mainline["quadrant_counts"]
     names = active_quadrants(mainline)
     lines = [
-        f"- 分类体系：{mainline['classification']}；主题归组方法：{mainline['methodology'].rstrip('。')}。",
+        f"- 分类体系：{public_classification(mainline, '统一行业分类（详细映射保留在审计快照）')}；主题按声明成分归组。",
         f"- 象限规则（由输入显式声明，非隐藏默认）：涨停家数 `>= {rules['limit_up_threshold']}`；"
         f"板块资金净流入 `> {rules['capital_threshold_cny'] / 1e8:,.2f}亿元`"
         f"{bleeding_clause(rules, html=False)}。",
@@ -205,7 +207,7 @@ def html_prev_pool(
     prev_pool: dict[str, Any] | None, section: dict[str, Any], market_date: str
 ) -> str:
     if not prev_pool:
-        return f'<p class="empty">{html_text(section["status_reason"])}</p>'
+        return f'<p class="empty">{html_text(public_status_reason(section))}</p>'
     promotion = (
         f'{prev_pool["promotion_rate_pct"]:.2f}%'
         if prev_pool["promotion_rate_pct"] is not None
@@ -249,7 +251,7 @@ def html_mainline(
     mainline: dict[str, Any] | None, section: dict[str, Any]
 ) -> str:
     if not mainline:
-        return f'<p class="empty">{html_text(section["status_reason"])}</p>'
+        return f'<p class="empty">{html_text(public_status_reason(section))}</p>'
     rules = mainline["quadrant_rules"]
     counts = mainline["quadrant_counts"]
     theme_rows = "".join(
@@ -273,8 +275,8 @@ def html_mainline(
         )
     )
     return (
-        f'<p class="section-note">分类体系：{html_text(mainline["classification"])}；'
-        f'{html_text(mainline["methodology"].rstrip("。"))}。'
+        f'<p class="section-note">分类体系：{html_text(public_classification(mainline, "统一行业分类（详细映射保留在审计快照）"))}；'
+        '主题按声明成分归组。'
         f'象限规则由输入显式声明：涨停家数 &gt;= {rules["limit_up_threshold"]}；'
         f'板块资金净流入 &gt; {rules["capital_threshold_cny"] / 1e8:,.2f} 亿元'
         f'{bleeding_clause(rules, html=True)}。</p>'
@@ -464,7 +466,7 @@ def markdown_concept_flows(concept: dict[str, Any]) -> list[str]:
     columns = _concept_columns(concept["items"])
     lines = [
         "",
-        f"概念层（{concept['classification']}，独立成表）：{concept['status_reason']}",
+        f"概念层（{public_classification(concept, '独立概念/风格分类')}，独立成表）。",
         "",
     ]
     lines.extend(
@@ -512,8 +514,7 @@ def html_concept_flows(concept: dict[str, Any]) -> str:
         )
     return (
         '<p class="sector-divider">概念层资金流</p>'
-        f'<p class="section-note">{html_text(concept["classification"])} · '
-        f'{html_text(concept["status_reason"])}</p>'
+        f'<p class="section-note">{html_text(public_classification(concept, "独立概念/风格分类"))}</p>'
         + featured
         + full
     )

@@ -77,7 +77,7 @@ def _longitudinal(
         checks.append(
             _check(
                 "unknown",
-                cycle.get("status_reason", "情绪周期证据未声明"),
+                "情绪周期证据不足",
                 "sentiment_cycle must provide a declared comparison window",
             )
         )
@@ -99,7 +99,7 @@ def _longitudinal(
         checks.append(
             _check(
                 "unknown",
-                prev_pool.get("status_reason", "前涨停池延续证据未声明"),
+                "前涨停池延续证据不足",
                 "prev_pool_performance must declare a health threshold",
             )
         )
@@ -138,7 +138,7 @@ def _liquidity_status(deep: dict[str, Any], mode: str) -> dict[str, str]:
     if not liquidity:
         return _check("not_enabled" if mode == "core" else "unknown", "量价深度证据未声明", "liquidity_regime must be declared")
     if liquidity.get("availability") == "unknown":
-        return _check("unknown", liquidity.get("status_reason", "量价证据未知"), "liquidity evidence must be available")
+        return _check("unknown", "量价证据不足", "liquidity evidence must be available")
     result = liquidity.get("result")
     status = {
         "all_declared_conditions_met": "supported",
@@ -166,7 +166,7 @@ def _depth(derived: dict[str, Any], mode: str) -> dict[str, Any]:
     groups = capital.get("groups", [])
     flagged = [item["id"] for item in groups if item.get("pseudo_sector_status") == "flagged"]
     if capital.get("availability") == "unknown":
-        capital_check = _check("unknown", capital.get("status_reason", "资金集中度未知"), "capital contribution evidence must be complete")
+        capital_check = _check("unknown", "资金集中度证据不足", "capital contribution evidence must be complete")
     elif capital:
         if flagged:
             capital_status = "contradicted"
@@ -174,9 +174,14 @@ def _depth(derived: dict[str, Any], mode: str) -> dict[str, Any]:
             capital_status = "supported"
         else:
             capital_status = "unknown"
+        complete_group_count = sum(
+            item.get("pseudo_sector_status") in {"clear", "flagged"}
+            for item in groups
+        )
         capital_check = _check(
             capital_status,
-            f"伪板块标记{len(flagged)}个；板块重叠率{capital.get('board_overlap_rate_pct', 0)}%",
+            f"已完成贡献分解的资金组{complete_group_count}个；伪板块标记{len(flagged)}个；"
+            f"板块重叠率{capital.get('board_overlap_rate_pct', 0)}%",
             "no relevant complete group may be pseudo_sector_status == flagged",
         )
     else:
@@ -193,15 +198,20 @@ def _depth(derived: dict[str, Any], mode: str) -> dict[str, Any]:
     checks.append(
         _check(
             "supported" if catalyst_theme_ids else "unknown",
-            f"有验证链的主题{len(catalyst_theme_ids)}个" if catalyst_theme_ids else catalysts.get("status_reason", "催化链未知"),
+            f"有验证链的主题{len(catalyst_theme_ids)}个" if catalyst_theme_ids else "催化链证据不足",
             "at least one sourced catalyst chain must map to a declared theme",
         )
     )
     lhb = deep.get("lhb_structure") or {}
+    lhb_evidence = (
+        f"观察日{lhb.get('observed_at', 'unknown')}；披露记录{len(lhb.get('items', []))}条；买卖额与席位结构按公开规则校验"
+        if lhb.get("availability") in {"available", "partial"}
+        else "龙虎榜结构证据不足"
+    )
     checks.append(
         _check(
             "supported" if lhb.get("availability") in {"available", "partial"} else "unknown",
-            lhb.get("status_reason", "龙虎榜结构未知"),
+            lhb_evidence,
             "lhb_structure must disclose available or lagged partial evidence",
         )
     )

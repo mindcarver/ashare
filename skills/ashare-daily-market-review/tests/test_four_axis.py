@@ -97,7 +97,7 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(summary["deep_coverage"]["unknown"], 1)
         self.assertEqual(summary["deep_coverage"]["missing"], 0)
         self.assertIn("深度覆盖：可得5 / 部分0 / 未知1 / 未声明0", report)
-        self.assertIn("当日龙虎榜尚未披露", html)
+        self.assertIn("证据不足，无法判断", html)
 
     def test_four_axis_marks_dual_confirmed_theme_as_regime_conflicted(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
