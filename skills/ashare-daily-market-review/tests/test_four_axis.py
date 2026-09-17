@@ -302,11 +302,73 @@ class FourAxisTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
-        self.assertEqual(module.analysis_mode_from_context({}), "core")
+        self.assertEqual(module.analysis_mode_from_context({}), "deep")
         self.assertEqual(module.analysis_mode_from_context({"deep_analysis": {"x": 1}}), "deep")
         self.assertEqual(module.analysis_mode_from_context({"analysis_mode": "core", "deep_analysis": {"x": 1}}), "core")
-        with self.assertRaises(SystemExit):
-            module.analysis_mode_from_context({"analysis_mode": "full"})
+        default_deep = module.deep_analysis_from_context({}, "deep")
+        self.assertEqual(set(default_deep), set(module.DEEP_COMPONENT_NAMES))
+        self.assertTrue(
+            all(item["availability"] == "unknown" for item in default_deep.values())
+        )
+        partial = module.deep_analysis_from_context(
+            {
+                "deep_analysis": {
+                    "lhb_structure": {
+                        "availability": "unknown",
+                        "status_reason": "当日龙虎榜尚未披露",
+                    }
+                }
+            },
+            "deep",
+        )
+        self.assertEqual(len(partial), 6)
+        self.assertEqual(partial["lhb_structure"]["status_reason"], "当日龙虎榜尚未披露")
+        self.assertIsNone(module.deep_analysis_from_context({}, "core"))
+        for mode in ("deep", "core"):
+            for bad in (None, [], "bad", 0, False):
+                with self.assertRaises(SystemExit):
+                    module.deep_analysis_from_context(
+                        {"deep_analysis": {"lhb_structure": bad}}, mode
+                    )
+            with self.assertRaises(SystemExit):
+                module.deep_analysis_from_context(
+                    {"deep_analysis": {"unsupported": {}}}, mode
+                )
+        for mode in ("deep", "core"):
+            for bad_top in (None, [], "bad", 0, False):
+                with self.assertRaises(SystemExit):
+                    module.deep_analysis_from_context(
+                        {"deep_analysis": bad_top}, mode
+                    )
+        for bad_mode in ("full", None, [], {}, 0, False):
+            with self.assertRaises(SystemExit):
+                module.analysis_mode_from_context({"analysis_mode": bad_mode})
+
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["deep_analysis"] = default_deep
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, html_path = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        self.assertEqual(summary["analysis_mode"], "deep")
+        self.assertEqual(summary["deep_coverage"]["unknown"], 6)
+        self.assertEqual(summary["deep_coverage"]["missing"], 0)
+        self.assertIn("DEEP · 深度交付", html)
+
+    def test_core_supplemental_component_cannot_be_null(self):
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["analysis_mode"] = "core"
+        market["deep_analysis"] = {"lhb_structure": None}
+        with tempfile.TemporaryDirectory() as tmp:
+            result, *_ = self.run_generator(market, tmp, expected=2)
+        self.assertIn("deep_analysis.lhb_structure 不能是null", result.stderr)
+
+        top_level = deep_fixture.DeepAnalysisTests().deep_market()
+        top_level["analysis_mode"] = "core"
+        top_level["deep_analysis"] = None
+        with tempfile.TemporaryDirectory() as tmp:
+            top_result, *_ = self.run_generator(top_level, tmp, expected=2)
+        self.assertIn("deep_analysis 不能是null", top_result.stderr)
 
 
 if __name__ == "__main__":

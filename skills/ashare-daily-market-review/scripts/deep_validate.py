@@ -54,9 +54,11 @@ def _component(data: dict[str, Any], name: str) -> dict[str, Any] | None:
     unknown = set(deep) - set(DEEP_COMPONENTS)
     if unknown:
         raise ReviewError(f"deep_analysis 含不受支持组件：{sorted(unknown)}")
-    component = deep.get(name)
-    if component is None:
+    if name not in deep:
         return None
+    component = deep[name]
+    if component is None:
+        raise ReviewError(f"deep_analysis.{name} 不能是null")
     if not isinstance(component, dict):
         raise ReviewError(f"deep_analysis.{name} 必须是object")
     if component.get("availability") not in AVAILABILITY:
@@ -640,9 +642,11 @@ def validate_verification_subjects(
 def validate_deep_analysis(
     data: dict[str, Any], sections: dict[str, dict[str, Any]], as_of: date, market_date: date
 ) -> None:
-    if data.get("deep_analysis") is None:
+    if "deep_analysis" not in data:
         validate_verification_subjects(data, sections)
         return
+    if data["deep_analysis"] is None:
+        raise ReviewError("deep_analysis 不能是null")
     validate_security_details(data, as_of, market_date)
     validate_liquidity_regime(data, as_of, market_date)
     validate_sentiment_cycle(data, as_of, market_date)

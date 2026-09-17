@@ -196,13 +196,19 @@
     {
       "id": 33,
       "prompt": "普通每日快报需要把六个深度组件都采全吗？",
-      "expected_output": "普通快报使用analysis_mode=core，可不声明deep_analysis，但必须公开深度模式未启用，并把深度覆盖显示为未声明6项；基础十章覆盖与深度覆盖分开，不能用基础覆盖替代深度覆盖。",
+      "expected_output": "本技能的新任务默认analysis_mode=deep，六个组件都必须声明；先尽力采集，取不到的组件补availability=unknown和原因，不能退回core。只有用户明确要求简版、快速版或core时才允许基础十章交付，并公开深度模式未启用。",
       "files": []
     },
     {
       "id": 34,
       "prompt": "旧的1.3复盘文件升级后应该自动变成deep吗？",
       "expected_output": "不自动推断。旧1.0到1.3输入统一保守升级为analysis_mode=core，已有深度组件可继续展示，但不倒推历史交付承诺，也不补造缺失组件。只有新的1.4输入显式声明deep才启用六组件硬门禁。",
+      "files": []
+    },
+    {
+      "id": 35,
+      "prompt": "用A股复盘技能复盘2026-09-17。",
+      "expected_output": "无需用户记内部参数：默认使用Schema 1.4与analysis_mode=deep，声明六个deep_analysis组件并生成纵横深验四轴报告。缺少的数据保留组件并标unknown与原因；最终HTML必须显示DEEP、6/6已声明、missing=0。只有用户明确要求简版/core才降级。",
       "files": []
     }
   ]

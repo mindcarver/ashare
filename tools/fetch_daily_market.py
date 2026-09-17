@@ -21,8 +21,8 @@
     concept_view → sectors.concept_view（第二套分类，须区别于行业层）
     sector_leaders → 以板块代码键控，落到 sectors.items[].leaders
   深度分析（1.4）：
-    analysis_mode → 显式core/deep；未声明时有deep_analysis推为deep，否则core
-    deep_analysis → 顶层原样透传，再由生成器严格校验、派生与渲染
+    analysis_mode → 默认deep；只有显式core才走轻量路径
+    deep_analysis → 缺少的六组件补为显式unknown，再由生成器严格校验、派生与渲染
 
 组装后会调用技能的生成器做一次契约校验（--validate，默认开），通过才落盘。
 
@@ -83,6 +83,15 @@ INDEX_NAMES = {
 
 DEFAULT_CATEGORY = "东财行业板块（m:90 t:2 口径，申万二级/三级混合层级）"
 
+DEEP_COMPONENT_NAMES = (
+    "security_details",
+    "liquidity_regime",
+    "sentiment_cycle",
+    "capital_co_movement",
+    "catalyst_chains",
+    "lhb_structure",
+)
+
 UNIVERSE = {
     "id": "all-a-non-st",
     "label": "全A非ST普通股",
@@ -131,13 +140,52 @@ def make_source(ident, name, url=None):
 
 
 def analysis_mode_from_context(ctx):
-    """显式模式优先；完整深度对象缺省推为deep，否则为core。"""
-    mode = ctx.get("analysis_mode")
-    if mode is not None:
-        if mode not in {"core", "deep"}:
+    """显式模式优先；未声明时默认deep。"""
+    if "analysis_mode" in ctx:
+        mode = ctx["analysis_mode"]
+        if not isinstance(mode, str) or mode not in {"core", "deep"}:
             raise SystemExit("context.analysis_mode 必须是core或deep")
         return mode
-    return "deep" if ctx.get("deep_analysis") else "core"
+    return "deep"
+
+
+def deep_analysis_from_context(ctx, mode):
+    """为默认deep交付补齐六组件；缺证保留unknown，不退回core。"""
+    if "deep_analysis" in ctx and ctx["deep_analysis"] is None:
+        raise SystemExit("context.deep_analysis 不能是null")
+    supplied = ctx.get("deep_analysis")
+    if mode == "core":
+        if supplied is None:
+            return None
+        if not isinstance(supplied, dict):
+            raise SystemExit("context.deep_analysis 必须是object")
+        unknown = sorted(set(supplied) - set(DEEP_COMPONENT_NAMES))
+        if unknown:
+            raise SystemExit(f"context.deep_analysis 含不支持组件：{unknown}")
+        for name, component in supplied.items():
+            if not isinstance(component, dict):
+                raise SystemExit(f"context.deep_analysis.{name} 必须是object")
+        return supplied
+    if supplied is None:
+        supplied = {}
+    if not isinstance(supplied, dict):
+        raise SystemExit("context.deep_analysis 必须是object")
+    unknown = sorted(set(supplied) - set(DEEP_COMPONENT_NAMES))
+    if unknown:
+        raise SystemExit(f"context.deep_analysis 含不支持组件：{unknown}")
+    for name, component in supplied.items():
+        if not isinstance(component, dict):
+            raise SystemExit(f"context.deep_analysis.{name} 必须是object")
+    completed = dict(supplied)
+    for name in DEEP_COMPONENT_NAMES:
+        completed.setdefault(
+            name,
+            {
+                "availability": "unknown",
+                "status_reason": f"context未提供{name}证据；默认深度复盘保留unknown，未退回core",
+            },
+        )
+    return completed
 
 
 def evidence(value, unit, observed_at, fetched_at, source, published_at=None):
@@ -586,9 +634,10 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
                 )
             target["leaders"] = leaders
 
+    analysis_mode = analysis_mode_from_context(ctx)
     market = {
         "schema_version": "1.4",
-        "analysis_mode": analysis_mode_from_context(ctx),
+        "analysis_mode": analysis_mode,
         "market_date": date_str,
         "as_of": as_of,
         "snapshot": {
@@ -603,8 +652,9 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
         "sections": sections,
         "verification_points": ctx.get("verification_points", []),
     }
-    if ctx.get("deep_analysis"):
-        market["deep_analysis"] = ctx["deep_analysis"]
+    deep_analysis = deep_analysis_from_context(ctx, analysis_mode)
+    if deep_analysis is not None:
+        market["deep_analysis"] = deep_analysis
     return market, {"quoted": quoted, "pools": pools, "boards": len(boards),
                     "selected_sectors": len(sector_items), "missing_boards": missing_boards,
                     "observed_session_dates": observed, "date_mismatch": bool(mismatch_note)}
