@@ -355,6 +355,43 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(summary["deep_coverage"]["missing"], 0)
         self.assertIn("DEEP · 深度交付", html)
 
+    def test_ths_northbound_daily_parser_requires_same_day_and_reconciliation(self):
+        tool_path = SKILL_DIR.parents[1] / "tools" / "fetch_daily_market.py"
+        spec = importlib.util.spec_from_file_location("fetch_daily_market_ths", tool_path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        timestamp = int(
+            module.datetime(2026, 9, 17, 15, 0, tzinfo=module.CST).timestamp()
+        )
+
+        def row(code, value):
+            return {"code": code, "values": [{"idx": 0, "values": [value]}]}
+
+        payload = {
+            "status_code": 0,
+            "data": {
+                "time_range": [str(timestamp)],
+                "data": [
+                    row(module.THS_NORTHBOUND_CODES["total"], -14.6e9),
+                    row(module.THS_NORTHBOUND_CODES["shanghai"], -8.9e9),
+                    row(module.THS_NORTHBOUND_CODES["shenzhen"], -5.7e9),
+                ],
+            },
+        }
+        parsed = module.parse_ths_northbound_daily(payload, "2026-09-17")
+        self.assertEqual(parsed["total"], -14.6e9)
+        self.assertEqual(
+            parsed["total"], parsed["shanghai"] + parsed["shenzhen"]
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "目标交易日"):
+            module.parse_ths_northbound_daily(payload, "2026-09-16")
+        inconsistent = copy.deepcopy(payload)
+        inconsistent["data"]["data"][0]["values"][0]["values"][-1] = -10e9
+        with self.assertRaisesRegex(RuntimeError, "不自洽"):
+            module.parse_ths_northbound_daily(inconsistent, "2026-09-17")
+
     def test_core_supplemental_component_cannot_be_null(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
         market["analysis_mode"] = "core"
