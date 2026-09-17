@@ -295,6 +295,8 @@ available时必须给与breadth完全一致的`universe`、非空`methodology`�
 
 仅有`provider_model/activity_proxy`时，funds不能标available。北向成交额属于活跃度代理，不能写成净流入方向。
 
+北向当日观察的内部取证渠道固定为同花顺陆股通页`hsgt_main_money`：取陆股通成分股总额、沪市分项和深市分项的目标交易日末值，必须满足`沪市+深市≈总额`并且时间轴覆盖`market_date`。三项均使用`unit: CNY`和`method_category: activity_proxy`。这是陆股通指数成分股大单资金净额代理，不得命名或解释为真实北向账户净买入。无序列、日期不符或三项不自洽时降级`partial/unknown`，不得换源或填0。
+
 ### style
 
 每项包含`name/interpretation/metric/window`。`window.trading_days`和`end_at`必须显式给出，不能把5日数据命名为当日。

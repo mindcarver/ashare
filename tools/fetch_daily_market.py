@@ -10,7 +10,7 @@
     short_term_sentiment  东财 push2ex 涨停池/跌停池/炸板池
     turnover          东财 push2his 上证+深证指数日K线
     sectors           东财 push2delay clist（m:90 t:2，f62 主力净额）
-    funds             东财数据中心交易所两融（T+1）
+    funds             同花顺陆股通成分股当日资金代理 + 交易所两融（T+1）
     style             由同日指数涨跌幅相减得到
 
   需 --context 显式声明（缺省即留空/unknown，不猜）：
@@ -58,6 +58,15 @@ MARGIN_URL = (
     "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPTA_RZRQ_LSHJ"
     "&columns=ALL&pageNumber=1&pageSize=8&sortColumns=DIM_DATE&sortTypes=-1"
 )
+THS_NORTHBOUND_URL = (
+    "https://dataq.10jqka.com.cn/fetch-data-server/fetch/v1/interval_data"
+)
+THS_NORTHBOUND_PAGE = "https://data.10jqka.com.cn/hsgt/"
+THS_NORTHBOUND_CODES = {
+    "total": "48:883957",
+    "shanghai": "16:1A0001",
+    "shenzhen": "32:399001",
+}
 
 # push2his 密集请求会整体限流（含编号备用主机），按避坑清单做主机轮换。
 KLINE_HOSTS = ["push2his.eastmoney.com"] + [
@@ -104,6 +113,20 @@ UNIVERSE = {
 
 def http_json(url, timeout=25):
     req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def http_post_json(url, payload, headers=None, timeout=25):
+    request_headers = dict(UA)
+    request_headers.update(headers or {})
+    request_headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers=request_headers,
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -302,6 +325,83 @@ def fetch_margin(raw, market_date):
         return None, None
     day = max(r["DIM_DATE"][:10] for r in available)
     return {r["DIM_DATE"][:10]: r for r in available}, day
+
+
+def parse_ths_northbound_daily(payload, market_date):
+    """Parse same-day LGT constituent large-order flows from THS.
+
+    THS explicitly classifies this series as an LGT-constituent large-order-flow
+    proxy, not actual northbound account flow.  The three series must reconcile.
+    """
+    if payload.get("status_code") != 0:
+        raise RuntimeError(payload.get("status_msg") or "同花顺返回非成功状态")
+    data = payload.get("data") or {}
+    times = data.get("time_range") or []
+    if not times:
+        raise RuntimeError("同花顺当日序列为空")
+    observed_dates = {
+        datetime.fromtimestamp(int(timestamp), CST).date().isoformat()
+        for timestamp in times
+        if str(timestamp).isdigit()
+    }
+    if market_date not in observed_dates:
+        raise RuntimeError(
+            f"同花顺序列日期{sorted(observed_dates)}与目标交易日{market_date}不一致"
+        )
+
+    rows = {row.get("code"): row for row in data.get("data") or []}
+
+    def last_value(code):
+        row = rows.get(code) or {}
+        nodes = row.get("values") or []
+        for node in nodes:
+            values = node.get("values") if isinstance(node, dict) else None
+            if not isinstance(values, list):
+                continue
+            for value in reversed(values):
+                if isinstance(value, (int, float)):
+                    return float(value)
+        raise RuntimeError(f"同花顺序列{code}没有可用数值")
+
+    result = {
+        name: last_value(code) for name, code in THS_NORTHBOUND_CODES.items()
+    }
+    component_sum = result["shanghai"] + result["shenzhen"]
+    tolerance = max(10_000.0, abs(result["total"]) * 1e-6)
+    if abs(result["total"] - component_sum) > tolerance:
+        raise RuntimeError("同花顺陆股通总额与沪深分项不自洽")
+    return result
+
+
+def fetch_ths_northbound_daily(raw, market_date):
+    day = datetime.fromisoformat(market_date).replace(tzinfo=CST)
+    start = int(day.replace(hour=9, minute=30, second=0, microsecond=0).timestamp())
+    end = int(day.replace(hour=15, minute=0, second=0, microsecond=0).timestamp())
+    payload = {
+        "indexes": [
+            {
+                "codes": list(THS_NORTHBOUND_CODES.values()),
+                "index_info": [{"index_id": "hsgt_main_money"}],
+            }
+        ],
+        "time_range": {
+            "time_type": "TREND",
+            "start": str(start),
+            "end": str(end),
+        },
+    }
+    response = http_post_json(
+        THS_NORTHBOUND_URL,
+        payload,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": THS_NORTHBOUND_PAGE,
+            "Source-Id": "b2cweb-hsgtconnect",
+            "Platform": "web",
+        },
+    )
+    raw["ths_northbound_daily"] = response
+    return parse_ths_northbound_daily(response, market_date)
 
 
 def fetch_turnover(raw, market_date, kline_cache_path):
@@ -554,18 +654,52 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
             "metrics": {},
         }
 
-    # 资金证据（交易所两融，T+1）
+    # 资金证据：同花顺陆股通成分股当日大单资金代理 + 交易所两融（T+1）。
+    # 前者不是真实北向账户净买入，只能标 activity_proxy。
+    fund_items = []
+    fund_reasons = []
+    try:
+        northbound = fetch_ths_northbound_daily(raw, date_str)
+        northbound_src = make_source(
+            f"ths-lgt-main-money-{date_str.replace('-', '')}",
+            "同花顺陆股通成分股大单资金序列",
+            THS_NORTHBOUND_PAGE,
+        )
+        for key, name in (
+            ("total", "北向当日流向代理（陆股通成分股）"),
+            ("shanghai", "沪市陆股通成分股当日流向代理"),
+            ("shenzhen", "深市陆股通成分股当日流向代理"),
+        ):
+            fund_items.append(
+                {
+                    "name": name,
+                    "methodology": (
+                        "陆股通指数成分股大单资金净额的当日累计值；"
+                        "是市场活跃度代理，不是真实北向账户净买入"
+                    ),
+                    "method_category": "activity_proxy",
+                    "metric": evidence(
+                        northbound[key],
+                        "CNY",
+                        date_str,
+                        fetched_at,
+                        northbound_src,
+                    ),
+                }
+            )
+        fund_reasons.append(
+            "北向当日观察固定采用同花顺陆股通成分股大单资金序列；"
+            "按官方口径标为activity_proxy，不冒充真实北向净买入。"
+        )
+    except Exception as exc:  # noqa: BLE001
+        raw["ths_northbound_daily_error"] = str(exc)
+        fund_reasons.append(f"同花顺北向当日流向代理未取得：{exc}。")
+
     margin, margin_day = fetch_margin(raw, date_str)
     if margin:
         margin_src = make_source("em-margin-lshj", "东财数据中心（交易所两融披露）", MARGIN_URL)
-        sections["funds"] = {
-            "availability": "partial",
-            "status_reason": (
-                f"交易所两融为T+1披露，本次采集时点（{date_str}）最新可得观察日为{margin_day}；"
-                f"{date_str}两融尚未发布，属T+1而非数据缺失。其余资金口径未纳入，故本章节维持partial。"
-                "板块级主力净流入已在 sectors 章按 provider_model 口径披露。"
-            ),
-            "items": [
+        fund_items.extend(
+            [
                 {
                     "name": "融资净流入（沪深两市）",
                     "methodology": "交易所披露的全市场融资买入额减融资偿还额，属法定披露事实，不等同于“主力资金”",
@@ -584,14 +718,30 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
                     "method_category": "exchange_fact",
                     "metric": evidence(margin[margin_day]["RQYE"], "CNY", margin_day, fetched_at, margin_src),
                 },
-            ],
-        }
+            ]
+        )
+        if margin_day == date_str:
+            fund_reasons.append(f"交易所两融已披露至{margin_day}。")
+        else:
+            fund_reasons.append(
+                f"交易所两融为T+1披露，目前最新可得观察日为{margin_day}；"
+                f"{date_str}两融尚未发布，属披露时滞而非数据缺失。"
+            )
     else:
-        sections["funds"] = {
-            "availability": "unknown",
-            "status_reason": "交易所两融接口未返回不晚于交易日的披露记录。",
-            "items": [],
-        }
+        fund_reasons.append("交易所两融未返回不晚于交易日的披露记录。")
+
+    sections["funds"] = {
+        "availability": "partial" if fund_items else "unknown",
+        "status_reason": "".join(fund_reasons)
+        + "ETF份额尚未纳入；板块级资金在sectors章按provider_model口径披露。",
+        "public_status_reason": (
+            "包含当日陆股通成分股流向代理与已披露的两融事实；"
+            "资金口径仍不完整，未取得项保持unknown。"
+            if fund_items
+            else "资金证据未取得，未以0代替。"
+        ),
+        "items": fund_items,
+    }
 
     # 需人工判断的章节：由 --context 显式声明，缺省即不注入（按 unknown 处理）。
     if ctx.get("health_thresholds"):

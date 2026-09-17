@@ -46,6 +46,8 @@ description: 生成可审计的A股每日深度复盘；用户只需指定交易
 
 每章标记`available/partial/unknown`和原因。每项数值必须保存单位、观察日、发布日期、抓取时间和来源。缺失就是unknown，不用0填充。第9、10章是`1.2`新增的**可选**分析层：不提供即按unknown处理，旧输入无需改动。
 
+**北向当日值的内部取证渠道固定为同花顺。** 使用其陆股通页的`hsgt_main_money`当日序列，同时取总额、沪市和深市分项，并校验「沪+深=总额」。该口径是陆股通指数成分股大单资金净额，并非可追踪的真实北向账户净买入，必须标`activity_proxy`；不得改用已失效的常量值、新闻转述或其他供应商数值冒充。当日序列无法自洽或日期不符时保持`unknown/partial`，不用0补齐。
+
 ### 公开报告与内部证据分离（强制）
 
 HTML/Markdown 是面向用户的公开报告，**不得写出数据从哪里获取**。禁止展示或暗示：平台/连接器名称、域名与URL、API/接口名、请求参数、字段编号、文件路径、采集命令、抓取主机、来源汇总表和采集故障细节。产业事件也只写事实、发布日期、机制、反证与验证点，不在正文署名媒体或链接。
@@ -125,6 +127,7 @@ python3 scripts/generate_daily_review.py \
 - breadth与short-term sentiment是否使用完全一致的结构化股票池；不一致时必须partial/unknown。
 - 滚动指标是否显式保存`window`，没有把5日值命名为当日。
 - funds是否保存`method_category`；仅有供应商模型或活跃度代理时不能标available。
+- 北向当日观察是否从同花顺`hsgt_main_money`取得总额/沪市/深市三条同日序列，是否校验三者自洽并标`activity_proxy`；是否没有写成真实北向账户净买入。
 - 自设验证点是否使用结构化condition和派生证据引用，没有伪造来源URL。
 - `mainline_matrix`的`quadrant_rules`是否显式声明，没有隐藏默认阈值。
 - 若声明`bleeding_threshold_cny`，是否严格小于`capital_threshold_cny`（否则区间倒挂），且`quadrant_rules`没有多余的自造键。
