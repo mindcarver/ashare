@@ -329,7 +329,11 @@ class FourAxisTests(unittest.TestCase):
                 {"deep_analysis": {"lhb_structure": None}}, "deep"
             )
         with self.assertRaises(SystemExit):
+            module.deep_analysis_from_context({"deep_analysis": None}, "deep")
+        with self.assertRaises(SystemExit):
             module.analysis_mode_from_context({"analysis_mode": "full"})
+        with self.assertRaises(SystemExit):
+            module.analysis_mode_from_context({"analysis_mode": None})
 
         market = deep_fixture.DeepAnalysisTests().deep_market()
         market["deep_analysis"] = default_deep

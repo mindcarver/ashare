@@ -141,8 +141,8 @@ def make_source(ident, name, url=None):
 
 def analysis_mode_from_context(ctx):
     """显式模式优先；未声明时默认deep。"""
-    mode = ctx.get("analysis_mode")
-    if mode is not None:
+    if "analysis_mode" in ctx:
+        mode = ctx["analysis_mode"]
         if mode not in {"core", "deep"}:
             raise SystemExit("context.analysis_mode 必须是core或deep")
         return mode
@@ -151,6 +151,8 @@ def analysis_mode_from_context(ctx):
 
 def deep_analysis_from_context(ctx, mode):
     """为默认deep交付补齐六组件；缺证保留unknown，不退回core。"""
+    if "deep_analysis" in ctx and ctx["deep_analysis"] is None:
+        raise SystemExit("context.deep_analysis 不能是null")
     supplied = ctx.get("deep_analysis")
     if mode == "core":
         if supplied is None:
