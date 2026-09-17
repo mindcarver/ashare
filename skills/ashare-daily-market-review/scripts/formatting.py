@@ -58,7 +58,47 @@ def fmt_signed_pct(number: float | None) -> str:
 
 
 def unknown_line(section: dict[str, Any]) -> str:
-    return f"> {section['availability'].upper()}：{section['status_reason']}"
+    return f"> {section['availability'].upper()}：{public_status_reason(section)}"
+
+
+def public_status_reason(section: dict[str, Any]) -> str:
+    """Return a report-safe availability explanation without acquisition details."""
+    declared = section.get("public_status_reason")
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    return {
+        "available": "证据已校验。",
+        "partial": "部分字段不可得，缺失项保持 unknown。",
+        "unknown": "证据不足，无法判断；未以0代替。",
+    }.get(section.get("availability"), "证据状态未声明。")
+
+
+def public_classification(section: dict[str, Any], fallback: str) -> str:
+    """Use an explicitly public taxonomy label, never an internal provider label."""
+    declared = section.get("public_classification")
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    return fallback
+
+
+def public_caveat(section: dict[str, Any]) -> str | None:
+    """Expose caveats only through a provider-neutral public field."""
+    declared = section.get("public_caveat")
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    if section.get("caveat"):
+        return "存在输入声明的口径限制；结论按保守口径解释。"
+    return None
+
+
+def public_method_category(category: str | None) -> str:
+    """Map internal method categories to provider-neutral report wording."""
+    return {
+        "exchange_fact": "公开披露事实",
+        "provider_model": "模型推导口径",
+        "derived": "规则派生",
+        "activity_proxy": "活跃度代理",
+    }.get(category or "", "未声明方法类别")
 
 
 def html_text(value: Any) -> str:
@@ -78,9 +118,8 @@ def value_tone(number: float | None) -> str:
 
 
 def html_evidence(evidence: dict[str, Any]) -> str:
-    source = evidence["source"]
     return (
-        f'{html_text(source["name"])} · 观测 {html_text(evidence["observed_at"])} · '
+        f'观测 {html_text(evidence["observed_at"])} · '
         f'发布 {html_text(evidence["published_at"])}'
     )
 

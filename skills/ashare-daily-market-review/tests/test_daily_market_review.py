@@ -203,7 +203,7 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertEqual(summary["derived"]["four_axis"]["analysis_mode"], "core")
         self.assertEqual(summary["derived"]["four_axis"]["axes"]["depth"]["status"], "not_enabled")
         self.assertIn("无可得盘面数据", markdown)
-        self.assertIn("宽度源不可用", markdown)
+        self.assertIn("证据不足，无法判断", markdown)
 
     def test_output_is_deterministic_and_has_no_investment_directives(self):
         with tempfile.TemporaryDirectory() as first_tmp, tempfile.TemporaryDirectory() as second_tmp:
@@ -232,6 +232,28 @@ class DailyMarketReviewTests(unittest.TestCase):
             "确定熊市",
         ):
             self.assertNotIn(forbidden, first_text)
+
+    def test_public_reports_hide_acquisition_details_but_keep_internal_audit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / "report.html"
+            _, markdown_path, summary_path = self.run_generator(
+                MARKET,
+                tmp,
+                html_out=html_path,
+            )
+            markdown = markdown_path.read_text(encoding="utf-8")
+            html = html_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        for public_report in (markdown, html):
+            self.assertNotIn("来源汇总", public_report)
+            self.assertNotIn("https://example.com", public_report)
+            self.assertNotIn("测试指数源", public_report)
+            self.assertNotIn("测试事件源", public_report)
+        self.assertTrue(summary["source_summary"])
+        self.assertTrue(
+            any((source.get("url") or "").startswith("https://example.com") for source in summary["source_summary"])
+        )
 
     def test_rejects_market_date_after_as_of(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
@@ -556,7 +578,7 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertIn('style="width:0.00%"', html)
         self.assertIn("下一交易日验证", html)
         self.assertIn('class="sentiment-kpis"', html)
-        self.assertIn("查看股票池、口径与规则", html)
+        self.assertIn("查看股票池与公开规则", html)
 
 
     def with_extension(self, market):
@@ -1139,7 +1161,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             [row["name"] for row in leaders[0]["leaders"]], ["深南电路", "科翔股份"]
         )
 
-        for phrase in ("连板梯队", "最高板质量", "概念层（东财概念", "板块内重点个股"):
+        for phrase in ("连板梯队", "最高板质量", "概念层（独立概念/风格分类", "板块内重点个股"):
             self.assertIn(phrase, markdown)
         self.assertIn("| 6 板 | 1 |", markdown)
         self.assertIn("不构成个股推荐", markdown)

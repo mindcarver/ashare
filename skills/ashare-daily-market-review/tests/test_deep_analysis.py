@@ -304,6 +304,10 @@ class DeepAnalysisTests(unittest.TestCase):
         ):
             self.assertIn(visible, html)
         self.assertNotIn("情绪总分", report)
+        for public_report in (report, html):
+            self.assertNotIn("深度测试源", public_report)
+            self.assertNotIn("https://example.com/deep", public_report)
+            self.assertNotIn("来源汇总", public_report)
 
     def test_declared_unknown_deep_component_is_visible_in_html(self):
         market = self.deep_market()
@@ -326,7 +330,7 @@ class DeepAnalysisTests(unittest.TestCase):
             _, _, _, html_path = self.run_generator(market, tmp)
             html = html_path.read_text(encoding="utf-8")
         self.assertIn("龙虎榜结构", html)
-        self.assertIn("当日龙虎榜尚未披露", html)
+        self.assertIn("证据不足，无法判断", html)
         self.assertIn("UNKNOWN", html)
 
     def test_rejects_wrong_fund_window_and_reversed_seal_times(self):
