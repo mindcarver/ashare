@@ -30,6 +30,7 @@
 - 同日首版`revision=1`且`supersedes_sha256=null`；后续修订递增并指向上一修订的输入SHA。
 - `raw_evidence_sha256`是采集原始证据清单或原始响应包的SHA，不是报告输出SHA。
 - `analysis_mode`只能是`core/deep`。deep是交付承诺：六个深度组件必须全部出现，缺数据用unknown和原因，不能省略。
+- 新的技能调用和一键取数默认选择deep；只有用户或context明确要求简版/core时才选择core。旧Schema文件迁移为core属于历史兼容，不是新任务默认值。
 
 ## 版本化历史
 

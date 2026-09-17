@@ -1,6 +1,6 @@
 ---
 name: ashare-daily-market-review
-description: 生成可审计的A股每日复盘，以“纵 × 横 × 深 × 验”交叉时间演化、当日截面、机制贡献与事后验证；覆盖指数宽度、量价、情绪周期、封板、多周期资金、主题集中度、催化链、龙虎榜和验证点。当用户要深度复盘A股、识别真假主线、分析资金去向、检查放量启动或比较盘后报告时使用；不输出买卖、仓位或目标价。
+description: 生成可审计的A股每日深度复盘；用户只需指定交易日，默认以deep模式和“纵 × 横 × 深 × 验”分析指数宽度、量价、情绪周期、封板、多周期资金、主题集中度、催化链、龙虎榜和验证点。只有用户明确要求简版/core时才降级；不输出买卖、仓位或目标价。
 ---
 
 # A股每日盘面复盘
@@ -46,7 +46,7 @@ description: 生成可审计的A股每日复盘，以“纵 × 横 × 深 × 验
 
 每章标记`available/partial/unknown`和原因。每项数值必须保存单位、观察日、发布日期、抓取时间和来源。缺失就是unknown，不用0填充。第9、10章是`1.2`新增的**可选**分析层：不提供即按unknown处理，旧输入无需改动。
 
-普通复盘使用`analysis_mode=core`。用户要求深度复盘、真假主线、资金去向或与外部深度报告比较时，必须读取[深度分析层契约](references/deep-analysis.md)和[四轴复盘规则](references/four-axis-analysis.md)，使用`analysis_mode=deep`并显式声明六个深度组件；缺数据用unknown和原因，不能省略组件后静默退回基础版。
+**默认路由是deep。** 用户只说“复盘YYYY-MM-DD”“用A股复盘技能看某日”或其他普通日期复盘请求时，也必须读取[深度分析层契约](references/deep-analysis.md)和[四轴复盘规则](references/four-axis-analysis.md)，使用`analysis_mode=deep`并声明六个深度组件。先尽力采集；仍缺数据时保留组件、写`availability=unknown`和原因，绝不退回core。只有用户明确说“简版”“快速版”或`core`时才允许`analysis_mode=core`。
 
 ## 四、生成复盘
 
@@ -151,7 +151,7 @@ python3 scripts/generate_daily_review.py \
 4. **全A宽度翻页必须 `pz=100`**：`pz=500` 会提前中断翻页并把下跌家数静默算成 0，不报错、只出错数；翻完自检「上涨+下跌+平盘 ≤ 有报价样本」。
 5. **宽度/指数/板块是「最新快照」接口，不能回填历史交易日**：`clist`/`ulist.np` 没有 `date` 参数，只返回当前最新快照，可用 `f124` 时间戳反推其所属日；能按日期取历史的是涨停池/跌停池/炸板池、日K线与两融。把别日的宽度挂到今天的标签下会静默混日期。
 
-一键取数：`make fetch-market DATE=<交易日> [OUT=market.json] [CTX=ctx.json]`组装1.4输入并校验。context可显式声明`analysis_mode`；未声明时，有`deep_analysis`推为deep，否则为core。详见避坑清单第十一节。
+一键取数：`make fetch-market DATE=<交易日> [OUT=market.json] [CTX=ctx.json]`组装1.4输入并校验。未声明模式时默认deep，自动把缺少的深度组件补为显式unknown；只有context明确声明core才走轻量路径。详见避坑清单第十一节。
 
 修改脚本后运行：
 

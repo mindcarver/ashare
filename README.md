@@ -83,7 +83,7 @@
     </tr>
     <tr>
       <td align="center"><b>每日盘面与短线情绪</b></td>
-      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html --history-dir ~/.ashare/daily-market-history</code><br />Schema 1.4 以“纵 × 横 × 深 × 验”交叉时间演化、当日截面、量价/资金/催化机制与验证闭环；区分core/deep交付并分别披露基础/深度覆盖。deep缺组件会拒绝，旧输入保守升级为core，不补造证据。</td>
+      <td align="left"><code>python3 skills/ashare-daily-market-review/scripts/generate_daily_review.py --input market.json --as-of YYYY-MM-DD --output daily-review.md --summary-out daily-review.json --html-out daily-review.html --history-dir ~/.ashare/daily-market-history</code><br />Schema 1.4 默认以deep和“纵 × 横 × 深 × 验”交叉时间演化、当日截面、量价/资金/催化机制与验证闭环；用户只需指定日期。六组件缺证时显式unknown，只有明确简版/core才降级；旧输入重放仍保守升级为core。</td>
     </tr>
     <tr>
       <td align="center"><b>候选股筛选</b></td>

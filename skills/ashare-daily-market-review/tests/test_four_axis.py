@@ -302,11 +302,45 @@ class FourAxisTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
-        self.assertEqual(module.analysis_mode_from_context({}), "core")
+        self.assertEqual(module.analysis_mode_from_context({}), "deep")
         self.assertEqual(module.analysis_mode_from_context({"deep_analysis": {"x": 1}}), "deep")
         self.assertEqual(module.analysis_mode_from_context({"analysis_mode": "core", "deep_analysis": {"x": 1}}), "core")
+        default_deep = module.deep_analysis_from_context({}, "deep")
+        self.assertEqual(set(default_deep), set(module.DEEP_COMPONENT_NAMES))
+        self.assertTrue(
+            all(item["availability"] == "unknown" for item in default_deep.values())
+        )
+        partial = module.deep_analysis_from_context(
+            {
+                "deep_analysis": {
+                    "lhb_structure": {
+                        "availability": "unknown",
+                        "status_reason": "当日龙虎榜尚未披露",
+                    }
+                }
+            },
+            "deep",
+        )
+        self.assertEqual(len(partial), 6)
+        self.assertEqual(partial["lhb_structure"]["status_reason"], "当日龙虎榜尚未披露")
+        self.assertIsNone(module.deep_analysis_from_context({}, "core"))
+        with self.assertRaises(SystemExit):
+            module.deep_analysis_from_context(
+                {"deep_analysis": {"lhb_structure": None}}, "deep"
+            )
         with self.assertRaises(SystemExit):
             module.analysis_mode_from_context({"analysis_mode": "full"})
+
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["deep_analysis"] = default_deep
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, html_path = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        self.assertEqual(summary["analysis_mode"], "deep")
+        self.assertEqual(summary["deep_coverage"]["unknown"], 6)
+        self.assertEqual(summary["deep_coverage"]["missing"], 0)
+        self.assertIn("DEEP · 深度交付", html)
 
 
 if __name__ == "__main__":
