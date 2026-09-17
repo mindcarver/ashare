@@ -331,6 +331,10 @@ class FourAxisTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             module.deep_analysis_from_context({"deep_analysis": None}, "deep")
         with self.assertRaises(SystemExit):
+            module.deep_analysis_from_context(
+                {"deep_analysis": {"lhb_structure": None}}, "core"
+            )
+        with self.assertRaises(SystemExit):
             module.analysis_mode_from_context({"analysis_mode": "full"})
         with self.assertRaises(SystemExit):
             module.analysis_mode_from_context({"analysis_mode": None})
@@ -345,6 +349,14 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(summary["deep_coverage"]["unknown"], 6)
         self.assertEqual(summary["deep_coverage"]["missing"], 0)
         self.assertIn("DEEP · 深度交付", html)
+
+    def test_core_supplemental_component_cannot_be_null(self):
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        market["analysis_mode"] = "core"
+        market["deep_analysis"] = {"lhb_structure": None}
+        with tempfile.TemporaryDirectory() as tmp:
+            result, *_ = self.run_generator(market, tmp, expected=2)
+        self.assertIn("deep_analysis.lhb_structure 不能是null", result.stderr)
 
 
 if __name__ == "__main__":

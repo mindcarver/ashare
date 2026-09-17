@@ -54,9 +54,11 @@ def _component(data: dict[str, Any], name: str) -> dict[str, Any] | None:
     unknown = set(deep) - set(DEEP_COMPONENTS)
     if unknown:
         raise ReviewError(f"deep_analysis 含不受支持组件：{sorted(unknown)}")
-    component = deep.get(name)
-    if component is None:
+    if name not in deep:
         return None
+    component = deep[name]
+    if component is None:
+        raise ReviewError(f"deep_analysis.{name} 不能是null")
     if not isinstance(component, dict):
         raise ReviewError(f"deep_analysis.{name} 必须是object")
     if component.get("availability") not in AVAILABILITY:

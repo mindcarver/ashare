@@ -159,6 +159,9 @@ def deep_analysis_from_context(ctx, mode):
             return None
         if not isinstance(supplied, dict):
             raise SystemExit("context.deep_analysis 必须是object")
+        for name in DEEP_COMPONENT_NAMES:
+            if name in supplied and supplied[name] is None:
+                raise SystemExit(f"context.deep_analysis.{name} 不能是null")
         return supplied
     if supplied is None:
         supplied = {}
