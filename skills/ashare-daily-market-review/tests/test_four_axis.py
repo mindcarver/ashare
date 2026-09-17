@@ -324,20 +324,25 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(len(partial), 6)
         self.assertEqual(partial["lhb_structure"]["status_reason"], "当日龙虎榜尚未披露")
         self.assertIsNone(module.deep_analysis_from_context({}, "core"))
-        with self.assertRaises(SystemExit):
-            module.deep_analysis_from_context(
-                {"deep_analysis": {"lhb_structure": None}}, "deep"
-            )
-        with self.assertRaises(SystemExit):
-            module.deep_analysis_from_context({"deep_analysis": None}, "deep")
-        with self.assertRaises(SystemExit):
-            module.deep_analysis_from_context(
-                {"deep_analysis": {"lhb_structure": None}}, "core"
-            )
-        with self.assertRaises(SystemExit):
-            module.analysis_mode_from_context({"analysis_mode": "full"})
-        with self.assertRaises(SystemExit):
-            module.analysis_mode_from_context({"analysis_mode": None})
+        for mode in ("deep", "core"):
+            for bad in (None, [], "bad", 0, False):
+                with self.assertRaises(SystemExit):
+                    module.deep_analysis_from_context(
+                        {"deep_analysis": {"lhb_structure": bad}}, mode
+                    )
+            with self.assertRaises(SystemExit):
+                module.deep_analysis_from_context(
+                    {"deep_analysis": {"unsupported": {}}}, mode
+                )
+        for mode in ("deep", "core"):
+            for bad_top in (None, [], "bad", 0, False):
+                with self.assertRaises(SystemExit):
+                    module.deep_analysis_from_context(
+                        {"deep_analysis": bad_top}, mode
+                    )
+        for bad_mode in ("full", None, [], {}, 0, False):
+            with self.assertRaises(SystemExit):
+                module.analysis_mode_from_context({"analysis_mode": bad_mode})
 
         market = deep_fixture.DeepAnalysisTests().deep_market()
         market["deep_analysis"] = default_deep

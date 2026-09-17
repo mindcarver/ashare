@@ -143,7 +143,7 @@ def analysis_mode_from_context(ctx):
     """显式模式优先；未声明时默认deep。"""
     if "analysis_mode" in ctx:
         mode = ctx["analysis_mode"]
-        if mode not in {"core", "deep"}:
+        if not isinstance(mode, str) or mode not in {"core", "deep"}:
             raise SystemExit("context.analysis_mode 必须是core或deep")
         return mode
     return "deep"
@@ -159,18 +159,25 @@ def deep_analysis_from_context(ctx, mode):
             return None
         if not isinstance(supplied, dict):
             raise SystemExit("context.deep_analysis 必须是object")
-        for name in DEEP_COMPONENT_NAMES:
-            if name in supplied and supplied[name] is None:
-                raise SystemExit(f"context.deep_analysis.{name} 不能是null")
+        unknown = sorted(set(supplied) - set(DEEP_COMPONENT_NAMES))
+        if unknown:
+            raise SystemExit(f"context.deep_analysis 含不支持组件：{unknown}")
+        for name, component in supplied.items():
+            if not isinstance(component, dict):
+                raise SystemExit(f"context.deep_analysis.{name} 必须是object")
         return supplied
     if supplied is None:
         supplied = {}
     if not isinstance(supplied, dict):
         raise SystemExit("context.deep_analysis 必须是object")
+    unknown = sorted(set(supplied) - set(DEEP_COMPONENT_NAMES))
+    if unknown:
+        raise SystemExit(f"context.deep_analysis 含不支持组件：{unknown}")
+    for name, component in supplied.items():
+        if not isinstance(component, dict):
+            raise SystemExit(f"context.deep_analysis.{name} 必须是object")
     completed = dict(supplied)
     for name in DEEP_COMPONENT_NAMES:
-        if name in completed and completed[name] is None:
-            raise SystemExit(f"context.deep_analysis.{name} 不能是null")
         completed.setdefault(
             name,
             {
