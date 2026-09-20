@@ -18,7 +18,8 @@ from formatting import (
     unknown_line,
     value_tone,
 )
-from schema import active_quadrant_order
+from schema import (OPERATOR_SYMBOLS, PUBLIC_METRIC_LABELS,
+    QUADRANT_SHORT_LABELS, active_quadrant_order)
 
 HEALTH_STATUS = {
     "passed": ("ok", "成立"),
@@ -67,7 +68,7 @@ def bleeding_clause(rules: dict[str, Any], *, html: bool) -> str:
         return ""
     if html:
         return f'；失血线 &lt;= {value / 1e8:,.2f} 亿元'
-    return f"；失血线 `<= {value / 1e8:,.2f}亿元`"
+    return f"；失血线 ≤ -{abs(value) / 1e8:,.2f}亿元"
 
 
 def markdown_health_check(health: dict[str, Any]) -> list[str]:
@@ -81,12 +82,12 @@ def markdown_health_check(health: dict[str, Any]) -> list[str]:
     ]
     for check in health["checks"]:
         lines.append(
-            f"| {check['code']} | {fmt_level(check['observed'], check['unit'])} "
-            f"| `{check['operator']}` | {fmt_level(check['threshold'], check['unit'])} "
+            f"| {PUBLIC_METRIC_LABELS.get(check['code'], check['code'])} | {fmt_level(check['observed'], check['unit'])} "
+            f"| {OPERATOR_SYMBOLS.get(check['operator'], check['operator'])} | {fmt_level(check['threshold'], check['unit'])} "
             f"| {HEALTH_STATUS[check['status']][1]} |"
         )
     if health["unresolved"]:
-        lines.extend(["", f"缺观察值、未纳入判定：{'、'.join(health['unresolved'])}。"])
+        lines.extend(["", f"缺观察值、未纳入判定：{'、'.join(PUBLIC_METRIC_LABELS.get(code, code) for code in health['unresolved'])}。"])
     return lines
 
 
@@ -98,7 +99,7 @@ def markdown_prev_pool(
         return [unknown_line(section), ""]
     lines.append(
         f"- 对比区间：{prev_pool['previous_market_date']} 涨停池 → {market_date} 收盘；"
-        f"股票池：{prev_pool['universe_id']}（与市场宽度同池）。"
+        f"股票池：{section.get('universe', {}).get('label', prev_pool['universe_id'])}（与市场宽度同池）。"
     )
     lines.append(
         f"- 池内只数：{prev_pool['pool_size']:.0f}；当日再涨停：{prev_pool['promotion_count']:.0f}。"
@@ -140,14 +141,16 @@ def markdown_mainline(
     rules = mainline["quadrant_rules"]
     counts = mainline["quadrant_counts"]
     names = active_quadrants(mainline)
+    has_reference = any(t.get('representative_board_id') for t in mainline['themes'])
     lines = [
         f"- 分类体系：{public_classification(mainline, '统一行业分类（详细映射保留在审计快照）')}；主题按声明成分归组。",
-        f"- 象限规则（由输入显式声明，非隐藏默认）：涨停家数 `>= {rules['limit_up_threshold']}`；"
-        f"板块资金净流入 `> {rules['capital_threshold_cny'] / 1e8:,.2f}亿元`"
+        f"- 象限规则（由输入显式声明，非隐藏默认）：涨停家数 ≥ {rules['limit_up_threshold']}；"
+        f"板块资金净流入 > {rules['capital_threshold_cny'] / 1e8:,.2f}亿元"
         f"{bleeding_clause(rules, html=False)}。",
         f"- 象限分布：{quadrant_distribution(counts, names)}。",
         "",
-        "| 主题 | 涨停家数 | 主题涨停股资金 | 板块资金（声明板块求和） | 板块涨跌（等权） | 象限 |",
+        ("| 主题 | 涨停家数 | 主题涨停股资金 | 引用板块资金 | 引用板块涨跌 | 象限 |" if has_reference else
+         "| 主题 | 涨停家数 | 主题涨停股资金 | 板块资金（声明板块求和） | 板块涨跌（等权） | 象限 |"),
         "|---|---:|---:|---:|---:|---|",
     ]
     for theme in sorted(
@@ -158,7 +161,7 @@ def markdown_mainline(
             f"| {fmt_flow_cny(theme['limit_up_fund_flow_cny'])} "
             f"| {fmt_flow_cny(theme['board_fund_flow_cny'])} "
             f"| {fmt_signed_pct(theme['board_change_pct_equal_weight'])} "
-            f"| {theme['quadrant']} |"
+            f"| {QUADRANT_SHORT_LABELS.get(theme['quadrant'], theme['quadrant'])} |"
         )
     lines.extend(
         [
@@ -175,21 +178,24 @@ def markdown_mainline(
             "",
         ]
     )
+    for theme in mainline['themes']:
+        if theme.get('capital_scope_note'):
+            lines.extend([f"- {theme['name']}：{theme['capital_scope_note']}。", ''])
     return lines
 
 
 def html_health_check(health: dict[str, Any]) -> str:
     rows = "".join(
-        f'<tr><td>{html_text(check["code"])}</td>'
+        f'<tr><td>{html_text(PUBLIC_METRIC_LABELS.get(check["code"], check["code"]))}</td>'
         f'<td class="num">{html_text(fmt_level(check["observed"], check["unit"]))}</td>'
-        f'<td class="src">{html_text(check["operator"])} '
+        f'<td class="src">{html_text(OPERATOR_SYMBOLS.get(check["operator"], check["operator"]))} '
         f'{html_text(fmt_level(check["threshold"], check["unit"]))}</td>'
         f'<td><span class="dot {HEALTH_STATUS[check["status"]][0]}"></span>'
         f'{HEALTH_STATUS[check["status"]][1]}</td></tr>'
         for check in health["checks"]
     )
     unresolved = (
-        f' 缺观察值、未纳入判定：{html_text("、".join(health["unresolved"]))}。'
+        f' 缺观察值、未纳入判定：{html_text("、".join(PUBLIC_METRIC_LABELS.get(code, code) for code in health["unresolved"]))}。'
         if health["unresolved"]
         else ""
     )
@@ -235,7 +241,7 @@ def html_prev_pool(
         '<dl class="kv">'
         f'<dt>对比区间</dt><dd>{html_text(prev_pool["previous_market_date"])} 涨停池 → '
         f'{html_text(market_date)} 收盘</dd>'
-        f'<dt>股票池</dt><dd>{html_text(prev_pool["universe_id"])}（与市场宽度同池）</dd>'
+        f'<dt>股票池</dt><dd>{html_text(section.get("universe", {}).get("label", prev_pool["universe_id"]))}（与市场宽度同池）</dd>'
         f'<dt>池内只数</dt><dd>{prev_pool["pool_size"]:.0f}</dd>'
         f'<dt>当日再涨停</dt><dd>{prev_pool["promotion_count"]:.0f}</dd>'
         f'<dt>晋级率</dt><dd>{html_text(promotion)} · {html_text(health_note)}</dd>'
@@ -254,6 +260,10 @@ def html_mainline(
         return f'<p class="empty">{html_text(public_status_reason(section))}</p>'
     rules = mainline["quadrant_rules"]
     counts = mainline["quadrant_counts"]
+    has_reference = any(t.get('representative_board_id') for t in mainline['themes'])
+    capital_heading = '引用板块资金' if has_reference else '板块资金'
+    change_heading = '引用板块涨跌' if has_reference else '板块涨跌(等权)'
+    scope_note = '；'.join(f"{t['name']}：{t['capital_scope_note']}" for t in mainline['themes'] if t.get('capital_scope_note')) if has_reference else '板块涨跌在多个声明板块之间取等权均值。'
     theme_rows = "".join(
         f'<tr><td>{html_text(theme["name"])}</td>'
         f'<td class="num">{theme["limit_up_count"]:.0f}</td>'
@@ -281,11 +291,11 @@ def html_mainline(
         f'板块资金净流入 &gt; {rules["capital_threshold_cny"] / 1e8:,.2f} 亿元'
         f'{bleeding_clause(rules, html=True)}。</p>'
         '<div class="table-wrap"><table class="tbl"><thead><tr><th>主题</th><th>涨停</th>'
-        '<th>主题涨停股资金</th><th>板块资金</th><th>板块涨跌(等权)</th><th>象限</th>'
+        f'<th>主题涨停股资金</th><th>{capital_heading}</th><th>{change_heading}</th><th>象限</th>'
         f'</tr></thead><tbody>{theme_rows}</tbody></table></div>'
         f'<div class="matrix-legend">{legend}</div>'
         '<p class="note">象限是「游资情绪面 × 机构资金面」的二维结构分类，不是评分，'
-        "也不构成入场信号或仓位指令。板块涨跌在多个声明板块之间取等权均值。</p>"
+        f"也不构成入场信号或仓位指令。{html_text(scope_note)}</p>"
     )
 
 

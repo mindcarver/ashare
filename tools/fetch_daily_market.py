@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.4 输入 market.json。
+"""抓取单个交易日的 A 股盘面数据，组装成 ashare-daily-market-review 的 1.5 输入 market.json。
 
 分工原则（机器能取的自动取，需要研究判断的显式声明）：
 
@@ -20,9 +20,18 @@
     streak_distribution / high_boards → short_term_sentiment
     concept_view → sectors.concept_view（第二套分类，须区别于行业层）
     sector_leaders → 以板块代码键控，落到 sectors.items[].leaders
-  深度分析（1.4）：
+  深度分析（1.5）：
     analysis_mode → 默认deep；只有显式core才走轻量路径
     deep_analysis → 缺少的六组件补为显式unknown，再由生成器严格校验、派生与渲染
+    写 deep_analysis 时必须满足 1.5 四条纪律，否则校验直接拒收：
+      catalyst_chains.items[]    必填 scope(theme/macro_backdrop)、catalyst_type、transmission；
+                                 macro_backdrop 的 affected_theme_ids 必须为空数组
+      security_details           必填 cross_check_tolerance_pct；1日窗口要与
+                                 short_term_sentiment.high_boards / sectors.items[].leaders
+                                 的同一交易日资金口径交叉校验
+      capital_co_movement        concentration_scope=complete 时不得声明 min_sample_coverage_pct；
+                                 声明 sample 时必须给 thresholds.min_sample_coverage_pct，
+                                 且每个group都要给不低于下限的 sample_coverage_pct
 
 组装后会调用技能的生成器做一次契约校验（--validate，默认开），通过才落盘。
 
@@ -786,7 +795,7 @@ def build_input(date_str, as_of, fetched_at, snapshot_type, cutoff_at, raw, ctx,
 
     analysis_mode = analysis_mode_from_context(ctx)
     market = {
-        "schema_version": "1.4",
+        "schema_version": "1.5",
         "analysis_mode": analysis_mode,
         "market_date": date_str,
         "as_of": as_of,
@@ -834,7 +843,7 @@ def validate_output(path, as_of):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.4 输入")
+    parser = argparse.ArgumentParser(description="抓取并组装 ashare-daily-market-review 的 1.5 输入")
     parser.add_argument("--date", required=True, help="交易日 YYYY-MM-DD")
     parser.add_argument("--out", type=Path, default=Path("market.json"))
     parser.add_argument("--as-of", help="默认同 --date")

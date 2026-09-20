@@ -172,7 +172,7 @@ class DailyMarketReviewTests(unittest.TestCase):
 
         self.assertIn("index_up_breadth_narrow", [item["code"] for item in summary["signals"]])
         signal = next(item for item in summary["signals"] if item["code"] == "index_up_breadth_narrow")
-        self.assertEqual(signal["rule"], "primary_index_change_pct > 0 and advancer_share_pct < 40")
+        self.assertEqual(signal["rule"], "主要指数涨跌幅 > 0 且 上涨家数占比 < 40%")
 
     def test_rejects_future_evidence_and_missing_source(self):
         future = json.loads(MARKET.read_text(encoding="utf-8"))
@@ -285,7 +285,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             markdown = markdown_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(summary["schema_version"], "1.4")
+        self.assertEqual(summary["schema_version"], "1.5")
         self.assertEqual(summary["legacy_migration"]["from"], "1.0")
         self.assertIn("兼容归一化", markdown)
         self.assertIn("定性观察点（不自动结算）", markdown)
@@ -534,7 +534,7 @@ class DailyMarketReviewTests(unittest.TestCase):
             html = html_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-        self.assertIn("A-SHARE / DAILY INTELLIGENCE", html)
+        self.assertIn("A股 · 每日盘面复盘", html)
         self.assertIn("市场宽度", html)
         self.assertIn("板块温度", html)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
@@ -979,9 +979,9 @@ class DailyMarketReviewTests(unittest.TestCase):
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
         self.assertEqual(legacy["schema_version"], "1.1")
-        self.assertEqual(summary["schema_version"], "1.4")
+        self.assertEqual(summary["schema_version"], "1.5")
         self.assertEqual(summary["legacy_migration"]["from"], "1.1")
-        self.assertIn("设为core", summary["legacy_migration"]["warnings"][0])
+        self.assertIn("按基础交付处理", summary["legacy_migration"]["warnings"][0])
         self.assertIn("兼容归一化", markdown)
         self.assertEqual(
             sorted(summary["sections"]),
@@ -1012,7 +1012,7 @@ class DailyMarketReviewTests(unittest.TestCase):
         self.assertIn("双确认主线矩阵", html)
         self.assertIn("延续性检验", html)
         self.assertIn("阈值体检", html)
-        self.assertIn("反方证据 · mainline_matrix", html)
+        self.assertIn("反方证据 · 双确认主线矩阵", html)
         self.assertIn("不是评分", html)
         self.assertNotIn("<script", html)
 

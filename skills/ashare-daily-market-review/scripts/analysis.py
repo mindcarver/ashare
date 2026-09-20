@@ -81,7 +81,8 @@ def derive_mainline_matrix(
         bleeding_threshold = float(bleeding_threshold)
     themes = []
     for theme in section["themes"]:
-        boards = [board_lookup[board_id] for board_id in theme["boards"]]
+        reference = theme.get("representative_board_id")
+        boards = [board_lookup[board_id] for board_id in ([reference] if reference else theme["boards"])]
         missing_flow = sorted(
             board["id"] for board in boards if board.get("fund_flow") is None
         )
@@ -105,14 +106,14 @@ def derive_mainline_matrix(
             if capital_positive and sentiment_positive:
                 quadrant = "dual_confirmed"
                 quadrant_rule = (
-                    f"board_fund_flow_cny > {capital_threshold:g} "
-                    f"且 limit_up_count >= {limit_up_threshold}"
+                    f"板块资金净流入 > {capital_threshold / 1e8:.2f}亿元 "
+                    f"且 涨停家数 ≥ {limit_up_threshold}"
                 )
             elif capital_positive:
                 quadrant = "capital_led"
                 quadrant_rule = (
-                    f"board_fund_flow_cny > {capital_threshold:g} "
-                    f"且 limit_up_count < {limit_up_threshold}"
+                    f"板块资金净流入 > {capital_threshold / 1e8:.2f}亿元 "
+                    f"且 涨停家数 < {limit_up_threshold}"
                 )
             elif sentiment_positive:
                 # 声明失血线后，把「家数达标」再按资金流出深度拆一档：
@@ -120,26 +121,29 @@ def derive_mainline_matrix(
                 if bleeding_threshold is not None and board_fund_flow <= bleeding_threshold:
                     quadrant = "sentiment_bleeding"
                     quadrant_rule = (
-                        f"limit_up_count >= {limit_up_threshold} "
-                        f"且 board_fund_flow_cny <= {bleeding_threshold:g}"
+                        f"涨停家数 ≥ {limit_up_threshold} "
+                        f"且 板块资金净流入 ≤ {bleeding_threshold / 1e8:.2f}亿元"
                     )
                 else:
                     quadrant = "sentiment_only"
                     quadrant_rule = (
-                        f"limit_up_count >= {limit_up_threshold} "
-                        f"且 board_fund_flow_cny <= {capital_threshold:g}"
+                        f"涨停家数 ≥ {limit_up_threshold} "
+                        f"且 板块资金净流入 ≤ {capital_threshold / 1e8:.2f}亿元"
                     )
             else:
                 quadrant = "bleeding"
                 quadrant_rule = (
-                    f"limit_up_count < {limit_up_threshold} "
-                    f"且 board_fund_flow_cny <= {capital_threshold:g}"
+                    f"涨停家数 < {limit_up_threshold} "
+                    f"且 板块资金净流入 ≤ {capital_threshold / 1e8:.2f}亿元"
                 )
         themes.append(
             {
                 "id": theme["id"],
                 "name": theme["name"],
                 "boards": list(theme["boards"]),
+                **({"representative_board_id": reference,
+                    "representative_board_name": board_lookup[reference]['name'],
+                    "capital_scope_note": f"资金仅参照{board_lookup[reference]['name']}，不代表全主题去重合计"} if reference else {}),
                 "limit_up_count": limit_up,
                 "limit_up_fund_flow_cny": (
                     float(theme["limit_up_fund_flow"]["value"])
@@ -300,7 +304,7 @@ def mainline_signals(mainline: dict[str, Any] | None) -> list[dict[str, str]]:
         detail = "、".join(
             f"{theme['name']}（涨停 {theme['limit_up_count']:.0f}，板块资金 "
             + (
-                "unknown"
+                "未声明"
                 if theme["board_fund_flow_cny"] is None
                 else f"{theme['board_fund_flow_cny'] / 1e8:+.2f}亿元"
             )

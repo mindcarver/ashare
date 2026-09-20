@@ -8,7 +8,7 @@
 from collections import Counter
 from typing import Any
 
-from schema import DEEP_COMPONENTS, parse_date
+from schema import DEEP_COMPONENTS, parse_date, SENTIMENT_STATE_LABELS, LIQUIDITY_RESULT_LABELS
 
 
 def deep_coverage(data: dict[str, Any]) -> dict[str, Any]:
@@ -69,7 +69,7 @@ def _longitudinal(
         checks.append(
             _check(
                 status,
-                f"窗口末日{latest_date or 'unknown'}；当前状态{cycle.get('current_state', 'unknown')}；窗口涨停新低={new_low}",
+                f"窗口末日{latest_date or '未知'}；当前情绪状态{SENTIMENT_STATE_LABELS.get(cycle.get('current_state', 'unknown'), cycle.get('current_state', '未知'))}；窗口涨停新低={'是' if new_low else ('否' if new_low is not None else '未知')}",
                 "sentiment window must cover market_date and current limit_up must not equal its minimum",
             )
         )
@@ -91,7 +91,7 @@ def _longitudinal(
         checks.append(
             _check(
                 health_status,
-                f"晋级率{prev_pool.get('promotion_rate_pct')}%，健康状态{health}",
+                f"晋级率{prev_pool.get('promotion_rate_pct')}%，{'达到声明健康线' if health == 'at_or_above_line' else ('低于声明健康线' if health == 'below_line' else '健康线对照未知')}",
                 "promotion_rate_pct >= declared health_threshold_pct",
             )
         )
@@ -147,7 +147,7 @@ def _liquidity_status(deep: dict[str, Any], mode: str) -> dict[str, str]:
     }.get(result, "unknown")
     return _check(
         status,
-        f"{liquidity.get('passed_count', 0)}/{liquidity.get('evaluated_count', 0)}项成立；{result}",
+        f"{liquidity.get('passed_count', 0)}/{liquidity.get('evaluated_count', 0)}项成立；{LIQUIDITY_RESULT_LABELS.get(result, result)}",
         "all declared liquidity conditions must pass",
     )
 
@@ -305,7 +305,8 @@ def _theme_rows(
         }
         verification = _check(
             "supported" if verification_ids or theme["id"] in direct_verifications else "unknown",
-            f"关联验证点{len(verification_ids)}个",
+            f"关联验证点{len(verification_ids)}个"
+            + ("；主题自有验证点" if theme["id"] in direct_verifications else ""),
             "theme or its catalyst chain must have a future verification point",
         )
         statuses = {
@@ -330,7 +331,13 @@ def _theme_rows(
             {
                 "id": theme["id"],
                 "name": theme["name"],
+                **({"capital_scope_note": theme['capital_scope_note']} if theme.get('capital_scope_note') else {}),
                 "quadrant": theme.get("quadrant"),
+                "limit_up_count": theme.get("limit_up_count"),
+                "board_fund_flow_cny": theme.get("board_fund_flow_cny"),
+                "catalyst_count": len(mapped),
+                "verification_count": len(verification_ids),
+                "has_own_verification": theme["id"] in direct_verifications,
                 "checks": {
                     "longitudinal": {"status": longitudinal["status"], "evidence": "; ".join(item["evidence"] for item in longitudinal["checks"]) or "纵向证据未知"},
                     "horizontal": horizontal,
@@ -366,11 +373,11 @@ def derive_four_axis(
         },
         "theme_intersections": _theme_rows(data, derived, longitudinal),
         "result_rules": {
-            "multi_axis_supported": "horizontal, longitudinal, liquidity, concentration, catalyst and verification are all supported",
-            "regime_conflicted": "horizontal is supported but longitudinal, liquidity or concentration is contradicted",
-            "horizontal_only": "horizontal is supported while at least one other axis is unknown or not enabled",
-            "not_horizontal_confirmed": "theme quadrant is not dual_confirmed",
-            "insufficient": "horizontal evidence is unknown",
+            "multi_axis_supported": "时间轴、截面、量价、集中度、催化链、验证链六项全部支持",
+            "regime_conflicted": "截面达标，但时间轴/量价/集中度任一反向",
+            "horizontal_only": "截面达标，其余轴缺证或未启用",
+            "not_horizontal_confirmed": "当日主线象限未达双确认",
+            "insufficient": "截面象限证据未知",
         },
         "note": "四轴只枚举证据状态和公开规则，不聚合成分数，不构成交易动作",
     }
