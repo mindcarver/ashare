@@ -107,7 +107,7 @@ def derive_short_term_sentiment(
             result.update(
                 {
                     "state": "repair",
-                    "rule": "limit_up > previous_limit_up and limit_down < previous_limit_down and open_board_rate_pct < previous_open_board_rate_pct and highest_streak >= previous_highest_streak",
+                    "rule": "涨停家数高于前值 且 跌停家数低于前值 且 炸板率低于前值 且 最高连板不低于前值",
                     "evidence": (
                         f"涨停 {previous_limit_up:.0f}→{limit_up:.0f}，"
                         f"跌停 {previous_limit_down:.0f}→{limit_down:.0f}，"
@@ -121,7 +121,7 @@ def derive_short_term_sentiment(
     result.update(
         {
             "state": "neutral",
-            "rule": "no_predefined_state_triggered",
+            "rule": "未触发预定义状态",
             "evidence": "当前数据完整但未触发预定义状态",
         }
     )
@@ -173,7 +173,7 @@ def derive(
                 {
                     "code": "index_up_breadth_narrow",
                     "label": "指数上涨但宽度偏窄",
-                    "rule": "primary_index_change_pct > 0 and advancer_share_pct < 40",
+                    "rule": "主要指数涨跌幅 > 0 且 上涨家数占比 < 40%",
                     "evidence": f"{primary['name']} {primary_change:+.2f}%，上涨家数占比 {derived['advancer_share_pct']:.2f}%",
                 }
             )
@@ -182,7 +182,7 @@ def derive(
                 {
                     "code": "index_down_breadth_resilient",
                     "label": "指数下跌但宽度仍有韧性",
-                    "rule": "primary_index_change_pct < 0 and advancer_share_pct > 60",
+                    "rule": "主要指数涨跌幅 < 0 且 上涨家数占比 > 60%",
                     "evidence": f"{primary['name']} {primary_change:+.2f}%，上涨家数占比 {derived['advancer_share_pct']:.2f}%",
                 }
             )

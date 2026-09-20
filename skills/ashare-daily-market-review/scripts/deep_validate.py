@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Schema 1.4 深度分析层校验。
+"""Schema 1.5 深度分析层校验。
 
 深度层放在顶层 ``deep_analysis``，不进入基础章节覆盖计数。所有组件均可选；
 存在才校验，缺失绝不回填。资金迁移只允许表达同日共现候选，不能声明因果迁移。
+1.5 的两条「资金/催化」纪律拆到 ``deep_flow_validate.py``，本模块只管其余组件。
 """
 
 import math
@@ -12,11 +13,17 @@ from datetime import date
 from typing import Any
 
 from evidence import (
+    deep_component,
+    require_current_evidence,
     require_market_date,
     validate_event,
     validate_evidence,
     validate_source,
     validate_window,
+)
+from deep_flow_validate import (
+    validate_capital_co_movement,
+    validate_catalyst_chains,
 )
 from schema import (
     AVAILABILITY,
@@ -45,45 +52,6 @@ LIQUIDITY_THRESHOLD_KEYS = {
 }
 
 
-def _component(data: dict[str, Any], name: str) -> dict[str, Any] | None:
-    deep = data.get("deep_analysis")
-    if deep is None:
-        return None
-    if not isinstance(deep, dict):
-        raise ReviewError("deep_analysis 必须是object")
-    unknown = set(deep) - set(DEEP_COMPONENTS)
-    if unknown:
-        raise ReviewError(f"deep_analysis 含不受支持组件：{sorted(unknown)}")
-    if name not in deep:
-        return None
-    component = deep[name]
-    if component is None:
-        raise ReviewError(f"deep_analysis.{name} 不能是null")
-    if not isinstance(component, dict):
-        raise ReviewError(f"deep_analysis.{name} 必须是object")
-    if component.get("availability") not in AVAILABILITY:
-        raise ReviewError(f"deep_analysis.{name}.availability 不受支持")
-    require_text(component, "status_reason", f"deep_analysis.{name}")
-    if component["availability"] == "unknown" and set(component) - {
-        "availability",
-        "status_reason",
-    }:
-        raise ReviewError(f"deep_analysis.{name} 标记unknown时不能携带分析数据")
-    return component
-
-
-def _validate_current_evidence(
-    evidence: Any,
-    field: str,
-    as_of: date,
-    market_date: date,
-    unit: str,
-    constraint: str = "any",
-) -> None:
-    validate_evidence(evidence, field, as_of, unit, constraint)
-    require_market_date(evidence, field, market_date)
-
-
 def _validate_datetime_evidence(
     evidence: Any,
     field: str,
@@ -104,12 +72,60 @@ def _validate_datetime_evidence(
     return value
 
 
+def _baseline_daily_flows(
+    sections: dict[str, dict[str, Any]],
+) -> dict[str, tuple[str, float]]:
+    """基础章节里同一交易日的「当日主力净额」，用于和深度表 1 日窗口交叉校验。
+
+    同一份报告里同一只票同一天的当日资金不该出现两个数。基础章节（高标池、板块
+    重点股）已经记录了当日口径，深度表再算一次时必须落在声明的容差内——这是
+    「深度表 1 日列按可得性分裂成两套供应商」那个坑的机器拦截点。
+    """
+    baseline: dict[str, tuple[str, float]] = {}
+
+    def remember(code: Any, flow: Any, label: str) -> None:
+        if not isinstance(code, str) or not code.strip():
+            return
+        raw = (flow or {}).get("value") if isinstance(flow, dict) else flow
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            return
+        baseline.setdefault(code, (label, float(raw)))
+
+    for item in sections["short_term_sentiment"].get("high_boards") or []:
+        remember(item.get("code"), item.get("fund_flow"), "短线情绪高标池")
+    for sector in sections["sectors"].get("items", []):
+        for item in sector.get("leaders") or []:
+            remember(item.get("code"), item.get("fund_flow"), f"板块重点股（{sector['name']}）")
+    return baseline
+
+
 def validate_security_details(
-    data: dict[str, Any], as_of: date, market_date: date
+    data: dict[str, Any], sections: dict[str, dict[str, Any]], as_of: date, market_date: date, strict: bool
 ) -> None:
-    component = _component(data, "security_details")
+    component = deep_component(data, "security_details")
     if component is None or component["availability"] == "unknown":
         return
+    if "methodology" in component:
+        require_text(component, "methodology", "deep_analysis.security_details")
+    if "public_caveat" in component:
+        require_text(component, "public_caveat", "deep_analysis.security_details")
+    tolerance = None
+    if "cross_check_tolerance_pct" in component:
+        raw_tolerance = component["cross_check_tolerance_pct"]
+        if (
+            isinstance(raw_tolerance, bool)
+            or not isinstance(raw_tolerance, (int, float))
+            or not math.isfinite(raw_tolerance)
+            or not 0 <= raw_tolerance <= 100
+        ):
+            raise ReviewError("deep_analysis.security_details.cross_check_tolerance_pct 必须在0到100之间")
+        tolerance = float(raw_tolerance)
+    elif strict:
+        raise ReviewError(
+            "deep_analysis.security_details.cross_check_tolerance_pct 必须声明："
+            "1日窗口要与基础章节同一交易日的当日资金口径交叉校验，容差由输入显式给出"
+        )
+    baseline = _baseline_daily_flows(sections) if tolerance is not None else {}
     items = component.get("items")
     if not isinstance(items, list) or not items:
         raise ReviewError("deep_analysis.security_details.items 必须是非空数组")
@@ -127,7 +143,7 @@ def validate_security_details(
         if not isinstance(roles, list) or not roles or not set(roles) <= DEEP_SECURITY_ROLES:
             raise ReviewError(f"{field}.roles 不受支持或为空")
         if "change_pct" in item:
-            _validate_current_evidence(
+            require_current_evidence(
                 item["change_pct"], f"{field}.change_pct", as_of, market_date, "percent"
             )
         if "streak" in item:
@@ -151,11 +167,22 @@ def validate_security_details(
             if days in seen_windows:
                 raise ReviewError(f"{field}.fund_flow_windows 窗口不能重复")
             seen_windows.add(days)
-            _validate_current_evidence(
+            require_current_evidence(
                 window_item.get("metric"), f"{sub}.metric", as_of, market_date, "CNY"
             )
             if window_item.get("method_category") not in FUND_METHODS:
                 raise ReviewError(f"{sub}.method_category 不受支持")
+            if days == 1 and tolerance is not None and code in baseline:
+                label, base_value = baseline[code]
+                deep_value = float(window_item["metric"]["value"])
+                if base_value:
+                    diff_pct = abs(deep_value - base_value) / abs(base_value) * 100
+                    if diff_pct > tolerance + 1e-9:
+                        raise ReviewError(
+                            f"{sub}.metric 与基础章节同一交易日口径相差 {diff_pct:.2f}%"
+                            f"（{label}），超过声明的 cross_check_tolerance_pct={tolerance}%；"
+                            "请统一到同一口径，或提高容差并在 methodology 写明来源差异"
+                        )
 
         seal = item.get("seal_structure")
         if seal is not None:
@@ -179,7 +206,7 @@ def validate_security_details(
             if first is not None and last is not None and first > last:
                 raise ReviewError(f"{field}.seal_structure 首封时间不能晚于末封时间")
             if "sealed_order_amount" in seal:
-                _validate_current_evidence(
+                require_current_evidence(
                     seal["sealed_order_amount"],
                     f"{field}.seal_structure.sealed_order_amount",
                     as_of,
@@ -188,7 +215,7 @@ def validate_security_details(
                     "nonnegative",
                 )
             if "break_count" in seal:
-                _validate_current_evidence(
+                require_current_evidence(
                     seal["break_count"],
                     f"{field}.seal_structure.break_count",
                     as_of,
@@ -211,7 +238,7 @@ def validate_security_details(
 def validate_liquidity_regime(
     data: dict[str, Any], as_of: date, market_date: date
 ) -> None:
-    component = _component(data, "liquidity_regime")
+    component = deep_component(data, "liquidity_regime")
     if component is None or component["availability"] == "unknown":
         return
     thresholds = component.get("thresholds")
@@ -259,6 +286,8 @@ def validate_liquidity_regime(
         if item_id in ids:
             raise ReviewError("liquidity_regime.benchmarks.id 不能重复")
         ids.add(item_id)
+        from price_volume import validate_bar_metrics
+        validate_bar_metrics(item, market_date.isoformat())
         if component["availability"] == "available" and any(key not in item for key in required):
             raise ReviewError(f"available liquidity_regime 的benchmark缺少必需指标")
         for key, unit, constraint in (
@@ -271,7 +300,7 @@ def validate_liquidity_regime(
             ("consecutive_volume_days", "count", "nonnegative"),
         ):
             if key in item:
-                _validate_current_evidence(
+                require_current_evidence(
                     item[key], f"{field}.{key}", as_of, market_date, unit, constraint
                 )
                 if key.endswith("percentile_120d") and not 0 <= float(item[key]["value"]) <= 100:
@@ -285,7 +314,7 @@ def validate_liquidity_regime(
 def validate_sentiment_cycle(
     data: dict[str, Any], as_of: date, market_date: date
 ) -> None:
-    component = _component(data, "sentiment_cycle")
+    component = deep_component(data, "sentiment_cycle")
     if component is None or component["availability"] == "unknown":
         return
     if any(key in component for key in ("score", "sentiment_score", "composite_score")):
@@ -336,144 +365,10 @@ def validate_sentiment_cycle(
         raise ReviewError("available sentiment_cycle 必须覆盖market_date")
 
 
-def validate_capital_co_movement(
-    data: dict[str, Any], sections: dict[str, dict[str, Any]], as_of: date, market_date: date
-) -> None:
-    component = _component(data, "capital_co_movement")
-    if component is None or component["availability"] == "unknown":
-        return
-    require_text(component, "methodology", "deep_analysis.capital_co_movement")
-    if component.get("claim_type") != "co_movement_candidate":
-        raise ReviewError("capital_co_movement.claim_type 必须是co_movement_candidate")
-    thresholds = component.get("thresholds")
-    if not isinstance(thresholds, dict):
-        raise ReviewError("capital_co_movement.thresholds 必须是object")
-    pseudo_line = thresholds.get("pseudo_sector_top1_share_pct")
-    if isinstance(pseudo_line, bool) or not isinstance(pseudo_line, (int, float)) or not 0 <= pseudo_line <= 100:
-        raise ReviewError("pseudo_sector_top1_share_pct 必须在0到100之间")
-    sector_ids = {item["id"] for item in sections["sectors"].get("items", [])}
-    groups = component.get("groups")
-    if not isinstance(groups, list) or not groups:
-        raise ReviewError("capital_co_movement.groups 必须是非空数组")
-    ids: set[str] = set()
-    for index, group in enumerate(groups):
-        field = f"deep_analysis.capital_co_movement.groups[{index}]"
-        if not isinstance(group, dict):
-            raise ReviewError(f"{field} 必须是object")
-        group_id = require_text(group, "id", field)
-        require_text(group, "name", field)
-        if group_id in ids:
-            raise ReviewError("capital_co_movement.groups.id 不能重复")
-        ids.add(group_id)
-        if group.get("role") not in {"inflow", "outflow"}:
-            raise ReviewError(f"{field}.role 必须是inflow或outflow")
-        board_ids = group.get("board_ids")
-        if not isinstance(board_ids, list) or not board_ids or not set(board_ids) <= sector_ids:
-            raise ReviewError(f"{field}.board_ids 存在悬空引用或为空")
-        if len(board_ids) != len(set(board_ids)):
-            raise ReviewError(f"{field}.board_ids 不能重复")
-        _validate_current_evidence(
-            group.get("total_fund_flow"), f"{field}.total_fund_flow", as_of, market_date, "CNY"
-        )
-        _validate_current_evidence(
-            group.get("change_pct"), f"{field}.change_pct", as_of, market_date, "percent"
-        )
-        total = float(group["total_fund_flow"]["value"])
-        if group["role"] == "inflow" and total <= 0:
-            raise ReviewError(f"{field} inflow组的total_fund_flow必须为正")
-        if group["role"] == "outflow" and total >= 0:
-            raise ReviewError(f"{field} outflow组的total_fund_flow必须为负")
-        complete = group.get("contributions_complete")
-        if not isinstance(complete, bool):
-            raise ReviewError(f"{field}.contributions_complete 必须是boolean")
-        contributions = group.get("contributions", [])
-        if not isinstance(contributions, list):
-            raise ReviewError(f"{field}.contributions 必须是数组")
-        if complete and len(contributions) < 2:
-            raise ReviewError(f"{field} 完整贡献分解至少需要2只个股")
-        codes: set[str] = set()
-        contribution_sum = 0.0
-        for position, item in enumerate(contributions):
-            sub = f"{field}.contributions[{position}]"
-            if not isinstance(item, dict):
-                raise ReviewError(f"{sub} 必须是object")
-            code = require_text(item, "code", sub)
-            require_text(item, "name", sub)
-            if code in codes:
-                raise ReviewError(f"{field}.contributions.code 不能重复")
-            codes.add(code)
-            _validate_current_evidence(
-                item.get("fund_flow"), f"{sub}.fund_flow", as_of, market_date, "CNY"
-            )
-            contribution_sum += float(item["fund_flow"]["value"])
-        if complete and not math.isclose(contribution_sum, total, abs_tol=1.0):
-            raise ReviewError(f"{field} 完整贡献分解之和必须等于total_fund_flow")
-
-    relations = component.get("relations", [])
-    if not isinstance(relations, list):
-        raise ReviewError("capital_co_movement.relations 必须是数组")
-    for index, relation in enumerate(relations):
-        field = f"deep_analysis.capital_co_movement.relations[{index}]"
-        if not isinstance(relation, dict):
-            raise ReviewError(f"{field} 必须是object")
-        if relation.get("from_group_id") not in ids or relation.get("to_group_id") not in ids:
-            raise ReviewError(f"{field} 引用了不存在的group")
-        lookup = {group["id"]: group for group in groups}
-        if lookup[relation["from_group_id"]]["role"] != "outflow":
-            raise ReviewError(f"{field}.from_group_id 必须引用outflow组")
-        if lookup[relation["to_group_id"]]["role"] != "inflow":
-            raise ReviewError(f"{field}.to_group_id 必须引用inflow组")
-        require_text(relation, "hypothesis", field)
-        counter = relation.get("counter_evidence")
-        if not isinstance(counter, list) or not counter or not all(
-            isinstance(item, str) and item.strip() for item in counter
-        ):
-            raise ReviewError(f"{field}.counter_evidence 必须是非空字符串数组")
-
-
-def validate_catalyst_chains(
-    data: dict[str, Any], sections: dict[str, dict[str, Any]], as_of: date
-) -> None:
-    component = _component(data, "catalyst_chains")
-    if component is None or component["availability"] == "unknown":
-        return
-    items = component.get("items")
-    if not isinstance(items, list) or not items:
-        raise ReviewError("deep_analysis.catalyst_chains.items 必须是非空数组")
-    theme_ids = {
-        theme["id"]
-        for theme in sections["mainline_matrix"].get("themes", [])
-    }
-    point_ids = {point.get("id") for point in data.get("verification_points", [])}
-    ids: set[str] = set()
-    for index, item in enumerate(items):
-        field = f"deep_analysis.catalyst_chains.items[{index}]"
-        validate_event(item, field, as_of, False)
-        item_id = require_text(item, "id", field)
-        if item_id in ids:
-            raise ReviewError("catalyst_chains.id 不能重复")
-        ids.add(item_id)
-        require_text(item, "fact", field)
-        require_text(item, "mechanism_hypothesis", field)
-        if item.get("causal_status") not in {"hypothesis", "correlation_only"}:
-            raise ReviewError(f"{field}.causal_status 不受支持")
-        affected = item.get("affected_theme_ids")
-        if not isinstance(affected, list) or not affected or not set(affected) <= theme_ids:
-            raise ReviewError(f"{field}.affected_theme_ids 存在悬空引用或为空")
-        counter = item.get("counter_evidence")
-        if not isinstance(counter, list) or not counter or not all(
-            isinstance(value, str) and value.strip() for value in counter
-        ):
-            raise ReviewError(f"{field}.counter_evidence 必须是非空字符串数组")
-        verification_ids = item.get("verification_point_ids")
-        if not isinstance(verification_ids, list) or not verification_ids or not set(verification_ids) <= point_ids:
-            raise ReviewError(f"{field}.verification_point_ids 存在悬空引用或为空")
-
-
 def validate_lhb_structure(
     data: dict[str, Any], as_of: date, market_date: date
 ) -> None:
-    component = _component(data, "lhb_structure")
+    component = deep_component(data, "lhb_structure")
     if component is None or component["availability"] == "unknown":
         return
     require_text(component, "methodology", "deep_analysis.lhb_structure")
@@ -529,7 +424,7 @@ def validate_lhb_structure(
             ("top_seller_share_pct", "percent", "nonnegative"),
         ):
             if key in item:
-                _validate_current_evidence(
+                require_current_evidence(
                     item[key], field + "." + key, as_of, observed_at, unit, constraint
                 )
         if ("buy_amount" in item) != ("sell_amount" in item):
@@ -647,10 +542,12 @@ def validate_deep_analysis(
         return
     if data["deep_analysis"] is None:
         raise ReviewError("deep_analysis 不能是null")
-    validate_security_details(data, as_of, market_date)
+    # 由 1.4 升级进来的输入豁免 1.5 新增的必填项，历史 deep 输入因此仍可重放。
+    strict = data.get("legacy_migration") is None
+    validate_security_details(data, sections, as_of, market_date, strict)
     validate_liquidity_regime(data, as_of, market_date)
     validate_sentiment_cycle(data, as_of, market_date)
-    validate_capital_co_movement(data, sections, as_of, market_date)
-    validate_catalyst_chains(data, sections, as_of)
+    validate_capital_co_movement(data, sections, as_of, market_date, strict)
+    validate_catalyst_chains(data, sections, as_of, strict)
     validate_lhb_structure(data, as_of, market_date)
     validate_verification_subjects(data, sections)

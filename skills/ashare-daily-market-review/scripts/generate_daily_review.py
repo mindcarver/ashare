@@ -99,6 +99,10 @@ def generate(
         resolved_verifications,
     )
     html = inject_shared_css(html)
+    # 读者语言门禁：公开产物含英文字段码/枚举/ID 即拒出（2026-09-17 用户规则）。
+    from public_language import assert_public_language
+
+    assert_public_language(markdown, html)
     return markdown, summary, html
 
 

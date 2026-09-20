@@ -54,17 +54,17 @@ class FourAxisTests(unittest.TestCase):
             report = report_path.read_text(encoding="utf-8")
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
             html = html_path.read_text(encoding="utf-8")
-        self.assertEqual(summary["schema_version"], "1.4")
+        self.assertEqual(summary["schema_version"], "1.5")
         self.assertEqual(summary["analysis_mode"], "core")
         self.assertFalse(summary["deep_coverage"]["enabled"])
         self.assertEqual(summary["deep_coverage"]["missing"], 6)
         self.assertIn("深度模式未启用", report)
-        self.assertIn("CORE · 深度模式未启用", html)
+        self.assertIn("基础交付 · 深度组件未启用", html)
         self.assertIn('aria-label="纵横深验四轴总览"', html)
 
     def test_new_schema_requires_mode_and_deep_requires_all_components(self):
         missing_mode = json.loads(MARKET.read_text(encoding="utf-8"))
-        missing_mode["schema_version"] = "1.4"
+        missing_mode["schema_version"] = "1.5"
         deep = deep_fixture.DeepAnalysisTests().deep_market()
         deep["deep_analysis"].pop("lhb_structure")
         null_component = deep_fixture.DeepAnalysisTests().deep_market()
@@ -117,6 +117,39 @@ class FourAxisTests(unittest.TestCase):
         self.assertIn("主题跨轴交汇", report)
         self.assertIn("环境冲突", html)
         self.assertIn("纵 × 横 × 深 × 验", html)
+
+    def test_theme_digest_leads_and_detail_is_demoted(self):
+        # 第五轮可读性反馈：六轴矩阵是审计面不是阅读面——速览在前、明细折叠在后。
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, _, html_path = self.run_generator(market, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            html = html_path.read_text(encoding="utf-8")
+        self.assertIn("当日主线速览（按当日判定强弱排序", report)
+        self.assertIn("| 主线 | 当日判定 | 关键数据 | 催化与验证 | 读法 |", report)
+        self.assertIn("大盘环境（各主题共用同一判定）", report)
+        self.assertIn("审计明细：六轴逐项判定", report)
+        self.assertIn("<details>", report)  # 明细已折叠
+        self.assertIn("当日主线速览", html)
+        self.assertIn("<details class=\"method-details\"><summary>审计明细", html)
+        # 速览行带关键数据与读法
+        self.assertRegex(report, r"涨停\d+家｜板块资金[+-][\d,\.]+亿元")
+
+    def test_theme_table_is_self_explanatory(self):
+        # 单字列名 + 裸三态值看不懂（2026-09-17用户反馈）：
+        # 列头必须自解释、格子带短原因、结果配读法说明。
+        market = deep_fixture.DeepAnalysisTests().deep_market()
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, _, html_path = self.run_generator(market, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            html = html_path.read_text(encoding="utf-8")
+        for header in ("时间轴", "截面", "量价", "集中度", "催化链", "验证链"):
+            self.assertIn(header, report)
+        self.assertIn("支持（双确认）", report)
+        self.assertIn("结果读法：多轴支持＝六项全部支持", report)
+        self.assertIn("列含义：时间轴＝近几日情绪与晋级是否同向", report)
+        self.assertIn("<small>", html)
+        self.assertNotIn("| 纵 | 横 | 量价 | 集中度 | 催化 | 验证 |", report)
 
     def test_missing_depth_stays_horizontal_only(self):
         market = deep_fixture.DeepAnalysisTests().deep_market()
@@ -353,7 +386,7 @@ class FourAxisTests(unittest.TestCase):
         self.assertEqual(summary["analysis_mode"], "deep")
         self.assertEqual(summary["deep_coverage"]["unknown"], 6)
         self.assertEqual(summary["deep_coverage"]["missing"], 0)
-        self.assertIn("DEEP · 深度交付", html)
+        self.assertIn("深度交付", html)
 
     def test_ths_northbound_daily_parser_requires_same_day_and_reconciliation(self):
         tool_path = SKILL_DIR.parents[1] / "tools" / "fetch_daily_market.py"

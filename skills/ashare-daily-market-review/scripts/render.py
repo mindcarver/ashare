@@ -22,8 +22,12 @@ from formatting import (
     public_method_category,
     public_status_reason,
     unknown_line,
-    value_tone,
+    value_tone,    humanize_condition_value,
+    translate_rule_text,
 )
+from schema import (ANALYSIS_MODE_LABELS, AVAILABILITY_LABELS, OPERATOR_SYMBOLS,
+    PUBLIC_METRIC_LABELS, SCOPE_LABELS, SECTION_KEY_LABELS, SENTIMENT_STATE_LABELS,
+    SNAPSHOT_TYPE_LABELS)
 from render_analysis import (
     html_concept_flows,
     html_health_check,
@@ -138,7 +142,7 @@ def build_html(
   <span>市场状态</span><strong>{state_labels[sentiment["state"]]}</strong>
 </div><p class="rule">{html_text(sentiment["evidence"])}</p>
 <div class="sentiment-kpis">{cards}</div>
-<details class="method-details"><summary>查看股票池与公开规则</summary><p class="evidence">股票池：{html_text(sentiment_section["universe"]["label"])}（{html_text(sentiment_section["universe"]["id"])}）<br />规则：<code>{html_text(sentiment["rule"])}</code></p></details>'''
+<details class="method-details"><summary>查看股票池与公开规则</summary><p class="evidence">股票池：{html_text(sentiment_section["universe"]["label"])}<br />规则：{html_text(translate_rule_text(sentiment["rule"], PUBLIC_METRIC_LABELS, SENTIMENT_STATE_LABELS))}</p></details>'''
 
     ladder = derived.get("streak_distribution")
     if ladder:
@@ -202,7 +206,7 @@ def build_html(
         rows = []
         for item in section["items"]:
             evidence = item["metric"]
-            method = f' · {html_text(item["method_category"])}' if section_name == "funds" else ""
+            method = f' · {html_text(public_method_category(item["method_category"]))}' if section_name == "funds" else ""
             explanation = (
                 public_method_category(item.get("method_category"))
                 if section_name == "funds"
@@ -214,13 +218,13 @@ def build_html(
     event_items = []
     status_labels = {"passed": "已验证", "failed": "未成立", "unknown": "待补证"}
     event_items.extend(
-        f'<li class="resolved {html_text(item["status"])}"><time>{html_text(item["observed_market_date"])}</time>{html_text(item["title"])}<small>上期验证 · {html_text(item["subject"]["scope"])}:{html_text(item["subject"]["label"])} · {status_labels[item["status"]]} · 观察值 {html_text(fmt_history_value(item["observed_value"], item["condition"]["unit"]))}</small></li>'
+        f'<li class="resolved {html_text(item["status"])}"><time>{html_text(item["observed_market_date"])}</time>{html_text(item["title"])}<small>上期验证 · {html_text(SCOPE_LABELS.get(item["subject"]["scope"], item["subject"]["scope"]))}：{html_text(item["subject"]["label"])} · {status_labels[item["status"]]} · 观察值 {html_text(fmt_history_value(item["observed_value"], item["condition"]["unit"]))}</small></li>'
         for item in resolved_verifications
     )
     if sections["events"]["availability"] != "unknown":
         event_items.extend(f'<li><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>已在信息截止日前公开</small></li>' for item in sections["events"]["items"])
     event_items.extend(
-        f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(item["subject"]["scope"])}:{html_text(item["subject"]["label"])} · {html_text(item["condition"]["metric"])} {html_text(item["condition"]["operator"])} {html_text(item["condition"]["value"])} {html_text(item["condition"]["unit"])}</small></li>'
+        f'<li class="future"><time>{html_text(item["event_date"])}</time>{html_text(item["title"])}<small>后续验证 · {html_text(SCOPE_LABELS.get(item["subject"]["scope"], item["subject"]["scope"]))}：{html_text(item["subject"]["label"])} · {html_text(PUBLIC_METRIC_LABELS.get(item["condition"]["metric"], item["condition"]["metric"]))} {html_text(OPERATOR_SYMBOLS.get(item["condition"]["operator"], item["condition"]["operator"]))} {html_text(humanize_condition_value(item["condition"]["value"], item["condition"]["unit"]))}</small></li>'
         for item in future_points
     )
     event_items.extend(
@@ -229,15 +233,21 @@ def build_html(
     )
     events_html = '<ul class="timeline">' + "".join(event_items) + "</ul>" if event_items else '<p class="empty">暂无可得事件或验证点</p>'
 
-    signal_html = "".join(f'<li><strong>{html_text(signal["label"])}：</strong>{html_text(signal["evidence"])}<small>{html_text(signal["rule"])}</small></li>' for signal in signals)
+    signal_html = "".join(f'<li><strong>{html_text(signal["label"])}：</strong>{html_text(signal["evidence"])}<small>{html_text(translate_rule_text(signal["rule"], PUBLIC_METRIC_LABELS, SENTIMENT_STATE_LABELS))}</small></li>' for signal in signals)
     if not signal_html:
         signal_html = '<li>当前输入未触发任何预定义的结构规则。</li>'
     caveat_html = "".join(
-        f'<li><strong>反方证据 · {html_text(name)}：</strong>{html_text(public_caveat(section))}</li>'
+        f'<li><strong>反方证据 · {html_text(SECTION_KEY_LABELS.get(name, name))}：</strong>{html_text(public_caveat(section))}</li>'
         for name, section in sections.items()
         if public_caveat(section)
     )
-    limits = "".join(f'<li>{html_text(name)}：{html_text(section["availability"])}，{html_text(public_status_reason(section))}</li>' for name, section in sections.items() if section["availability"] != "available")
+    limits = "".join(
+        f'<li>{html_text(SECTION_KEY_LABELS.get(name, name))}：'
+        f'{html_text(AVAILABILITY_LABELS.get(section["availability"], section["availability"]))}，'
+        f'{html_text(public_status_reason(section))}</li>'
+        for name, section in sections.items()
+        if section["availability"] != "available"
+    )
     all_unknown = coverage_counts["unknown"] == len(SECTION_NAMES)
     content = '<div class="no-data">该日期没有可得的盘面数据；未绘制任何零值替代图表。</div>' if all_unknown else f'''<section class="dashboard-grid" aria-label="盘面核心数据"><article class="panel wide"><div class="panel-head"><h2>主要指数</h2>{availability_badge(indices)}</div>{index_rows}</article><article class="panel"><div class="panel-head"><h2>市场宽度</h2>{availability_badge(breadth)}</div>{breadth_chart}</article><article class="panel"><div class="panel-head"><h2>短线情绪</h2>{availability_badge(sentiment_section)}</div>{sentiment_html}</article><article class="panel wide"><div class="panel-head"><h2>板块温度</h2>{availability_badge(sectors)}</div>{sector_html}</article><article class="panel"><div class="panel-head"><h2>资金证据</h2>{availability_badge(sections["funds"])}</div>{evidence_rows("funds", "methodology")}</article><article class="panel"><div class="panel-head"><h2>风格结构</h2>{availability_badge(sections["style"])}</div>{evidence_rows("style", "interpretation")}</article><article class="panel wide"><div class="panel-head"><h2>延续性检验</h2>{availability_badge(sections["prev_pool_performance"])}</div>{prev_pool_html}</article><article class="panel wide"><div class="panel-head"><h2>双确认主线矩阵</h2>{availability_badge(sections["mainline_matrix"])}</div>{mainline_html}</article><article class="panel wide"><div class="panel-head"><h2>事件与验证点</h2>{availability_badge(sections["events"])}</div>{events_html}</article></section>'''
     if not all_unknown and future_points:
@@ -248,7 +258,7 @@ def build_html(
 
     breadth_history = history["metrics"]["advancer_share_pct"]
     turnover_history = history["metrics"]["turnover_amount"]
-    history_strip = f'''<aside class="history-strip" aria-label="连续历史"><span>连续历史</span><strong>{history["sample_size"]} 个交易日 · 前值 {html_text(history["previous_market_date"] or "unknown")}</strong><small>上涨参与度20日分位 {html_text(breadth_history["percentile_20d"] if breadth_history["percentile_20d"] is not None else "样本不足")} · 成交额20日分位 {html_text(turnover_history["percentile_20d"] if turnover_history["percentile_20d"] is not None else "样本不足")}</small></aside>'''
+    history_strip = f'''<aside class="history-strip" aria-label="连续历史"><span>连续历史</span><strong>{history["sample_size"]} 个交易日 · 前值 {html_text(history["previous_market_date"] or "未知")}</strong><small>上涨参与度20日分位 {html_text(breadth_history["percentile_20d"] if breadth_history["percentile_20d"] is not None else "样本不足")} · 成交额20日分位 {html_text(turnover_history["percentile_20d"] if turnover_history["percentile_20d"] is not None else "样本不足")}</small></aside>'''
     content = history_strip + content
 
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>A股每日盘面复盘 · {html_text(data["market_date"])}</title><style>
@@ -265,7 +275,7 @@ main{{max-width:1180px;margin:auto;padding:32px 20px 56px}}
 @media(max-width:760px){{main{{padding:22px 14px 40px}}}}
 @media(max-width:620px){{.four-axis-theme-table{{min-width:760px}}}}
 
-</style></head><body><main><header class="masthead"><div><p class="eyebrow">A-SHARE / DAILY INTELLIGENCE</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(data["snapshot"]["type"])} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节 · 模式 {html_text(data["analysis_mode"].upper())}</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{html_four_axis(derived.get("four_axis"), coverage_counts)}{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><footer>本报告只描述输入证据和显式规则，不构成投资建议。公开报告不展示数据采集渠道；完整证据链保留在审计输入与历史快照中。</footer></main></body></html>'''
+</style></head><body><main><header class="masthead"><div><p class="eyebrow">A股 · 每日盘面复盘</p><h1>市场脉搏</h1></div><p class="asof">交易日 {html_text(data["market_date"])}<br />信息截止 {html_text(data["as_of"])}<br />{html_text(SNAPSHOT_TYPE_LABELS.get(data["snapshot"]["type"], data["snapshot"]["type"]))} · 修订 {data["snapshot"]["revision"]}<br />输入指纹 {html_text(input_sha256[:12])}</p></header><div class="coverage">{availability_badge({"availability": "available"})} {coverage_counts["available"]} 个章节 · {availability_badge({"availability": "partial"})} {coverage_counts["partial"]} 个章节 · {availability_badge({"availability": "unknown"})} {coverage_counts["unknown"]} 个章节 · 模式 {html_text(ANALYSIS_MODE_LABELS.get(data["analysis_mode"], data["analysis_mode"]))}</div><section class="hero-grid" aria-label="市场脉搏摘要">{"".join(hero_cards)}</section>{html_four_axis(derived.get("four_axis"), coverage_counts)}{content}{html_deep_analysis(derived.get("deep_analysis"))}<section class="signal-area"><div class="panel-head"><h2>结构信号与限制</h2><span>证据优先</span></div><ul class="signal-list">{signal_html}{caveat_html}</ul>{f'<ul class="limits">{limits}</ul>' if limits else ''}</section><footer>本报告只描述输入证据和显式规则，不构成投资建议。公开报告不展示数据采集渠道；完整证据链保留在审计输入与历史快照中。</footer></main></body></html>'''
 
 
 def _history_row(history: dict[str, Any], metric: str, label: str) -> str:
@@ -304,9 +314,9 @@ def build_markdown(
         f"# A股每日盘面复盘｜{data['market_date']}",
         "",
         f"- 截止日期：{data['as_of']}",
-        f"- 快照：{data['snapshot']['type']} / 修订 {data['snapshot']['revision']} / 截止 {data['snapshot']['cutoff_at']}",
+        f"- 快照：{SNAPSHOT_TYPE_LABELS.get(data['snapshot']['type'], data['snapshot']['type'])} / 修订 {data['snapshot']['revision']} / 截止 {data['snapshot']['cutoff_at']}",
         f"- 输入SHA-256：`{input_sha256}`",
-        f"- 分析模式：`{data['analysis_mode']}`",
+        f"- 分析模式：{ANALYSIS_MODE_LABELS.get(data['analysis_mode'], data['analysis_mode'])}",
         f"- 覆盖：可得{coverage_counts['available']} / 部分{coverage_counts['partial']} / 未知{coverage_counts['unknown']}",
         "- 结论属性：盘面证据与结构观察，不构成投资建议",
         "",
@@ -318,13 +328,13 @@ def build_markdown(
         )
         lines.append("")
     if coverage_counts["unknown"] == len(SECTION_NAMES):
-        lines.extend(["## 无可得盘面数据", "", "本次十个盘面章节均为unknown，不能形成全市场强弱结论。", ""])
+        lines.extend(["## 无可得盘面数据", "", "本次十个盘面章节均为未知，不能形成全市场强弱结论。", ""])
 
     lines.extend(markdown_four_axis(derived.get("four_axis"), coverage_counts))
 
     lines.extend(["## 连续历史", ""])
     lines.append(
-        f"- 样本：{history['sample_size']} 个交易日；前一交易日：{history['previous_market_date'] or 'unknown'}；当前情绪状态连续 {history['sentiment_state_streak'] if history['sentiment_state_streak'] is not None else 'unknown'} 日。"
+        f"- 样本：{history['sample_size']} 个交易日；前一交易日：{history['previous_market_date'] or '未知'}；当前情绪状态连续 {history['sentiment_state_streak'] if history['sentiment_state_streak'] is not None else '未知'} 日。"
     )
     lines.extend(["", "| 指标 | 当前 | 前值 | 变化 | 20日分位 | 60日分位 |", "|---|---:|---:|---:|---:|---:|"])
     history_labels = (
@@ -383,7 +393,7 @@ def build_markdown(
     sentiment_section = sections["short_term_sentiment"]
     sentiment = derived["short_term_sentiment"]
     if sentiment["state"] == "unknown":
-        lines.extend([f"> UNKNOWN：{public_status_reason(sentiment_section)}", ""])
+        lines.extend([f"> 未知：{public_status_reason(sentiment_section)}", ""])
     else:
         labels = {
             "ice": "冰点",
@@ -395,10 +405,10 @@ def build_markdown(
         metrics = sentiment_section["metrics"]
         lines.extend(
             [
-                f"- 股票池：{sentiment_section['universe']['label']}（{sentiment_section['universe']['id']}）",
+                f"- 股票池：{sentiment_section['universe']['label']}",
                 f"- 炸板率：{sentiment['open_board_rate_pct']:.2f}%（{fmt_evidence(metrics['open_board_failed'])} / {fmt_evidence(metrics['limit_attempts'])}）",
                 f"- 最高连板：{fmt_evidence(metrics['highest_streak'])}",
-                f"- 状态：{labels[sentiment['state']]}；规则：`{sentiment['rule']}`。",
+                f"- 状态：{labels[sentiment['state']]}；规则：{translate_rule_text(sentiment['rule'], PUBLIC_METRIC_LABELS, SENTIMENT_STATE_LABELS)}。",
                 f"- 依据：{sentiment['evidence']}。",
             ]
         )
@@ -432,7 +442,7 @@ def build_markdown(
             lines.append(f"- 较前值：{derived['turnover_vs_previous_pct']:+.2f}%")
         if "turnover_vs_5d_avg_pct" in derived:
             lines.append(f"- 较5日均值：{derived['turnover_vs_5d_avg_pct']:+.2f}%")
-        lines.extend([f"- 覆盖状态：{turnover['availability']}", ""])
+        lines.extend([f"- 覆盖状态：{AVAILABILITY_LABELS.get(turnover['availability'], turnover['availability'])}", ""])
 
     lines.extend(["## 五、板块表现", ""])
     sectors = sections["sectors"]
@@ -441,7 +451,7 @@ def build_markdown(
     else:
         ordered = sorted(sectors["items"], key=lambda item: (-float(item["change_pct"]["value"]), item["id"]))
         has_flow = any(item.get("fund_flow") for item in ordered)
-        lines.append(f"分类体系：{public_classification(sectors, '统一行业分类（详细映射保留在审计快照）')}；覆盖状态：{sectors['availability']}。")
+        lines.append(f"分类体系：{public_classification(sectors, '统一行业分类（详细映射保留在审计快照）')}；覆盖状态：{AVAILABILITY_LABELS.get(sectors['availability'], sectors['availability'])}。")
         if has_flow:
             methods = sorted(
                 {
@@ -451,7 +461,7 @@ def build_markdown(
                 }
             )
             lines.append(
-                f"板块资金流证据类别：{'、'.join(methods)}；资金流为供应商推导值时按该类别披露，不等同交易所事实。"
+                f"板块资金流证据类别：{'、'.join(sorted({public_method_category(m) for m in methods}))}；资金流为供应商推导值时按该类别披露，不等同交易所事实。"
             )
         lines.append("")
         if has_flow:
@@ -464,7 +474,7 @@ def build_markdown(
             for item in ordered:
                 evidence = item["change_pct"]
                 flow = item.get("fund_flow")
-                flow_cell = fmt_flow_cny(float(flow["value"])) if flow else "unknown"
+                flow_cell = fmt_flow_cny(float(flow["value"])) if flow else "未声明"
                 lines.append(
                     f"| {item['name']} | {fmt_evidence(evidence)} | {flow_cell} | {evidence['observed_at']} |"
                 )
@@ -496,7 +506,7 @@ def build_markdown(
         lines.extend([f"| 项目 | 数值 | {method_heading}方法/解释 | 观察日 |", f"|---|---:|{'---|' if section_name == 'funds' else ''}---|---|"])
         for item in section["items"]:
             evidence = item["metric"]
-            method_cell = f"{item['method_category']} | " if section_name == "funds" else ""
+            method_cell = f"{public_method_category(item['method_category'])} | " if section_name == "funds" else ""
             explanation_text = (
                 public_method_category(item.get("method_category"))
                 if section_name == "funds"
@@ -540,7 +550,7 @@ def build_markdown(
                 item["observed_value"], item["condition"]["unit"]
             )
             lines.append(
-                f"- {status_labels[item['status']]}｜{item['title']}｜{item['subject']['scope']}:{item['subject']['label']}｜观察值 {observed}（{item['observed_market_date']}）"
+                f"- {status_labels[item['status']]}｜{item['title']}｜{SCOPE_LABELS.get(item['subject']['scope'], item['subject']['scope'])}：{item['subject']['label']}｜观察值 {observed}（{item['observed_market_date']}）"
             )
         lines.append("")
     if data.get("qualitative_verification_points"):
@@ -555,7 +565,9 @@ def build_markdown(
         for item in future_points:
             condition = item["condition"]
             lines.append(
-                f"- {item['event_date']}｜{item['title']}｜{item['subject']['scope']}:{item['subject']['label']}｜`{condition['metric']} {condition['operator']} {condition['value']} {condition['unit']}`"
+                f"- {item['event_date']}｜{item['title']}｜{SCOPE_LABELS.get(item['subject']['scope'], item['subject']['scope'])}：{item['subject']['label']}｜"
+                f"{PUBLIC_METRIC_LABELS.get(condition['metric'], condition['metric'])} {OPERATOR_SYMBOLS.get(condition['operator'], condition['operator'])} "
+                f"{humanize_condition_value(condition['value'], condition['unit'])}"
             )
         lines.append("")
 
@@ -564,18 +576,18 @@ def build_markdown(
     if caveats:
         lines.extend(["反方证据与自我证伪（由输入显式声明）：", ""])
         for name, caveat in caveats:
-            lines.append(f"- {name}：{caveat}")
+            lines.append(f"- {SECTION_KEY_LABELS.get(name, name)}：{caveat}")
         lines.append("")
     if signals:
         for signal in signals:
-            lines.append(f"- {signal['label']}：{signal['evidence']}；规则：`{signal['rule']}`。")
+            lines.append(f"- {signal['label']}：{signal['evidence']}；规则：{translate_rule_text(signal['rule'], PUBLIC_METRIC_LABELS, SENTIMENT_STATE_LABELS)}。")
     else:
         lines.append("- 当前输入未触发预定义的指数—宽度背离规则。")
     lines.append("")
     for name in SECTION_NAMES:
         section = sections[name]
         if section["availability"] != "available":
-            lines.append(f"- {name}：{section['availability']}，{public_status_reason(section)}")
+            lines.append(f"- {SECTION_KEY_LABELS.get(name, name)}：{AVAILABILITY_LABELS.get(section['availability'], section['availability'])}，{public_status_reason(section)}")
     lines.extend(["", "---", "", "本报告只描述输入证据和显式规则，不构成投资建议。公开报告不展示数据采集渠道；完整证据链保留在审计输入与历史快照中。", ""])
     report = "\n".join(lines)
     for phrase in FORBIDDEN:

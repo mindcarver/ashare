@@ -67,7 +67,7 @@ def legacy_universe(label: str, status_reason: str) -> dict[str, Any]:
     return {
         "id": "legacy-" + hashlib.sha256(combined.encode("utf-8")).hexdigest()[:12],
         "label": label,
-        "population_rule": f"由Schema 1.0文本保守迁移：{combined}",
+        "population_rule": f"由1.0版结构文本保守迁移：{combined}",
         "includes_st": "含ST" in combined and "不含ST" not in combined,
         "includes_bse": "北交" in combined,
         "exclusions": [],
@@ -123,7 +123,7 @@ def upgrade_verification_subjects(migrated: dict[str, Any], warnings: list[str])
             structured.append(point)
         else:
             qualitative.append(point)
-            warnings.append(f"验证点{point.get('id', 'unknown')}标题与指标无法证明一致，降为定性观察")
+            warnings.append(f"验证点「{point.get('title', point.get('id', '未命名'))}」标题与指标无法证明一致，降为定性观察")
     migrated["verification_points"] = structured
     migrated["qualitative_verification_points"] = qualitative
 
@@ -139,7 +139,7 @@ def downgrade_nonfuture_verifications(
         if parse_date(point.get("event_date"), "verification_point.event_date") <= market_date:
             qualitative.append(point)
             warnings.append(
-                f"验证点{point.get('id', 'unknown')}不晚于market_date，降为定性观察"
+                f"验证点「{point.get('title', point.get('id', '未命名'))}」到期日不晚于复盘交易日，降为定性观察"
             )
         else:
             structured.append(point)
@@ -151,11 +151,26 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
     version = data.get("schema_version")
     if version == SCHEMA_VERSION:
         return data
+    if version == "1.4":
+        # 1.4 → 1.5 是纯版本升级：1.5 的四条新纪律对「新写的输入」必填，
+        # 但升级输入豁免且不回填，因此已发布的 deep 报告仍可逐字节重放。
+        migrated = copy.deepcopy(data)
+        migrated["schema_version"] = SCHEMA_VERSION
+        mode = data.get("analysis_mode")
+        migrated["analysis_mode"] = mode if mode in ANALYSIS_MODES else "core"
+        migrated["legacy_migration"] = {
+            "from": version,
+            "warnings": [
+                "输入由1.4版结构升级至1.5；催化分类、催化作用域、"
+                "窗口交叉校验容差与集中度样本口径对本次升级输入豁免，未回填"
+            ],
+        }
+        return migrated
     if version in {"1.1", "1.2", "1.3"}:
         migrated = copy.deepcopy(data)
         migrated["schema_version"] = SCHEMA_VERSION
         migrated["analysis_mode"] = "core"
-        warnings = [f"输入由Schema {version}升级为1.4并设为core；未伪造深度证据"]
+        warnings = [f"输入由{version}版结构升级至1.5并按基础交付处理；未伪造深度证据"]
         if version in {"1.1", "1.2"}:
             upgrade_verification_subjects(migrated, warnings)
         downgrade_nonfuture_verifications(migrated, warnings)
@@ -181,14 +196,14 @@ def upgrade_legacy_input(data: dict[str, Any], input_sha256: str) -> dict[str, A
         "supersedes_sha256": None,
         "raw_evidence_sha256": input_sha256,
     }
-    warnings = ["输入由Schema 1.0保守归一化；未伪造缺失字段"]
+    warnings = ["输入由1.0版结构保守归一化；未伪造缺失字段"]
     sections = migrated.get("sections", {})
     breadth = sections.get("breadth", {})
     sentiment = sections.get("short_term_sentiment", {})
     if breadth.get("availability") != "unknown":
         label = breadth.get("universe")
         if not isinstance(label, str) or not label.strip():
-            label = breadth.get("status_reason", "Schema 1.0股票池未命名")
+            label = breadth.get("status_reason", "1.0版结构股票池未命名")
         breadth["universe"] = legacy_universe(label, breadth.get("status_reason", ""))
     if sentiment.get("availability") != "unknown":
         label = sentiment.get("universe")

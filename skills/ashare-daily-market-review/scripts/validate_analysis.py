@@ -101,6 +101,15 @@ def validate_mainline_matrix(
         ):
             raise ReviewError(f"{field}.boards 必须是非空字符串数组")
         missing = sorted(board for board in boards if board not in board_ids)
+        reference = theme.get("representative_board_id")
+        if reference is not None and reference not in boards:
+            raise ReviewError(f"{field}.representative_board_id 必须属于声明板块")
+        codes = theme.get("limit_up_codes")
+        if codes is not None:
+            if not isinstance(codes, list) or any(not isinstance(code, str) or not code for code in codes) or len(set(codes)) != len(codes):
+                raise ReviewError(f"{field}.limit_up_codes 必须是去重证券代码数组")
+            if len(codes) != theme['limit_up']['value']:
+                raise ReviewError(f"{field}.limit_up_codes 与涨停家数不一致")
         if missing:
             raise ReviewError(
                 f"{field}.boards 引用了sectors中不存在的板块：{'、'.join(missing)}"
@@ -418,4 +427,3 @@ def validate_extended_structures(
     validate_high_boards(sections, as_of, market_date)
     validate_concept_view(sections, as_of, market_date)
     validate_sector_leaders(sections, as_of, market_date)
-

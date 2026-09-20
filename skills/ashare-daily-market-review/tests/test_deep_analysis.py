@@ -43,7 +43,7 @@ def datetime_evidence(value, observed="2026-08-25"):
 class DeepAnalysisTests(unittest.TestCase):
     def deep_market(self):
         market = json.loads(MARKET.read_text(encoding="utf-8"))
-        market["schema_version"] = "1.4"
+        market["schema_version"] = "1.5"
         market["analysis_mode"] = "deep"
         market["verification_points"][0]["subject"] = {
             "scope": "market",
@@ -53,6 +53,16 @@ class DeepAnalysisTests(unittest.TestCase):
         for item, flow in zip(market["sections"]["sectors"]["items"], (3e9, -2e9, 1e8)):
             item["fund_flow"] = evidence(flow, "CNY")
             item["fund_flow_method_category"] = "provider_model"
+        # 基础章节里的同一交易日当日资金：深度表 1 日窗口必须与它对齐（1.5 交叉校验）。
+        market["sections"]["sectors"]["items"][0]["leaders"] = [
+            {
+                "code": "603186",
+                "name": "华正新材",
+                "change_pct": evidence(10.0, "percent"),
+                "fund_flow": evidence(7.07e8, "CNY"),
+                "fund_flow_method_category": "provider_model",
+            }
+        ]
         market["sections"]["mainline_matrix"] = {
             "availability": "available",
             "status_reason": "主题证据完整",
@@ -72,6 +82,9 @@ class DeepAnalysisTests(unittest.TestCase):
             "security_details": {
                 "availability": "available",
                 "status_reason": "高标与板块重点股证据完整",
+                "methodology": "多周期窗口按同一供应商模型口径取数，1日窗口与基础章节同日口径交叉校验",
+                "public_caveat": "供应商模型不等同真实账户资金",
+                "cross_check_tolerance_pct": 5,
                 "items": [
                     {
                         "code": "603186",
@@ -166,6 +179,9 @@ class DeepAnalysisTests(unittest.TestCase):
                         "fact": "供应商发布新的电子布提价函",
                         "mechanism_hypothesis": "若订单接受提价，上游材料收入弹性可能改善",
                         "causal_status": "hypothesis",
+                        "scope": "theme",
+                        "catalyst_type": "price_hike",
+                        "transmission": "上游提价函→中游覆铜板成本传导→电子链材料环节议价能力上升",
                         "affected_theme_ids": ["electronics-chain"],
                         "counter_evidence": ["提价可能尚未传导到实际成交与利润"],
                         "verification_point_ids": ["verify-turnover"],
@@ -287,7 +303,7 @@ class DeepAnalysisTests(unittest.TestCase):
         )
         outflow = deep["capital_co_movement"]["groups"][1]
         self.assertEqual(outflow["opposite_direction_count"], 0)
-        self.assertIn("## 深度分析层（Schema 1.4）", report)
+        self.assertIn("## 深度分析层", report)
         self.assertIn("产业催化证据链", report)
         self.assertIn("同日流出与流入只构成共现候选", report)
         self.assertIn('aria-label="深度分析层"', html)
@@ -331,7 +347,7 @@ class DeepAnalysisTests(unittest.TestCase):
             html = html_path.read_text(encoding="utf-8")
         self.assertIn("龙虎榜结构", html)
         self.assertIn("证据不足，无法判断", html)
-        self.assertIn("UNKNOWN", html)
+        self.assertIn("未声明", html)
 
     def test_rejects_wrong_fund_window_and_reversed_seal_times(self):
         wrong_window = self.deep_market()
@@ -363,6 +379,25 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertIn("history_sample_days 必须不小于120", first.stderr)
         self.assertIn("禁止不可复算的综合情绪分", second.stderr)
         self.assertIn("贡献分解之和必须等于", third.stderr)
+
+    def test_supplier_aggregation_noise_passes_sum_reconciliation(self):
+        # 板块级聚合值与成分股逐只加总存在约1e-8量级的供应商聚合噪声，
+        # 相对容差1e-6内必须放行；真实缺成分（偏差远超百万分之一）仍拒收。
+        market = self.deep_market()
+        group = market["deep_analysis"]["capital_co_movement"]["groups"][0]
+        group["total_fund_flow"]["value"] = 3e9 + 500  # 1.7e-7 相对偏差，属聚合噪声
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, summary_path, *_ = self.run_generator(market, tmp)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        derived_group = summary["derived"]["deep_analysis"]["capital_co_movement"]["groups"][0]
+        self.assertIsNotNone(derived_group["top1_positive_share_pct"])
+
+        missing = self.deep_market()
+        missing_group = missing["deep_analysis"]["capital_co_movement"]["groups"][0]
+        missing_group["total_fund_flow"]["value"] = 3e9 + 5e6  # 0.17% 偏差，等同缺成分
+        with tempfile.TemporaryDirectory() as tmp:
+            result, *_ = self.run_generator(missing, tmp, expected=2)
+        self.assertIn("贡献分解之和必须等于", result.stderr)
 
     def test_incomplete_contributions_do_not_produce_concentration_or_observation(self):
         market = self.deep_market()
@@ -431,6 +466,115 @@ class DeepAnalysisTests(unittest.TestCase):
             second, *_ = self.run_generator(lhb, tmp, expected=2)
         self.assertIn("counter_evidence 必须是非空", first.stderr)
         self.assertIn("禁止席位主观意图", second.stderr)
+
+    def test_strict_catalyst_requires_scope_type_and_transmission(self):
+        no_scope = self.deep_market()
+        no_scope["deep_analysis"]["catalyst_chains"]["items"][0].pop("scope")
+        no_type = self.deep_market()
+        no_type["deep_analysis"]["catalyst_chains"]["items"][0].pop("catalyst_type")
+        no_transmission = self.deep_market()
+        no_transmission["deep_analysis"]["catalyst_chains"]["items"][0].pop("transmission")
+        with tempfile.TemporaryDirectory() as tmp:
+            first, *_ = self.run_generator(no_scope, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            second, *_ = self.run_generator(no_type, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            third, *_ = self.run_generator(no_transmission, tmp, expected=2)
+        self.assertIn("scope 必须声明", first.stderr)
+        self.assertIn("catalyst_type 必须声明", second.stderr)
+        self.assertIn("transmission 必须写出", third.stderr)
+
+    def test_macro_backdrop_must_not_bind_theme(self):
+        bound = self.deep_market()
+        item = bound["deep_analysis"]["catalyst_chains"]["items"][0]
+        item["scope"] = "macro_backdrop"
+        item["catalyst_type"] = "macro"
+        wrong_type = self.deep_market()
+        wrong_item = wrong_type["deep_analysis"]["catalyst_chains"]["items"][0]
+        wrong_item["scope"] = "macro_backdrop"
+        wrong_item["catalyst_type"] = "price_hike"
+        wrong_item["affected_theme_ids"] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            first, *_ = self.run_generator(bound, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            second, *_ = self.run_generator(wrong_type, tmp, expected=2)
+        self.assertIn("affected_theme_ids 必须为空数组", first.stderr)
+        self.assertIn("宏观背景只用于 macro/policy", second.stderr)
+
+    def test_security_one_day_window_cross_checks_base_sections(self):
+        market = self.deep_market()
+        market["sections"]["sectors"]["items"][0]["leaders"][0]["fund_flow"]["value"] = 9.0e8
+        with tempfile.TemporaryDirectory() as tmp:
+            result, *_ = self.run_generator(market, tmp, expected=2)
+        self.assertIn("cross_check_tolerance_pct", result.stderr)
+        self.assertIn("超过声明的", result.stderr)
+
+    def test_security_cross_check_tolerance_is_mandatory_for_new_input(self):
+        market = self.deep_market()
+        market["deep_analysis"]["security_details"].pop("cross_check_tolerance_pct")
+        with tempfile.TemporaryDirectory() as tmp:
+            result, *_ = self.run_generator(market, tmp, expected=2)
+        self.assertIn("cross_check_tolerance_pct 必须声明", result.stderr)
+
+    def test_sample_scope_concentration_requires_declared_coverage(self):
+        missing_floor = self.deep_market()
+        capital = missing_floor["deep_analysis"]["capital_co_movement"]
+        capital["concentration_scope"] = "sample"
+        group = capital["groups"][0]
+        group["contributions_complete"] = False
+        group["sample_coverage_pct"] = 80
+        below_floor = self.deep_market()
+        capital = below_floor["deep_analysis"]["capital_co_movement"]
+        capital["concentration_scope"] = "sample"
+        capital["thresholds"]["min_sample_coverage_pct"] = 70
+        for target in capital["groups"]:
+            target["contributions_complete"] = False
+            target["sample_coverage_pct"] = 40
+        with tempfile.TemporaryDirectory() as tmp:
+            first, *_ = self.run_generator(missing_floor, tmp, expected=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            second, *_ = self.run_generator(below_floor, tmp, expected=2)
+        self.assertIn("min_sample_coverage_pct", first.stderr)
+        self.assertIn("低于声明的 min_sample_coverage_pct", second.stderr)
+
+    def test_sample_scope_concentration_is_rendered_with_coverage(self):
+        market = self.deep_market()
+        capital = market["deep_analysis"]["capital_co_movement"]
+        capital["concentration_scope"] = "sample"
+        capital["thresholds"]["min_sample_coverage_pct"] = 70
+        for group in capital["groups"]:
+            group["contributions_complete"] = False
+            group["sample_coverage_pct"] = 85
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, summary_path, html_path = self.run_generator(market, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        derived = summary["derived"]["deep_analysis"]["capital_co_movement"]
+        self.assertEqual(derived["concentration_scope"], "sample")
+        self.assertEqual(derived["groups"][0]["sample_coverage_pct"], 85.0)
+        self.assertIsNotNone(derived["groups"][0]["top1_positive_share_pct"])
+        self.assertIn("样本内", report)
+        self.assertIn("样本覆盖率", html)
+
+    def test_legacy_1_4_input_is_exempt_from_1_5_disciplines(self):
+        market = self.deep_market()
+        market["schema_version"] = "1.4"
+        market["deep_analysis"]["security_details"].pop("cross_check_tolerance_pct")
+        item = market["deep_analysis"]["catalyst_chains"]["items"][0]
+        item.pop("scope")
+        item.pop("catalyst_type")
+        item.pop("transmission")
+        with tempfile.TemporaryDirectory() as tmp:
+            _, report_path, summary_path, html_path = self.run_generator(market, tmp)
+            report = report_path.read_text(encoding="utf-8")
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            html = html_path.read_text(encoding="utf-8")
+        self.assertEqual(summary["schema_version"], "1.5")
+        self.assertEqual(summary["legacy_migration"]["from"], "1.4")
+        self.assertEqual(summary["analysis_mode"], "deep")
+        self.assertIn("产业催化证据链", report)
+        self.assertIn("深度分析层", html)
 
     def test_rejects_invalid_liquidity_thresholds_and_future_lhb_metadata(self):
         threshold = self.deep_market()
@@ -667,7 +811,7 @@ class DeepAnalysisTests(unittest.TestCase):
         self.assertEqual(result["status"], "passed")
         self.assertEqual(result["subject"]["id"], "603186")
         self.assertEqual(result["observed_value"], 3)
-        self.assertIn("stock:华正新材", report)
+        self.assertIn("个股：华正新材", report)
 
 
 if __name__ == "__main__":

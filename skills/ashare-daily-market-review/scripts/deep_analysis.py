@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Schema 1.4 深度分析的确定性派生。
+"""Schema 1.5 深度分析的确定性派生。
 
 这里只把已校验证据变成可复算结构；不读取网络、不补默认阈值、不把同日资金共现
 升级为因果迁移，也不推断龙虎榜席位的主观意图。
@@ -9,7 +9,7 @@
 from itertools import combinations
 from typing import Any
 
-from schema import DEEP_COMPONENTS, value
+from schema import DEEP_COMPONENTS, INDUSTRIAL_CATALYST_TYPES, value, SENTIMENT_STATE_LABELS
 
 
 def _number(evidence: dict[str, Any] | None) -> float | None:
@@ -50,6 +50,27 @@ def derive_security_details(component: dict[str, Any]) -> dict[str, Any]:
         "availability": component["availability"],
         "status_reason": component["status_reason"],
         "items": items,
+        **(
+            {
+                "methodology": component["methodology"],
+            }
+            if component.get("methodology")
+            else {}
+        ),
+        **(
+            {
+                "public_caveat": component["public_caveat"],
+            }
+            if component.get("public_caveat")
+            else {}
+        ),
+        **(
+            {
+                "cross_check_tolerance_pct": float(component["cross_check_tolerance_pct"]),
+            }
+            if "cross_check_tolerance_pct" in component
+            else {}
+        ),
     }
 
 
@@ -240,6 +261,7 @@ def _concentration(
 def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
     groups = []
     threshold = float(component["thresholds"]["pseudo_sector_top1_share_pct"])
+    scope = component.get("concentration_scope", "complete")
     for group in component.get("groups", []):
         contributions = [
             {
@@ -249,7 +271,10 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
             }
             for item in group.get("contributions", [])
         ]
-        if not group["contributions_complete"]:
+        # 样本口径：贡献分解未覆盖板块全部成分，但输入显式声明了覆盖率与下限，
+        # 于是集中度按「已声明样本内」输出，并在每个组上挂着口径与覆盖率。
+        computable = group["contributions_complete"] or scope == "sample"
+        if not computable:
             concentration = {
                 "top1_positive_share_pct": None,
                 "absolute_hhi": None,
@@ -260,15 +285,16 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
             concentration = _concentration(
                 group.get("contributions", []), group["role"]
             )
+            pseudo_status = "unknown"
         if (
-            group["contributions_complete"]
+            computable
             and float(group["total_fund_flow"]["value"]) > 0
             and float(group["change_pct"]["value"]) <= 0
             and concentration["top1_positive_share_pct"] is not None
             and concentration["top1_positive_share_pct"] >= threshold
         ):
             pseudo_status = "flagged"
-        elif group["contributions_complete"]:
+        elif computable:
             pseudo_status = "clear"
         groups.append(
             {
@@ -279,6 +305,12 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
                 "total_fund_flow_cny": float(group["total_fund_flow"]["value"]),
                 "change_pct": float(group["change_pct"]["value"]),
                 "contributions_complete": group["contributions_complete"],
+                "concentration_scope": scope,
+                "sample_coverage_pct": (
+                    float(group["sample_coverage_pct"])
+                    if "sample_coverage_pct" in group
+                    else None
+                ),
                 "contributions": contributions,
                 **concentration,
                 "pseudo_sector_status": pseudo_status,
@@ -317,6 +349,7 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
         "claim_type": "co_movement_candidate",
         "methodology": component["methodology"],
         "thresholds": dict(component["thresholds"]),
+        "concentration_scope": scope,
         "groups": groups,
         "overlaps": overlaps,
         "board_overlap_rate_pct": board_overlap_rate,
@@ -331,31 +364,62 @@ def derive_capital_co_movement(component: dict[str, Any]) -> dict[str, Any]:
             }
             for item in component.get("relations", [])
         ],
-        "note": "同日流出与流入只构成共现候选，不证明同一笔资金发生因果迁移",
+        "note": "同日流出与流入只构成共现候选，不证明同一笔资金发生因果迁移"
+        + ("；集中度为样本口径，只在各组声明的覆盖率内成立" if scope == "sample" else ""),
     }
 
 
-def derive_catalyst_chains(component: dict[str, Any]) -> dict[str, Any]:
-    return {
+def derive_catalyst_chains(
+    component: dict[str, Any], sections: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    theme_names = {
+        item["id"]: item["name"]
+        for item in (sections.get("mainline_matrix") or {}).get("themes", [])
+    }
+    items = [
+        {
+            "id": item["id"],
+            "title": item["title"],
+            "event_date": item["event_date"],
+            "published_at": item["published_at"],
+            "source": item["source"],
+            "fact": item["fact"],
+            "mechanism_hypothesis": item["mechanism_hypothesis"],
+            "causal_status": item["causal_status"],
+            "affected_theme_ids": list(item["affected_theme_ids"]),
+            "affected_theme_labels": [
+                theme_names.get(theme_id, theme_id)
+                for theme_id in item["affected_theme_ids"]
+            ],
+            "counter_evidence": list(item["counter_evidence"]),
+            "verification_point_ids": list(item["verification_point_ids"]),
+            "scope": item.get("scope"),
+            "catalyst_type": item.get("catalyst_type"),
+            "transmission": item.get("transmission"),
+        }
+        for item in component.get("items", [])
+    ]
+    result: dict[str, Any] = {
         "availability": component["availability"],
         "status_reason": component["status_reason"],
-        "items": [
-            {
-                "id": item["id"],
-                "title": item["title"],
-                "event_date": item["event_date"],
-                "published_at": item["published_at"],
-                "source": item["source"],
-                "fact": item["fact"],
-                "mechanism_hypothesis": item["mechanism_hypothesis"],
-                "causal_status": item["causal_status"],
-                "affected_theme_ids": list(item["affected_theme_ids"]),
-                "counter_evidence": list(item["counter_evidence"]),
-                "verification_point_ids": list(item["verification_point_ids"]),
-            }
-            for item in component.get("items", [])
-        ],
+        "items": items,
     }
+    # 只有输入真的做了分类，才输出覆盖统计；否则与 1.4 输出逐字节一致。
+    if any(item["catalyst_type"] for item in items):
+        coverage: dict[str, int] = {}
+        for item in items:
+            key = item["catalyst_type"] or "unclassified"
+            coverage[key] = coverage.get(key, 0) + 1
+        industrial = sum(
+            count
+            for key, count in coverage.items()
+            if key in INDUSTRIAL_CATALYST_TYPES
+        )
+        result["type_coverage"] = coverage
+        result["industrial_catalyst_count"] = industrial
+        result["catalyst_count"] = len(items)
+        result["note"] = "催化必须分类；政策与宏观属于背景，产业级催化才回答「这个板块今天为什么涨」"
+    return result
 
 
 def derive_lhb_structure(component: dict[str, Any]) -> dict[str, Any]:
@@ -413,6 +477,8 @@ def derive_deep_analysis(
             }
         elif name == "liquidity_regime":
             result[name] = derive_liquidity_regime(component, sections, derived)
+        elif name == "catalyst_chains":
+            result[name] = derive_catalyst_chains(component, sections)
         else:
             result[name] = DERIVERS[name](component)
     return result
@@ -428,20 +494,20 @@ def deep_signals(deep: dict[str, Any] | None) -> list[dict[str, str]]:
             {
                 "code": "liquidity_conditions_not_met",
                 "label": "量能与价格条件未同时满足",
-                "rule": "all declared liquidity checks must pass",
+                "rule": "全部声明的量价条件均须成立",
                 "evidence": f"{liquidity.get('passed_count', 0)}/{liquidity.get('evaluated_count', 0)}项成立",
             }
         )
     cycle = deep.get("sentiment_cycle") or {}
     if cycle.get("new_window_low_limit_up"):
         change = cycle.get("limit_up_change")
-        change_text = f"{change:+.0f}" if change is not None else "unknown"
+        change_text = f"{change:+.0f}" if change is not None else "未知"
         signals.append(
             {
                 "code": "sentiment_cycle_limit_up_low",
                 "label": "涨停家数触及声明窗口低位",
-                "rule": "current limit_up == min(declared sentiment cycle window)",
-                "evidence": f"当前状态 {cycle.get('current_state')}，涨停较前值变化 {change_text}",
+                "rule": "涨停家数等于声明情绪窗口内的最小值",
+                "evidence": f"当前状态 {SENTIMENT_STATE_LABELS.get(cycle.get('current_state'), cycle.get('current_state'))}，涨停较前值变化 {change_text}",
             }
         )
     capital = deep.get("capital_co_movement") or {}
@@ -453,8 +519,21 @@ def deep_signals(deep: dict[str, Any] | None) -> list[dict[str, str]]:
             {
                 "code": "pseudo_sector_concentration",
                 "label": "板块资金由少数个股主导",
-                "rule": "group change <= 0 and top1 positive share >= declared threshold",
+                "rule": "板块涨跌 ≤ 0 且 Top1正流入占比 ≥ 声明阈值",
                 "evidence": "、".join(flagged),
+            }
+        )
+    catalysts = deep.get("catalyst_chains") or {}
+    if catalysts.get("catalyst_count") and not catalysts.get("industrial_catalyst_count"):
+        signals.append(
+            {
+                "code": "catalyst_industrial_gap",
+                "label": "催化来源缺产业级",
+                "rule": "no catalyst declared with catalyst_type in industrial set",
+                "evidence": (
+                    f"{catalysts['catalyst_count']}条催化全部为政策或宏观背景，"
+                    "未覆盖提价、订单、产能、业绩、股东行为或供给管制"
+                ),
             }
         )
     return signals

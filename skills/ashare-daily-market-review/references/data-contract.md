@@ -1,12 +1,12 @@
 # A股每日盘面数据契约
 
-采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.4`。
+采集每日数据、构造输入、写入历史或解释覆盖状态时读取本文件。当前版本为 `1.5`。
 
 ## 顶层与快照
 
 ```json
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "analysis_mode": "core",
   "market_date": "2026-08-25",
   "as_of": "2026-08-25",
@@ -83,6 +83,21 @@ PATH/YYYY-MM-DD/rNNN-<input-sha前12位>.json
 基础覆盖只统计十个`sections`；深度覆盖独立统计六组件的available/partial/unknown/missing。deep模式的missing必须为0。
 
 新1.4输入的`verification_points[].event_date`必须严格晚于`market_date`。旧版本中不满足该条件的点迁为定性观察，不继续进入未来验证计数或主题交汇。
+
+### 1.4 → 1.5 升级
+
+`1.5` 不改章节结构、不加顶层章节，只给深度层补四条**日常纪律**。它们对**新写的 1.5 输入是必填**，对**由 1.4 升级进来的输入一律豁免、不回填**——因此已发布的历史 deep 报告仍可逐字节重放（重放验证只允许出现版本号、`legacy_migration` 说明和新增的显式默认值 `concentration_scope="complete"`，派生数值必须零变化）。
+
+四条纪律（细节见[深度分析层契约](deep-analysis.md)）：
+
+1. **催化必须分类**：`catalyst_chains.items[].catalyst_type` 从固定集合取（政策/提价/订单/产能/业绩/股东行为/供给与管制/宏观）。
+2. **催化必须声明作用域**：`scope=theme` 必须绑已声明主题并写出 `transmission`（事件→主题的传导路径）；宏观事件用 `scope=macro_backdrop`，此时 `affected_theme_ids` 必须为空数组，不得把宏观硬挂到某个板块。
+3. **个股窗口必须交叉校验**：`security_details.cross_check_tolerance_pct` 必填；1 日窗口要与基础章节（高标池、板块重点股）同一交易日的当日资金口径比对，超容差即拒收。
+4. **集中度必须交代样本口径**：`capital_co_movement.concentration_scope` 为 `complete` 或 `sample`；声明 `sample` 时必须在 `thresholds.min_sample_coverage_pct` 给覆盖率下限，并在每个 group 上给出 `sample_coverage_pct`。
+
+`security_details.public_caveat` 为可选：声明后按公开口径渲染，未声明时渲染器使用保守通用说明。
+
+升级 1.4 输入时只做两件事：改写 `schema_version`、写入 `legacy_migration={"from":"1.4","warnings":[...]}`，并在摘要与 Markdown 公开该说明。分析模式原样保留（1.4 已声明 `deep` 的输入仍按 deep 交付）。
 
 ## 章节状态
 
@@ -444,3 +459,7 @@ health = promotion_rate_pct >= health_threshold_pct ? at_or_above_line : below_l
 ```
 
 下跌家数为0时涨跌比输出unknown。输入或历史不足时不计算相应派生指标。
+
+## 主题成员与资金参照（兼容性扩展）
+
+`mainline_matrix.themes[]` 可声明去重 `limit_up_codes`，只数须等于 `limit_up.value`。父子板块可选 `representative_board_id`（必须在 `boards` 内）；派生净额仅取此板块，公开说明是资金参照而非主题去重总额。`public_scope` 解释成员和参照边界。详见[读者版深度规则](reader-depth.md)。

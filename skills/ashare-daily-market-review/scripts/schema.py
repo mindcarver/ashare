@@ -13,7 +13,7 @@ import _paths  # noqa: F401  确保 skills/_shared 在 sys.path 上
 from ashare_shared import forbidden_terms
 
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 
 
 # 兼容可读的旧版本：升级链只前进不后退。
@@ -21,7 +21,11 @@ SCHEMA_VERSION = "1.4"
 #   1.1 → 1.2  纯版本升级（1.2 全部新增字段均为可选，旧输入语义不变）
 #   1.2 → 1.3  验证点增加 subject 语义；深度分析层全部可选
 #   1.3 → 1.4  增加分析模式、独立深度覆盖和四轴交汇；旧输入默认 core
-SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1", "1.2", "1.3"}
+#   1.4 → 1.5  深度层增加四条日常纪律：催化必须分类且宏观催化不绑主题、
+#              个股窗口必须做口径交叉校验、集中度必须有样本口径、口径说明可披露。
+#              这四项对「新写的 1.5 输入」是必填；由 1.4 升级进来的输入豁免且不回填，
+#              因此历史 deep 输入仍可逐字节重放。core 输入不受影响。
+SUPPORTED_LEGACY_VERSIONS = {"1.0", "1.1", "1.2", "1.3", "1.4"}
 
 
 ANALYSIS_MODES = {"core", "deep"}
@@ -132,6 +136,221 @@ DEEP_COMPONENTS = (
 DEEP_SECURITY_ROLES = {"high_board", "sector_leader", "theme_leader"}
 FUND_FLOW_WINDOWS = {1, 3, 5, 10}
 SENTIMENT_STATES = {"ice", "euphoria", "divergence", "repair", "neutral", "unknown"}
+
+
+# 催化链的分类维度（1.5）。分类本身不是判断，而是为了让「今天只有政策新闻」这种
+# 覆盖缺口在报告里可见；`transmission` 强制写出事件→主题的传导路径，用来拦住
+# 「因为契约要求绑定主题，所以把宏观事件硬挂到某个板块」的写法。
+CATALYST_TYPES = {
+    "policy",
+    "price_hike",
+    "order",
+    "capacity",
+    "earnings",
+    "shareholder",
+    "supply",
+    "macro",
+}
+
+
+# 产业级催化：能落到「这个板块为什么今天涨」的类型。政策与宏观属于背景，
+# 不计入产业级覆盖。
+INDUSTRIAL_CATALYST_TYPES = {
+    "price_hike",
+    "order",
+    "capacity",
+    "earnings",
+    "shareholder",
+    "supply",
+}
+
+
+CATALYST_TYPE_LABELS = {
+    "policy": "政策",
+    "price_hike": "提价",
+    "order": "订单",
+    "capacity": "产能",
+    "earnings": "业绩",
+    "shareholder": "股东行为",
+    "supply": "供给与管制",
+    "macro": "宏观",
+}
+
+
+# `theme` 必须绑定已声明主题并写出传导链；`macro_backdrop` 明确不绑主题。
+CATALYST_SCOPES = {"theme", "macro_backdrop"}
+
+
+CATALYST_SCOPE_LABELS = {
+    "theme": "主题催化",
+    "macro_backdrop": "宏观背景（不绑定主题）",
+}
+
+
+# 量价条件码的公开中文标签：渲染层统一取用；未列出的码保留原文，不静默丢弃。
+# 码集与 deep_analysis.derive_liquidity_regime 声明的阈值键一一对应。
+LIQUIDITY_CHECK_LABELS = {
+    "volume_ratio_min": "量比(5日)",
+    "consecutive_days_min": "连续放量天数",
+    "ma20_distance_min_pct": "距20日均线",
+    "daily_change_min_pct": "当日涨跌幅",
+    "advancer_share_min_pct": "上涨家数占比",
+    "limit_up_min": "涨停家数",
+    "limit_down_max": "跌停家数",
+    "promotion_rate_min_pct": "晋级率",
+}
+
+
+CONCENTRATION_SCOPES = {"complete", "sample"}
+
+
+# ─── 公开报告中文标签层（2026-09-17 用户反馈：公开报告绝不出现英文字段码）───
+# 渲染层一律从这里取标签；映射缺失时保留原文会被公开语言门禁拦下，逼着补齐。
+
+OPERATOR_SYMBOLS = {"<=": "≤", ">=": "≥", "==": "="}
+
+
+AVAILABILITY_LABELS = {
+    "available": "可得",
+    "partial": "部分",
+    "unknown": "未知",
+}
+
+
+SENTIMENT_STATE_LABELS = {
+    "ice": "冰点",
+    "euphoria": "亢奋",
+    "divergence": "分歧",
+    "repair": "修复",
+    "neutral": "中性",
+    "unknown": "未知",
+}
+
+SNAPSHOT_TYPE_LABELS = {
+    "close": "收盘",
+    "post_close": "盘后",
+    "weekend_update": "周末补充",
+}
+
+ANALYSIS_MODE_LABELS = {
+    "deep": "深度交付",
+    "core": "基础交付",
+}
+
+METHOD_CATEGORY_LABELS = {
+    "exchange_fact": "交易所事实",
+    "provider_model": "供应商模型",
+    "activity_proxy": "活跃度代理",
+    "derived": "派生值",
+}
+
+SECURITY_ROLE_LABELS = {
+    "high_board": "高标",
+    "sector_leader": "板块重点股",
+    "theme_leader": "主题领涨股",
+}
+
+CAPITAL_ROLE_LABELS = {
+    "inflow": "流入",
+    "outflow": "流出",
+}
+
+PSEUDO_STATUS_LABELS = {
+    "clear": "未标记",
+    "flagged": "伪板块",
+    "unknown": "未知",
+}
+
+SCOPE_LABELS = {
+    "market": "全市场",
+    "stock": "个股",
+    "sector": "板块",
+    "theme": "主题",
+    "benchmark": "基准",
+}
+
+LIQUIDITY_RESULT_LABELS = {
+    "all_declared_conditions_met": "全部声明条件成立",
+    "conditions_not_met": "条件未全部成立",
+    "unknown": "未知",
+}
+
+CAUSAL_STATUS_LABELS = {
+    "hypothesis": "机制假设",
+    "correlation_only": "仅相关（不作因果解读）",
+    "evidence_backed": "证据支撑",
+}
+
+SECTION_KEY_LABELS = {
+    "indices": "主要指数",
+    "breadth": "市场宽度",
+    "short_term_sentiment": "短线情绪",
+    "turnover": "成交与流动性",
+    "sectors": "板块表现",
+    "funds": "资金证据",
+    "style": "风格结构",
+    "events": "事件",
+    "mainline_matrix": "双确认主线矩阵",
+    "prev_pool_performance": "延续性检验",
+}
+
+# 验证点/阈值体检的全部指标（与 VERIFICATION_UNITS_BY_SCOPE 闭集对齐）+ 体检键。
+PUBLIC_METRIC_LABELS = {
+    "primary_index_change_pct": "主要指数涨跌幅",
+    "advancer_share_pct": "上涨家数占比",
+    "turnover_amount": "两市成交额",
+    "turnover_vs_previous_pct": "成交额较前值变化",
+    "open_board_rate_pct": "炸板率",
+    "limit_balance": "涨停净差（涨停-跌停）",
+    "promotion_rate_pct": "晋级率",
+    "streak": "连板数",
+    "change_pct": "涨跌幅",
+    "fund_flow_1d_cny": "当日主力净额",
+    "sealed_order_amount_cny": "封单金额",
+    "break_count": "开板次数",
+    "fund_flow_cny": "板块资金净流入",
+    "top1_positive_share_pct": "Top1正流入占比",
+    "first_board_count": "首板家数",
+    "limit_up_count": "涨停家数",
+    "board_fund_flow_cny": "板块资金净流入",
+    "volume_ratio_5d": "量比(5日)",
+    "ma20_distance_pct": "距20日均线",
+    "ma60_distance_pct": "距60日均线",
+    "return_percentile_120d": "收益120日分位",
+    "volume_percentile_120d": "成交120日分位",
+    "limit_up": "涨停家数",
+    "limit_down": "跌停家数",
+    "highest_streak": "最高连板",
+    "limit_up_min": "涨停家数下限",
+    "limit_down_max": "跌停家数上限",
+    "open_board_rate_max_pct": "炸板率上限",
+    "promotion_rate_min_pct": "晋级率下限",
+    "highest_streak_min": "最高连板下限",
+    "volume_ratio_min": "量比(5日)下限",
+    "consecutive_days_min": "连续放量天数下限",
+    "ma20_distance_min_pct": "距20日均线下限",
+    "daily_change_min_pct": "当日涨跌幅下限",
+}
+
+# 象限码同时并入指标标签：信号规则文本（如 `quadrant == dual_confirmed`）共用这套映射。
+PUBLIC_METRIC_LABELS.update({
+    "dual_confirmed": "双确认",
+    "capital_led": "资金先行",
+    "sentiment_only": "情绪脉冲",
+    "sentiment_bleeding": "情绪失血",
+    "bleeding": "失血",
+    "quadrant": "主线象限",
+})
+
+# 象限短名（区别于 QUADRANTS 的完整读法，用于表格单元格）。
+QUADRANT_SHORT_LABELS = {
+    "dual_confirmed": "双确认",
+    "capital_led": "资金先行",
+    "sentiment_only": "情绪脉冲",
+    "sentiment_bleeding": "情绪失血",
+    "bleeding": "失血",
+    "unknown": "未知",
+}
 
 
 # 双确认主线矩阵：象限是「游资情绪面（涨停家数）× 机构资金面（板块主力净流入）」

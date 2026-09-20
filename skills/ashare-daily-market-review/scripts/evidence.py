@@ -13,8 +13,16 @@ from datetime import date
 from typing import Any
 from urllib.parse import urlparse
 
-from schema import ReviewError, VERIFICATION_OPERATORS, VERIFICATION_UNITS_BY_SCOPE, parse_date, parse_datetime, require_text
-
+from schema import (
+    AVAILABILITY,
+    DEEP_COMPONENTS,
+    ReviewError,
+    VERIFICATION_OPERATORS,
+    VERIFICATION_UNITS_BY_SCOPE,
+    parse_date,
+    parse_datetime,
+    require_text,
+)
 
 VERIFICATION_TITLE_TERMS = {
     "market": {
@@ -188,3 +196,48 @@ def require_market_date(evidence: dict[str, Any], field: str, market_date: date)
     observed_at = parse_date(evidence.get("observed_at"), f"{field}.observed_at")
     if observed_at != market_date:
         raise ReviewError(f"{field} 标记available时observed_at必须等于market_date")
+
+
+def deep_component(data: dict[str, Any], name: str) -> dict[str, Any] | None:
+    """取一个深度组件；缺省返回 None，声明就必须自洽。
+
+    深度层放在顶层 `deep_analysis`，不进入基础章节覆盖计数。所有组件均可选；
+    存在才校验，缺失绝不回填。标 unknown 的组件不允许夹带分析数据。
+    """
+    deep = data.get("deep_analysis")
+    if deep is None:
+        return None
+    if not isinstance(deep, dict):
+        raise ReviewError("deep_analysis 必须是object")
+    unknown = set(deep) - set(DEEP_COMPONENTS)
+    if unknown:
+        raise ReviewError(f"deep_analysis 含不受支持组件：{sorted(unknown)}")
+    if name not in deep:
+        return None
+    component = deep[name]
+    if component is None:
+        raise ReviewError(f"deep_analysis.{name} 不能是null")
+    if not isinstance(component, dict):
+        raise ReviewError(f"deep_analysis.{name} 必须是object")
+    if component.get("availability") not in AVAILABILITY:
+        raise ReviewError(f"deep_analysis.{name}.availability 不受支持")
+    require_text(component, "status_reason", f"deep_analysis.{name}")
+    if component["availability"] == "unknown" and set(component) - {
+        "availability",
+        "status_reason",
+    }:
+        raise ReviewError(f"deep_analysis.{name} 标记unknown时不能携带分析数据")
+    return component
+
+
+def require_current_evidence(
+    evidence: Any,
+    field: str,
+    as_of: date,
+    market_date: date,
+    unit: str,
+    constraint: str = "any",
+) -> None:
+    """证据必须合法，且观察日就是本次复盘的交易日。"""
+    validate_evidence(evidence, field, as_of, unit, constraint)
+    require_market_date(evidence, field, market_date)

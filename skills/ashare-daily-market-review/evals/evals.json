@@ -178,13 +178,13 @@
     {
       "id": 30,
       "prompt": "明天验证超声电子能不能4板，condition继续用全市场涨停净差行不行？",
-      "expected_output": "不行。Schema 1.4验证点必须声明subject；个股问题用scope=stock、subject.id=股票代码，并使用stock scope允许的streak等指标。stock标题配market.limit_balance会被拒绝；旧1.2中无法证明标题与全市场metric一致的验证点会降为定性观察，不再错误自动结算。",
+      "expected_output": "不行。Schema 1.5验证点必须声明subject；个股问题用scope=stock、subject.id=股票代码，并使用stock scope允许的streak等指标。stock标题配market.limit_balance会被拒绝；旧1.2中无法证明标题与全市场metric一致的验证点会降为定性观察，不再错误自动结算。",
       "files": []
     },
     {
       "id": 31,
       "prompt": "我要深度复盘，但今天龙虎榜和产业催化还没拿到，能不能先省略这两块？",
-      "expected_output": "不能静默省略。Schema 1.4设置analysis_mode=deep后，六个deep_analysis组件必须全部声明；龙虎榜和催化可分别标availability=unknown并写明原因，但缺键会fail closed。报告同时显示基础覆盖与深度覆盖，避免把基础满格误称完整深度复盘。",
+      "expected_output": "不能静默省略。Schema 1.5设置analysis_mode=deep后，六个deep_analysis组件必须全部声明；龙虎榜和催化可分别标availability=unknown并写明原因，但缺键会fail closed。报告同时显示基础覆盖与深度覆盖，避免把基础满格误称完整深度复盘。",
       "files": []
     },
     {
@@ -202,13 +202,103 @@
     {
       "id": 34,
       "prompt": "旧的1.3复盘文件升级后应该自动变成deep吗？",
-      "expected_output": "不自动推断。旧1.0到1.3输入统一保守升级为analysis_mode=core，已有深度组件可继续展示，但不倒推历史交付承诺，也不补造缺失组件。只有新的1.4输入显式声明deep才启用六组件硬门禁。",
+      "expected_output": "不自动推断。旧1.0到1.3输入统一保守升级为analysis_mode=core，已有深度组件可继续展示，但不倒推历史交付承诺，也不补造缺失组件。只有新的1.5输入显式声明deep才启用六组件硬门禁。",
       "files": []
     },
     {
       "id": 35,
       "prompt": "用A股复盘技能复盘2026-09-17。",
-      "expected_output": "无需用户记内部参数：默认使用Schema 1.4与analysis_mode=deep，声明六个deep_analysis组件并生成纵横深验四轴报告。缺少的数据保留组件并标unknown与原因；最终HTML必须显示DEEP、6/6已声明、missing=0。只有用户明确要求简版/core才降级。",
+      "expected_output": "无需用户记内部参数：默认使用Schema 1.5与analysis_mode=deep，声明六个deep_analysis组件并生成纵横深验四轴报告。缺少的数据保留组件并标unknown与原因；最终HTML必须显示DEEP、6/6已声明、missing=0。只有用户明确要求简版/core才降级。",
+      "files": []
+    },
+    {
+      "id": 36,
+      "prompt": "今天只有一条国常会新闻，没有产业新闻。催化链能不能直接挂到半导体板块上？",
+      "expected_output": "不可以。国常会属于宏观/政策事件，1.5 要求声明scope=macro_backdrop，此时affected_theme_ids必须为空数组，不得硬挂到任何主题；catalyst_type只能是macro或policy。若确实要归因到半导体，必须改scope=theme并写出transmission（政策→具体条款→板块环节→受益逻辑）和至少一条反方证据。全部催化都落在政策/宏观时，报告会输出分类覆盖并在summary里给出催化产业级缺口信号。",
+      "files": []
+    },
+    {
+      "id": 37,
+      "prompt": "深度表的个股1日资金和板块重点股那一节的当日资金对不上，差4%，能直接发吗？",
+      "expected_output": "不能直接发。1.5 起security_details必须声明cross_check_tolerance_pct，深层表的1日窗口要与基础章节（short_term_sentiment.high_boards / sectors.items[].leaders）同一交易日的当日资金口径交叉校验，超容差直接拒收并报出是哪只票差多少、基线来自哪个章节。4%差异只有两种正当处理：把1日列统一到基线口径，或把容差提到覆盖该差异并在methodology写明来源差异（例如两套供应商模型）。不允许隐式放宽。",
+      "files": []
+    },
+    {
+      "id": 38,
+      "prompt": "板块资金贡献只抓到前3只票，能不能算一下Top1集中度看是不是伪板块？",
+      "expected_output": "可以，但必须显式声明样本口径。1.5 起 capital_co_movement 组件的 concentration_scope只有complete和sample两种：声明sample时thresholds.min_sample_coverage_pct必须给出覆盖率下限，且每个group都要给不低于下限的sample_coverage_pct，报告会多出「样本覆盖率」列并写明「样本内口径，只在各组声明的覆盖率内成立」。不声明sample就只能把contributions_complete设为false，此时Top1占比、HHI、反向个股数及依赖它们的自动验证全部保持unknown，不得用样本子集冒充整个板块。complete与sample混用时min_sample_coverage_pct只能随sample出现。",
+      "files": []
+    },
+    {
+      "id": 39,
+      "prompt": "把旧的1.4 deep复盘文件重新跑一遍，新加的催化分类和交叉校验会不会报错？",
+      "expected_output": "不会。1.5 的四条纪律只对「新写的1.5输入」必填；由1.4升级进来的输入走豁免路径：只改写schema_version并写入legacy_migration={'from':'1.4','warnings':[...]}，analysis_mode原样保留，不回填任何1.5字段。历史deep报告因此仍可重放，派生数值逐值不变，差异只有版本号、legacy_migration说明和新增的显式默认值concentration_scope='complete'。",
+      "files": []
+    },
+    {
+      "id": 40,
+      "prompt": "读者版里电子昨日净流入227.03亿，今日净流出126.68亿，可以写当日被抽354亿吗？",
+      "expected_output": "不可以。353.71亿是净额较前日减少额；当天净流出126.68亿。正文、表格与图标题同源，不能把差值当水平值。",
+      "files": []
+    },
+    {
+      "id": 41,
+      "prompt": "用这份reader_extra补9月17日，里面中晶科技涨0.54%，主输入是三连板，文件没有日期。",
+      "expected_output": "不按文件名或经验补日期。拒用无法证明日期且与基础行情冲突的旁路，保留原文件与内部排除原因；正文显示未知。",
+      "files": []
+    },
+    {
+      "id": 42,
+      "prompt": "正文平盘按零，图中能否把-0.05%到0.05%视为平盘？",
+      "expected_output": "不能。正文与图表消费共用互斥分桶，平盘严格等于0；分桶合计与同池上涨下跌平盘对账；ST等范围不符须隔离。",
+      "files": []
+    },
+    {
+      "id": 43,
+      "prompt": "两只同行业股票高换手的跌更多，自动写跌幅由浮筹决定。",
+      "expected_output": "拒绝确定性因果模板；只呈现描述性对照，机制作为待验证假设并提供反方证据及后续验证。",
+      "files": []
+    },
+    {
+      "id": 44,
+      "prompt": "deep读者版只留四张图，隐藏多周期资金、集中度和催化反证让它更简洁。",
+      "expected_output": "不静默删掉六组件深度结果。可调整顺序和压缩重复文字，但保留可得事实、假设、反证、窗口与范围，未知组件明确缺口。",
+      "files": []
+    },
+    {
+      "id": 45,
+      "prompt": "旧脚本用成交额算出量比1.18，PDF成交量比0.92，马上发布哪个？",
+      "expected_output": "分别从目标日和前5交易日带日期日线重算成交量比与成交额比，不含当日；不得改标签以外保留错误量价判断。新基准携带daily_bars，真实入口拒收字段与原始日线不一致。",
+      "files": []
+    },
+    {
+      "id": 46,
+      "prompt": "47只涨停池与主输入家数完全相同，但澳弘电子封单由0.02亿变0.30亿，直接补上吗？",
+      "expected_output": "不能混用批次。逐代码交叉检查封单，冲突补充池拒用；更新须作为新修订整组统一，原值保留且未解释的差异公开说明，不认定PDF绝对正确。",
+      "files": []
+    },
+    {
+      "id": 47,
+      "prompt": "昨日连板12只、再涨停4只、收跌5只，写5只断板？",
+      "expected_output": "不可以：未再涨停8只，其中5只收跌3只上涨；两池代码交集决定晋级，不用涨幅>=9.8%代替20%涨停规则。",
+      "files": []
+    },
+    {
+      "id": 48,
+      "prompt": "汽车零部件8只，参考PDF汽车链9只；父板块与零部件资金直接相加？",
+      "expected_output": "先列成员和归属，制造链9只含商用车、不含服务；同步修改家数与同成员资金。声明代表板块只作范围更宽的资金参照，不累加父子板块，也不冒充主题整体净额。",
+      "files": []
+    },
+    {
+      "id": 49,
+      "prompt": "9月20日修订9月17日报告，9月18日条件放在明日关注？",
+      "expected_output": "标历史修订版，分开观察交易日、信息截止与后来补核；9月18日已过，缺该日证据则尚未结算，不伪装成未来观察或事前已知。",
+      "files": []
+    },
+    {
+      "id": 50,
+      "prompt": "历史资金文件没采集时间，但价格涨跌与带日期原行情逐股一致，可以回填9月17日时间吗？",
+      "expected_output": "不能。保留original_fetched_at=null及历史存档模式，使用本次读取时间与known_by_fetch；校验逐代码独立报价及时间戳，只声明行情匹配、不证明资金更新时间。",
       "files": []
     }
   ]
